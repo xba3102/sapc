@@ -66,7 +66,15 @@
             .print-sijil-only body { background-color: white; }
             .print-sijil-only > *:not(#certificate-container) { display: none !important; }
             .print-sijil-only #certificate-container { display: flex !important; }
-            @page { size: A4 landscape; margin: 10mm; }
+            
+            /* Pengurusan Cetakan Slip Keputusan Sahaja */
+            .print-slip-only body { background-color: white; }
+            .print-slip-only > *:not(#slip-container) { display: none !important; }
+            .print-slip-only #slip-container { display: block !important; }
+            
+            @page { margin: 10mm; }
+            .print-sijil-only @page { size: A4 landscape; }
+            .print-slip-only @page { size: A4 portrait; }
         }
     </style>
 </head>
@@ -100,6 +108,11 @@
                 <p class="font-bold text-sm text-gray-600">GURU BESAR</p>
             </div>
         </div>
+    </div>
+
+    <!-- Template Slip Keputusan -->
+    <div id="slip-container" class="hidden flex-col items-center p-8 bg-white w-full min-h-screen absolute inset-0 z-[200]">
+        <!-- Disuntik melalui JS -->
     </div>
 
     <!-- Toast Notification -->
@@ -468,6 +481,12 @@
                 <!-- AKADEMIK (2 PENGGAL) -->
                 <div id="mcontent-akademik" class="modal-section hidden">
                     
+                    <!-- Butang Cetak Slip Keputusan -->
+                    <div class="flex gap-3 justify-end mb-4 border-b pb-4">
+                        <button onclick="app.cetakSlip('mid')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow flex items-center gap-2 transition"><i class="fa-solid fa-file-lines"></i> Cetak Slip (Tengahan)</button>
+                        <button onclick="app.cetakSlip('end')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow flex items-center gap-2 transition"><i class="fa-solid fa-file-lines"></i> Cetak Slip (Akhir)</button>
+                    </div>
+
                     <!-- Special Academics -->
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 grid grid-cols-2 gap-6">
                         <div>
@@ -939,7 +958,7 @@
                         <td class="p-3 text-center font-bold text-gray-500 text-xs">${idx+1}</td>
                         <td class="p-3 font-semibold text-gray-800">${s.name}</td>
                         <td class="p-2 text-center">
-                            <select class="bulk-pbd border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue">
+                            <select class="bulk-pbd border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue" onkeydown="app.handleBulkKeydown(event, this, 'pbd')">
                                 <option value="">- Pilih PBD -</option>
                                 <option value="1" ${pbd=='1'?'selected':''}>1</option>
                                 <option value="2" ${pbd=='2'?'selected':''}>2</option>
@@ -950,10 +969,28 @@
                             </select>
                         </td>
                         <td class="p-2 text-center">
-                            <input type="number" class="bulk-uasa border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue" placeholder="%" value="${uasa}">
+                            <input type="text" class="bulk-uasa border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue" placeholder="%" value="${uasa}" onkeydown="app.handleBulkKeydown(event, this, 'uasa')">
                         </td>
                     </tr>`;
                 }).join('');
+            },
+
+            // Fungsi baharu untuk mengawal lompatan keyboard Arrow Up/Down
+            handleBulkKeydown(e, element, type) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault(); // Elak scroll halaman atau ubah pilihan secara lalai
+                    const currentRow = element.closest('tr');
+                    const targetRow = e.key === 'ArrowDown' ? currentRow.nextElementSibling : currentRow.previousElementSibling;
+
+                    if (targetRow) {
+                        const targetInput = targetRow.querySelector(type === 'uasa' ? '.bulk-uasa' : '.bulk-pbd');
+                        if (targetInput) {
+                            targetInput.focus();
+                            // Jika ia input teks (UASA), highlight teks sedia ada untuk pertindihan pantas
+                            if (targetInput.tagName === 'INPUT') targetInput.select();
+                        }
+                    }
+                }
             },
 
             toggleBulkHeader() {
@@ -1341,6 +1378,150 @@
                     window.print();
                     // Kembalikan ke mod asal lepas dialog cetak ditutup
                     setTimeout(() => document.body.classList.remove('print-sijil-only'), 500);
+                }, 100);
+            },
+
+            // --- FUNGSI SLIP KEPUTUSAN PENTAKSIRAN ---
+            calcTermStats(student, term) {
+                let total = 0;
+                let count = 0;
+                let isBMTM = false;
+                const subjects = student.tahap === '2' ? (this.state.settings.subT2 || []) : (this.state.settings.subT1 || []);
+
+                subjects.forEach(sub => {
+                    const uasaVal = student.acad?.[term]?.sub?.[sub]?.uasa || '';
+                    if (uasaVal.trim() !== '') {
+                        count++;
+                        let mark = parseFloat(uasaVal);
+                        if (!isNaN(mark)) {
+                            total += mark;
+                            if (mark < 40) isBMTM = true;
+                        } else {
+                            // Anggap gagal jika TH, TD, P dimasukkan
+                            isBMTM = true;
+                        }
+                    }
+                });
+
+                let avg = count > 0 ? (total / count) : 0;
+                let status = 'TIADA REKOD MARKAH';
+                if (count > 0) {
+                    status = isBMTM ? 'BELUM MENCAPAI TAHAP MINIMUM (BMTM)' : 'MENCAPAI TAHAP MINIMUM (MTM)';
+                }
+
+                return { total, avg, status, count };
+            },
+
+            cetakSlip(term) {
+                const s = this.state.students.find(x => x.id === this.state.currentStudentId);
+                if(!s) return;
+
+                const termName = term === 'mid' ? 'PERTENGAHAN PENGGAL' : 'AKHIR TAHUN';
+                const subjects = s.tahap === '2' ? (this.state.settings.subT2 || []) : (this.state.settings.subT1 || []);
+                
+                // Kira Statistik Diri Sendiri
+                const myStats = this.calcTermStats(s, term);
+
+                // Kira Kedudukan Kelas
+                const classCohort = this.state.students.filter(x => x.className === s.className);
+                const classRankList = classCohort.map(c => ({ id: c.id, total: this.calcTermStats(c, term).total })).sort((a, b) => b.total - a.total);
+                const kedudukanKelas = classRankList.findIndex(x => x.id === s.id) + 1;
+
+                // Kira Kedudukan Tahun (Kumpulan Darjah yang sama)
+                const tahunCohort = this.state.students.filter(x => x.tahun === s.tahun);
+                const tahunRankList = tahunCohort.map(c => ({ id: c.id, total: this.calcTermStats(c, term).total })).sort((a, b) => b.total - a.total);
+                const kedudukanTahun = tahunRankList.findIndex(x => x.id === s.id) + 1;
+
+                // Bina HTML Jadual Subjek
+                const subjectRows = subjects.map((sub, idx) => {
+                    const pbd = s.acad?.[term]?.sub?.[sub]?.pbd || '-';
+                    const uasa = s.acad?.[term]?.sub?.[sub]?.uasa || '-';
+                    let gred = '-';
+                    
+                    let numMark = parseFloat(uasa);
+                    if (!isNaN(numMark)) {
+                        if(numMark >= 80) gred = 'A';
+                        else if(numMark >= 65) gred = 'B';
+                        else if(numMark >= 50) gred = 'C';
+                        else if(numMark >= 40) gred = 'D';
+                        else gred = 'E';
+                    } else if (uasa.match(/TH|TD|P/i)) {
+                        gred = uasa.toUpperCase();
+                    }
+
+                    return `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-2 px-3 text-center border-r border-gray-200">${idx + 1}</td>
+                        <td class="py-2 px-3 border-r border-gray-200">${sub}</td>
+                        <td class="py-2 px-3 text-center border-r border-gray-200">${uasa}</td>
+                        <td class="py-2 px-3 text-center border-r border-gray-200 font-bold">${gred}</td>
+                        <td class="py-2 px-3 text-center">${pbd}</td>
+                    </tr>`;
+                }).join('');
+
+                const slipContainer = document.getElementById('slip-container');
+                slipContainer.innerHTML = `
+                    <div class="w-full max-w-4xl text-gray-800">
+                        <div class="text-center border-b-2 border-gray-800 pb-4 mb-6">
+                            <h1 class="text-3xl font-black uppercase tracking-widest">SK BIKANG</h1>
+                            <h2 class="text-xl font-bold mt-1">SLIP KEPUTUSAN PENTAKSIRAN ${termName}</h2>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-6 text-sm font-semibold">
+                            <div>
+                                <p class="mb-1"><span class="w-32 inline-block">NAMA MURID</span> : <span class="font-bold">${s.name}</span></p>
+                                <p class="mb-1"><span class="w-32 inline-block">KELAS</span> : ${s.className}</p>
+                            </div>
+                            <div>
+                                <p class="mb-1"><span class="w-32 inline-block">NO. K.P / MYKID</span> : ${s.ic || '-'}</p>
+                                <p class="mb-1"><span class="w-32 inline-block">TAHUN</span> : TAHUN ${s.tahun || '-'}</p>
+                            </div>
+                        </div>
+
+                        <table class="w-full border-2 border-gray-800 mb-6 text-sm">
+                            <thead class="bg-gray-100 border-b-2 border-gray-800">
+                                <tr>
+                                    <th class="py-2 px-3 border-r border-gray-800 w-12 text-center">BIL</th>
+                                    <th class="py-2 px-3 border-r border-gray-800 text-left">MATA PELAJARAN</th>
+                                    <th class="py-2 px-3 border-r border-gray-800 w-24 text-center">MARKAH UASA</th>
+                                    <th class="py-2 px-3 border-r border-gray-800 w-20 text-center">GRED UASA</th>
+                                    <th class="py-2 px-3 w-28 text-center">TAHAP PBD</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${subjectRows}
+                            </tbody>
+                        </table>
+
+                        <div class="border-2 border-gray-800 rounded-lg p-4 mb-8 bg-gray-50 flex justify-between">
+                            <div class="space-y-2 text-sm">
+                                <p><span class="font-bold w-40 inline-block">JUMLAH MARKAH</span> : <span class="font-black text-lg">${myStats.total}</span></p>
+                                <p><span class="font-bold w-40 inline-block">PURATA PERATUS</span> : <span class="font-black text-lg">${myStats.avg.toFixed(1)}%</span></p>
+                                <p><span class="font-bold w-40 inline-block">KEPUTUSAN KESELURUHAN</span> : <span class="font-bold ${myStats.status.includes('BELUM') ? 'text-red-600' : 'text-green-600'}">${myStats.status}</span></p>
+                            </div>
+                            <div class="space-y-2 text-sm border-l-2 border-gray-300 pl-6">
+                                <p><span class="font-bold w-40 inline-block">KEDUDUKAN DALAM KELAS</span> : <span class="font-black text-lg">${kedudukanKelas}</span> / ${classCohort.length}</p>
+                                <p><span class="font-bold w-40 inline-block">KEDUDUKAN DALAM TAHUN</span> : <span class="font-black text-lg">${kedudukanTahun}</span> / ${tahunCohort.length}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-20 pt-10">
+                            <div class="text-center">
+                                <div class="border-b border-gray-800 mb-2 h-16"></div>
+                                <p class="font-bold text-xs">TANDATANGAN GURU KELAS</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="border-b border-gray-800 mb-2 h-16"></div>
+                                <p class="font-bold text-xs">TANDATANGAN IBU BAPA/PENJAGA</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.classList.add('print-slip-only');
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => document.body.classList.remove('print-slip-only'), 500);
                 }, 100);
             },
 
