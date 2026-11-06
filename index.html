@@ -96,6 +96,9 @@
             <button onclick="app.switchMainTab('pendaftaran')" id="btn-tab-pendaftaran" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
                 <i class="fa-solid fa-users-gear w-5"></i> Pendaftaran
             </button>
+            <button onclick="app.switchMainTab('pemarkahan')" id="btn-tab-pemarkahan" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
+                <i class="fa-solid fa-list-check w-5"></i> Pemarkahan Pukal
+            </button>
             <button onclick="app.switchMainTab('tetapan')" id="btn-tab-tetapan" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
                 <i class="fa-solid fa-cogs w-5"></i> Tetapan (Master)
             </button>
@@ -266,6 +269,56 @@
                         <div class="flex-grow overflow-y-auto p-3 bg-gray-50/50 space-y-2" id="student-list-container">
                             <!-- Rendered via JS -->
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= PEMARKAHAN PUKAL ================= -->
+            <div id="view-pemarkahan" class="hidden animate-fade-in h-full flex flex-col space-y-4">
+                <!-- Panel Kawalan -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 shrink-0">
+                    <h2 class="text-lg font-bold text-corp-dark mb-4"><i class="fa-solid fa-list-check mr-2 text-corp-blue"></i> Pemasukan Markah Pukal (Subjek)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Kelas</label>
+                            <select id="bulk-class" onchange="app.loadBulkMarksTable()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Penggal Penilaian</label>
+                            <select id="bulk-term" onchange="app.loadBulkMarksTable()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50">
+                                <option value="mid">Pertengahan Penggal</option>
+                                <option value="end" selected>Akhir Tahun</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Mata Pelajaran</label>
+                            <select id="bulk-subject" onchange="app.loadBulkMarksTable()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jadual -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex-1 flex flex-col overflow-hidden">
+                    <div class="bg-corp-dark px-6 py-4 flex justify-between items-center text-white shrink-0">
+                        <h3 class="font-bold text-sm uppercase tracking-wide" id="bulk-title-display">Paparan Markah</h3>
+                        <button onclick="app.saveBulkMarks()" class="bg-corp-gold hover:bg-yellow-500 text-corp-dark px-4 py-1.5 rounded text-xs font-bold shadow flex items-center gap-2 transition">
+                            <i class="fa-solid fa-save"></i> Simpan Semua
+                        </button>
+                    </div>
+                    <div class="flex-grow overflow-y-auto">
+                        <table class="w-full text-sm relative">
+                            <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm border-b">
+                                <tr>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-16">Bil</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nama Murid</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-40">Tahap PBD (1-6)</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-40">Peratus UASA (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulk-marks-tbody" class="divide-y divide-gray-100">
+                                <tr><td colspan="4" class="text-center py-8 text-gray-500 italic">Sila pilih kelas dan subjek untuk mula.</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -603,7 +656,7 @@
 
             // --- NAVIGATION ---
             switchMainTab(tab) {
-                ['dashboard', 'pendaftaran', 'tetapan'].forEach(t => {
+                ['dashboard', 'pendaftaran', 'pemarkahan', 'tetapan'].forEach(t => {
                     const btn = document.getElementById('btn-tab-' + t);
                     const view = document.getElementById('view-' + t);
                     if(t === tab) {
@@ -616,6 +669,112 @@
                     }
                 });
                 if(tab === 'dashboard') this.renderDashboard();
+                if(tab === 'pemarkahan') {
+                    this.renderBulkFilters();
+                    this.loadBulkMarksTable();
+                }
+            },
+
+            // --- PEMARKAHAN PUKAL ---
+            renderBulkFilters() {
+                // Classes
+                const selCls = document.getElementById('bulk-class');
+                selCls.innerHTML = '<option value="">-- Pilih Kelas --</option>' + this.state.classes.map(c => `<option value="${c}">${c}</option>`).join('');
+                if(this.state.selectedClass && this.state.classes.includes(this.state.selectedClass)) {
+                    selCls.value = this.state.selectedClass;
+                }
+
+                // Subjects (Combine Tahap 1 & 2 without duplicates, sorted)
+                const allSubs = [...new Set([...(this.state.settings.subT1||[]), ...(this.state.settings.subT2||[])])].sort();
+                const selSub = document.getElementById('bulk-subject');
+                const currSub = selSub.value; 
+                selSub.innerHTML = '<option value="">-- Pilih Subjek --</option>' + allSubs.map(s => `<option value="${s}">${s}</option>`).join('');
+                if(currSub && allSubs.includes(currSub)) selSub.value = currSub;
+            },
+
+            loadBulkMarksTable() {
+                const cls = document.getElementById('bulk-class').value;
+                const term = document.getElementById('bulk-term').value; 
+                const sub = document.getElementById('bulk-subject').value;
+                const tbody = document.getElementById('bulk-marks-tbody');
+                const theadTitle = document.getElementById('bulk-title-display');
+                
+                if(!cls || !sub) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500 italic">Sila pilih kelas dan subjek untuk mula memasukkan markah.</td></tr>';
+                    theadTitle.innerText = "Paparan Markah";
+                    return;
+                }
+
+                const list = this.state.students.filter(s => s.className === cls);
+                theadTitle.innerText = `${sub} - ${term === 'mid' ? 'Pertengahan Penggal' : 'Akhir Tahun'} (${cls})`;
+
+                if(list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500 italic">Tiada murid dalam kelas ini.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = list.map((s, idx) => {
+                    const pbd = s?.acad?.[term]?.sub?.[sub]?.pbd || '';
+                    const uasa = s?.acad?.[term]?.sub?.[sub]?.uasa || '';
+                    return `
+                    <tr data-studentid="${s.id}" class="hover:bg-blue-50 border-b border-gray-100 transition group">
+                        <td class="px-4 py-2 text-center text-gray-500 font-semibold">${idx+1}</td>
+                        <td class="px-4 py-2 font-bold text-gray-800 text-sm group-hover:text-corp-blue">${s.name}</td>
+                        <td class="px-4 py-2 text-center">
+                            <select class="bulk-pbd border-2 border-gray-200 rounded-lg p-1.5 outline-none focus:border-corp-blue text-sm font-semibold w-full max-w-[120px] bg-white cursor-pointer">
+                                <option value="">-</option>
+                                <option value="1" ${pbd=='1'?'selected':''}>TP 1</option>
+                                <option value="2" ${pbd=='2'?'selected':''}>TP 2</option>
+                                <option value="3" ${pbd=='3'?'selected':''}>TP 3</option>
+                                <option value="4" ${pbd=='4'?'selected':''}>TP 4</option>
+                                <option value="5" ${pbd=='5'?'selected':''}>TP 5</option>
+                                <option value="6" ${pbd=='6'?'selected':''}>TP 6</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-2 text-center">
+                            <input type="number" class="bulk-uasa border-2 border-gray-200 rounded-lg p-1.5 outline-none focus:border-corp-blue text-sm font-semibold w-full max-w-[100px] text-center" placeholder="%" value="${uasa}">
+                        </td>
+                    </tr>`;
+                }).join('');
+            },
+
+            saveBulkMarks() {
+                const cls = document.getElementById('bulk-class').value;
+                const term = document.getElementById('bulk-term').value;
+                const sub = document.getElementById('bulk-subject').value;
+
+                if(!cls || !sub) {
+                    this.showToast('Ralat', 'Sila pilih kelas dan subjek.', true);
+                    return;
+                }
+
+                const rows = document.querySelectorAll('#bulk-marks-tbody tr[data-studentid]');
+                let count = 0;
+                rows.forEach(tr => {
+                    const sId = tr.getAttribute('data-studentid');
+                    const pbd = tr.querySelector('.bulk-pbd').value;
+                    const uasa = tr.querySelector('.bulk-uasa').value;
+
+                    const student = this.state.students.find(s => s.id === sId);
+                    if(student) {
+                        if(!student.acad) student.acad = { mid:{sub:{}}, end:{sub:{}} };
+                        if(!student.acad[term].sub) student.acad[term].sub = {};
+                        if(!student.acad[term].sub[sub]) student.acad[term].sub[sub] = {};
+                        
+                        student.acad[term].sub[sub].pbd = pbd;
+                        student.acad[term].sub[sub].uasa = uasa;
+                        count++;
+                    }
+                });
+
+                this.saveState();
+                
+                // Refresh modal background list if the edited class is currently selected in registration
+                if (this.state.selectedClass === cls) {
+                    this.renderStudentList(); 
+                }
+                
+                this.showToast('Berjaya', `Markah ${count} murid disimpan.`);
             },
 
             // --- MASTER DATA SETTINGS ---
