@@ -164,18 +164,20 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Stats Card -->
                     <div class="lg:col-span-1 space-y-6">
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-corp-blue text-xl"><i class="fa-solid fa-users"></i></div>
+                        <div onclick="app.showStudentsSummaryModal()" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer hover:border-corp-blue hover:shadow-md transition group">
+                            <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-corp-blue text-xl group-hover:scale-110 transition"><i class="fa-solid fa-users"></i></div>
                             <div>
                                 <p class="text-xs text-gray-500 font-bold uppercase">Jumlah Murid</p>
                                 <h3 class="text-2xl font-black text-gray-800" id="dash-total-students">0</h3>
+                                <span class="text-[10px] text-corp-blue font-semibold">Klik untuk pecahan jantina <i class="fa-solid fa-arrow-right text-[9px]"></i></span>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-corp-gold text-xl"><i class="fa-solid fa-school"></i></div>
+                        <div onclick="app.showClassesSummaryModal()" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer hover:border-corp-gold hover:shadow-md transition group">
+                            <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-corp-gold text-xl group-hover:scale-110 transition"><i class="fa-solid fa-school"></i></div>
                             <div>
                                 <p class="text-xs text-gray-500 font-bold uppercase">Jumlah Kelas</p>
                                 <h3 class="text-2xl font-black text-gray-800" id="dash-total-classes">0</h3>
+                                <span class="text-[10px] text-corp-gold font-semibold">Klik untuk senarai kelas <i class="fa-solid fa-arrow-right text-[9px]"></i></span>
                             </div>
                         </div>
                     </div>
@@ -622,6 +624,34 @@
         </div>
     </div>
 
+    <!-- ================= MODAL RINGKASAN KELAS & MURID (BARU) ================= -->
+    <div id="summary-modal" class="fixed inset-0 bg-corp-dark/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
+            <div class="bg-corp-blue px-6 py-4 flex justify-between items-center text-white shrink-0">
+                <div class="flex items-center gap-3">
+                    <div id="summary-modal-icon" class="w-10 h-10 bg-corp-gold text-corp-dark rounded-full flex items-center justify-center font-bold text-lg shadow">
+                        <i class="fa-solid fa-school"></i>
+                    </div>
+                    <div>
+                        <h3 id="summary-modal-title" class="font-bold text-lg">Ringkasan</h3>
+                        <p id="summary-modal-subtitle" class="text-xs text-blue-200">Maklumat Terperinci</p>
+                    </div>
+                </div>
+                <button onclick="app.closeSummaryModal()" class="text-white hover:text-red-400 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-6 bg-gray-50 flex-1 overflow-y-auto">
+                <div id="summary-modal-content" class="space-y-3">
+                    <!-- Diisi secara dinamik via JavaScript -->
+                </div>
+            </div>
+
+            <div class="bg-gray-100 px-6 py-4 flex justify-end border-t shrink-0">
+                <button onclick="app.closeSummaryModal()" class="px-6 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 shadow-sm">Tutup</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- DEFAULT MASTER DATA ---
         const defaultSettings = {
@@ -707,6 +737,109 @@
             },
 
             generateId() { return 'std_' + Math.random().toString(36).substr(2, 9); },
+
+            // --- INTERAKTIF DASHBOARD STATS (KELAS & MURID BERJANTINA) ---
+            showClassesSummaryModal() {
+                const modal = document.getElementById('summary-modal');
+                document.getElementById('summary-modal-icon').innerHTML = '<i class="fa-solid fa-school"></i>';
+                document.getElementById('summary-modal-title').innerText = 'Senarai Keseluruhan Kelas';
+                document.getElementById('summary-modal-subtitle').innerText = `Jumlah keseluruhan: ${this.state.classes.length} kelas aktif`;
+
+                const container = document.getElementById('summary-modal-content');
+                if(this.state.classes.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500 italic text-center py-6">Tiada kelas didaftarkan lagi.</p>';
+                } else {
+                    container.innerHTML = this.state.classes.map((cls, idx) => {
+                        const count = this.state.students.filter(s => s.className === cls).length;
+                        return `
+                        <div class="flex justify-between items-center bg-white p-4 rounded-xl border shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-lg bg-blue-50 text-corp-blue font-bold text-xs flex items-center justify-center">${idx+1}</span>
+                                <span class="font-bold text-gray-800">${cls}</span>
+                            </div>
+                            <span class="text-xs bg-gray-100 px-3 py-1 rounded-full font-bold text-gray-600">${count} Murid</span>
+                        </div>`;
+                    }).join('');
+                }
+                modal.classList.remove('hidden');
+            },
+
+            showStudentsSummaryModal() {
+                const modal = document.getElementById('summary-modal');
+                document.getElementById('summary-modal-icon').innerHTML = '<i class="fa-solid fa-users"></i>';
+                document.getElementById('summary-modal-title').innerText = 'Pecahan Murid Mengikut Kelas & Jantina';
+                document.getElementById('summary-modal-subtitle').innerText = `Jumlah keseluruhan: ${this.state.students.length} murid`;
+
+                const container = document.getElementById('summary-modal-content');
+                if(this.state.classes.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500 italic text-center py-6">Tiada data kelas atau murid.</p>';
+                    modal.classList.remove('hidden');
+                    return;
+                }
+
+                let totalL = 0;
+                let totalP = 0;
+
+                let html = this.state.classes.map((cls, idx) => {
+                    const studentsInClass = this.state.students.filter(s => s.className === cls);
+                    // Infer jantina: Jika ic wujud dan nombor terakhir ganjil = Lelaki, genap = Perempuan. Jika tiada IC, anggap belum dikira atau letak unassigned.
+                    let l = 0;
+                    let p = 0;
+                    studentsInClass.forEach(s => {
+                        if(s.ic && s.ic.length >= 1) {
+                            let lastChar = parseInt(s.ic.slice(-1));
+                            if(!isNaN(lastChar)) {
+                                if(lastChar % 2 === 0) p++;
+                                else l++;
+                                return;
+                            }
+                        }
+                        // Default fallback jika tiada ic rasmi
+                        l++; 
+                    });
+
+                    totalL += l;
+                    totalP += p;
+
+                    return `
+                    <div class="bg-white p-4 rounded-xl border shadow-sm space-y-2">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <span class="font-bold text-sm text-gray-800"><i class="fa-solid fa-school text-corp-blue mr-2"></i>${cls}</span>
+                            <span class="text-xs bg-blue-50 text-corp-blue px-2.5 py-0.5 rounded-full font-bold">${studentsInClass.length} Jumlah</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 pt-1 text-xs">
+                            <div class="bg-blue-50/50 p-2 rounded-lg flex items-center justify-between border border-blue-100">
+                                <span class="font-semibold text-blue-900"><i class="fa-solid fa-mars text-blue-600 mr-1"></i> Lelaki</span>
+                                <span class="font-black text-blue-700">${l}</span>
+                            </div>
+                            <div class="bg-pink-50/50 p-2 rounded-lg flex items-center justify-between border border-pink-100">
+                                <span class="font-semibold text-pink-900"><i class="fa-solid fa-venus text-pink-600 mr-1"></i> Perempuan</span>
+                                <span class="font-black text-pink-700">${p}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                // Header Total Keseluruhan Jantina
+                let summaryHeader = `
+                <div class="bg-gradient-to-r from-corp-blue to-blue-800 text-white p-4 rounded-xl shadow-md mb-2 flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-blue-200">Jumlah Keseluruhan Jantina</p>
+                        <h4 class="font-black text-lg">${this.state.students.length} Murid Aktif</h4>
+                    </div>
+                    <div class="flex gap-2 text-xs">
+                        <span class="bg-blue-900/60 px-3 py-1.5 rounded-lg border border-blue-400 font-bold"><i class="fa-solid fa-mars mr-1"></i> ${totalL} Lelaki</span>
+                        <span class="bg-pink-900/60 px-3 py-1.5 rounded-lg border border-pink-400 font-bold"><i class="fa-solid fa-venus mr-1"></i> ${totalP} Perempuan</span>
+                    </div>
+                </div>`;
+
+                container.innerHTML = summaryHeader + html;
+                modal.classList.remove('hidden');
+            },
+
+            closeSummaryModal() {
+                document.getElementById('summary-modal').classList.add('hidden');
+            },
 
             cetakTokoh() {
                 const tbody = document.getElementById('dashboard-tbody');
