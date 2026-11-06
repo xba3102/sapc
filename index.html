@@ -39,22 +39,18 @@
 
         /* Pengurusan Cetakan Global & Khusus */
         @media print {
-            /* Pastikan warna latar (bg-color) dicetak dengan tepat */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            /* Buka kunci scroll supaya boleh cetak berbilang muka surat */
             body, main, .flex-1, #view-dashboard, .hide-scrollbar {
                 height: auto !important;
                 overflow: visible !important;
                 display: block !important;
             }
-            /* Sembunyikan elemen navigasi ketika mencetak */
             aside { display: none !important; }
             header button { display: none !important; }
             
-            /* Logik Cetak Tokoh Sahaja */
             .print-tokoh-only header,
             .print-tokoh-only #view-dashboard > div:not(.tokoh-container) {
                 display: none !important;
@@ -65,10 +61,46 @@
                 margin-top: 0 !important;
             }
             .print-tokoh-only .tokoh-header-btn { display: none !important; }
+
+            /* Pengurusan Cetakan Sijil Sahaja */
+            .print-sijil-only body { background-color: white; }
+            .print-sijil-only > *:not(#certificate-container) { display: none !important; }
+            .print-sijil-only #certificate-container { display: flex !important; }
+            @page { size: A4 landscape; margin: 10mm; }
         }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 antialiased h-screen flex overflow-hidden font-sans">
+
+    <!-- Template Sijil (Disembunyikan pada skrin, dipapar ketika cetak sijil) -->
+    <div id="certificate-container" class="hidden flex-col items-center justify-center text-center p-12 bg-white w-full min-h-screen border-[16px] border-double border-corp-gold absolute inset-0 z-[200]">
+        <div class="w-24 h-24 bg-corp-blue rounded-full flex items-center justify-center mb-6 shadow-lg border-4 border-corp-gold mx-auto">
+            <i class="fa-solid fa-award text-5xl text-corp-gold"></i>
+        </div>
+        <h1 class="text-5xl font-black text-corp-blue mb-2 tracking-wider">SIJIL PENGHARGAAN</h1>
+        <h2 class="text-2xl font-bold text-gray-700 mb-10 uppercase tracking-widest">SK Bikang</h2>
+        
+        <p class="text-xl text-gray-600 mb-6 font-medium">Dengan ini diperakui dan dianugerahkan kepada</p>
+        <h3 class="text-4xl font-bold text-gray-900 uppercase border-b-2 border-gray-400 pb-2 mb-4 inline-block px-12" id="sijil-name">NAMA MURID</h3>
+        <p class="text-lg text-gray-500 font-bold mb-10">Kelas: <span id="sijil-class" class="text-gray-800"></span></p>
+        
+        <p class="text-xl text-gray-600 mb-6">Kerana telah diiktiraf sebagai <span class="font-bold text-corp-gold text-2xl">TOKOH MURID</span> atas pencapaian cemerlang:</p>
+        
+        <div id="sijil-achievements" class="flex flex-col gap-3 text-xl font-bold text-corp-blue mb-16">
+            <!-- Disuntik melalui JS -->
+        </div>
+        
+        <div class="flex justify-between w-full max-w-4xl mt-auto px-10">
+            <div class="text-center">
+                <div class="border-b border-gray-400 w-56 mb-2 h-16"></div>
+                <p class="font-bold text-sm text-gray-600">GURU KELAS</p>
+            </div>
+            <div class="text-center">
+                <div class="border-b border-gray-400 w-56 mb-2 h-16"></div>
+                <p class="font-bold text-sm text-gray-600">GURU BESAR</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notification -->
     <div id="toast" class="fixed top-5 right-5 bg-white border-l-4 border-corp-gold shadow-xl px-6 py-4 rounded-md z-[100] transform transition-all duration-300 translate-x-[150%] opacity-0 flex items-center gap-3">
@@ -96,8 +128,8 @@
             <button onclick="app.switchMainTab('pendaftaran')" id="btn-tab-pendaftaran" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
                 <i class="fa-solid fa-users-gear w-5"></i> Pendaftaran
             </button>
-            <button onclick="app.switchMainTab('pemarkahan')" id="btn-tab-pemarkahan" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
-                <i class="fa-solid fa-list-check w-5"></i> Pemarkahan Pukal
+            <button onclick="app.switchMainTab('pukal')" id="btn-tab-pukal" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
+                <i class="fa-solid fa-pen-to-square w-5"></i> Markah Pukal (Subjek)
             </button>
             <button onclick="app.switchMainTab('tetapan')" id="btn-tab-tetapan" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
                 <i class="fa-solid fa-cogs w-5"></i> Tetapan (Master)
@@ -106,7 +138,7 @@
         
         <div class="p-4 border-t border-blue-800 text-xs text-center text-blue-300">
             <p>&copy; 2026 SK Bikang</p>
-            <p>Versi 4.1 (Stable Build)</p>
+            <p>Versi 4.2 (Optimized UI)</p>
         </div>
     </aside>
 
@@ -175,7 +207,7 @@
                     </div>
                 </div>
 
-                <!-- Tokoh Keseluruhan (Ditanda dengan 'tokoh-container' untuk cetakan khusus) -->
+                <!-- Tokoh Keseluruhan -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden tokoh-container">
                     <div class="bg-corp-dark px-6 py-4 flex justify-between items-center text-white">
                         <h3 class="font-bold text-sm uppercase tracking-wide"><i class="fa-solid fa-trophy text-corp-gold mr-2"></i> Senarai Top Tokoh Murid (Keseluruhan)</h3>
@@ -204,127 +236,124 @@
 
             </div>
 
-            <!-- ================= PENDAFTARAN ================= -->
-            <div id="view-pendaftaran" class="hidden animate-fade-in h-full flex flex-col">
-                <!-- Panel Atas: Dikecilkan (padding dan gap diminimumkan) -->
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 flex flex-col xl:flex-row gap-4 shrink-0">
-                    <div class="flex-1 flex gap-4">
-                        <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Pilih Kelas</label>
-                            <select id="select-kelas" onchange="app.selectClass()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm font-semibold focus:border-corp-blue outline-none cursor-pointer bg-gray-50"></select>
+            <!-- ================= PENDAFTARAN (Dikecilkan Bahagian Atas) ================= -->
+            <div id="view-pendaftaran" class="hidden animate-fade-in h-full flex flex-col space-y-4">
+                
+                <!-- Bar Pilihan Kelas & Import Pukal yang Sangat Kompak -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-4 items-center justify-between shrink-0">
+                    <div class="flex items-center gap-3 w-full lg:w-auto flex-1">
+                        <div class="w-64">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Pilih Kelas</label>
+                            <select id="select-kelas" onchange="app.selectClass()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-semibold focus:border-corp-blue outline-none cursor-pointer bg-gray-50"></select>
                         </div>
-                        <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tambah Kelas Baharu</label>
+                        <div class="flex-1 max-w-xs">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tambah Kelas Baharu</label>
                             <div class="flex gap-2">
-                                <input type="text" id="input-new-class" placeholder="Cth: 1 ARIF" class="flex-1 border-2 border-gray-200 rounded-lg p-2 text-sm uppercase focus:border-corp-blue outline-none">
-                                <button onclick="app.addClass()" class="bg-corp-blue text-white px-4 rounded-lg font-bold hover:bg-blue-800"><i class="fa-solid fa-plus"></i></button>
+                                <input type="text" id="input-new-class" placeholder="Cth: 1 ARIF" class="flex-1 border-2 border-gray-200 rounded-lg p-2 text-xs uppercase focus:border-corp-blue outline-none">
+                                <button onclick="app.addClass()" class="bg-corp-blue text-white px-3 rounded-lg font-bold text-xs hover:bg-blue-800"><i class="fa-solid fa-plus"></i></button>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="xl:w-1/3 bg-blue-50 border border-blue-200 p-3 rounded-xl relative overflow-hidden flex flex-row justify-between items-center gap-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-corp-blue shadow-sm shrink-0"><i class="fa-solid fa-file-csv"></i></div>
-                            <h3 class="font-bold text-xs text-corp-blue leading-tight">Import Pukal CSV<br><span class="font-normal opacity-70">Sistem Pintar</span></h3>
-                        </div>
-                        <label class="bg-white border border-corp-blue text-corp-blue hover:bg-corp-blue hover:text-white cursor-pointer font-bold py-1.5 px-4 rounded-lg shadow-sm transition text-xs whitespace-nowrap">
-                            Pilih Fail
+                    <div class="flex items-center gap-3">
+                        <label class="bg-blue-50 border border-blue-200 text-corp-blue hover:bg-corp-blue hover:text-white cursor-pointer font-bold py-2 px-4 rounded-lg shadow-sm transition text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-file-csv"></i> Import Pukal CSV
                             <input type="file" accept=".csv" class="hidden" onchange="app.handleCSV(event)">
                         </label>
                     </div>
                 </div>
 
-                <div id="class-workspace" class="hidden flex-grow overflow-hidden gap-4 flex-col md:flex-row">
-                    <!-- Manual Add (Disembunyikan secara lalai untuk UI Minimalis) -->
-                    <div id="panel-manual-add" class="hidden md:w-1/3 bg-white p-5 rounded-xl shadow-sm border border-gray-100 h-fit transition-all duration-300">
-                        <div class="flex justify-between items-center border-b pb-2 mb-4">
-                            <h3 class="font-bold text-gray-800 text-sm uppercase"><i class="fa-solid fa-user-plus mr-2 text-corp-blue"></i>Tambah Manual</h3>
-                            <button onclick="app.toggleManualAdd()" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
+                <!-- Workspace Senarai Murid -->
+                <div id="class-workspace" class="hidden flex-grow overflow-hidden flex flex-col bg-white rounded-xl shadow-sm border border-gray-100">
+                    <div class="bg-gray-50 px-6 py-3 border-b flex justify-between items-center shrink-0">
+                        <div class="flex items-center gap-4">
+                            <h3 class="font-bold text-gray-800 text-sm">Senarai: <span id="lbl-current-class" class="text-corp-blue"></span></h3>
+                            <span class="text-xs bg-corp-blue text-white px-2.5 py-0.5 rounded-full font-bold" id="lbl-student-count">0</span>
                         </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Nama Penuh</label>
-                                <input type="text" id="input-manual-name" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm uppercase outline-none focus:border-corp-blue">
+                        <!-- Butang Tolol (Toggle) Tambah Murid Manual -->
+                        <button onclick="app.toggleManualAdd()" id="btn-toggle-manual" class="bg-corp-gold text-corp-dark hover:bg-yellow-500 px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-plus"></i> <span id="lbl-toggle-text">Tambah Murid</span>
+                        </button>
+                    </div>
+
+                    <!-- Panel Tambah Murid Manual (Disembunyikan secara lalai, akan unhide bila ditekan) -->
+                    <div id="panel-manual-add" class="hidden bg-blue-50/70 border-b p-4 animate-fade-in shrink-0">
+                        <div class="max-w-2xl mx-auto flex flex-col md:flex-row gap-3 items-end">
+                            <div class="flex-1 w-full">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Penuh Murid</label>
+                                <input type="text" id="input-manual-name" placeholder="NAMA PENUH" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs uppercase outline-none focus:border-corp-blue bg-white">
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Tahun (Cth: 1, 4)</label>
-                                <input type="number" id="input-manual-tahun" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-corp-blue">
+                            <div class="w-32">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tahun</label>
+                                <input type="number" id="input-manual-tahun" placeholder="1-6" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs text-center outline-none focus:border-corp-blue bg-white">
                             </div>
-                            <button onclick="app.addStudentManual()" class="w-full bg-corp-gold text-corp-dark py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 shadow">Simpan Murid</button>
+                            <button onclick="app.addStudentManual()" class="w-full md:w-auto bg-corp-blue text-white px-5 py-2 rounded-lg font-bold text-xs hover:bg-blue-800 shadow">Simpan</button>
                         </div>
                     </div>
 
-                    <!-- Student List (Lebih ruang untuk senarai) -->
-                    <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
-                        <div class="bg-gray-50 px-5 py-3 border-b flex justify-between items-center">
-                            <h3 class="font-bold text-gray-800">Senarai: <span id="lbl-current-class" class="text-corp-blue"></span></h3>
-                            <div class="flex items-center gap-3">
-                                <!-- Butang Toggle Tambah Murid -->
-                                <button onclick="app.toggleManualAdd()" class="text-xs bg-white border border-gray-300 hover:border-corp-blue hover:text-corp-blue px-3 py-1.5 rounded font-semibold text-gray-700 shadow-sm transition flex items-center gap-2">
-                                    <i class="fa-solid fa-user-plus"></i> <span class="hidden sm:inline">Tambah Murid</span>
-                                </button>
-                                <span class="text-xs bg-corp-blue text-white px-3 py-1.5 rounded-full font-bold shadow-sm" id="lbl-student-count">0</span>
-                            </div>
-                        </div>
-                        <div class="flex-grow overflow-y-auto p-3 bg-gray-50/50 space-y-2" id="student-list-container">
-                            <!-- Rendered via JS -->
-                        </div>
+                    <!-- Senarai Nama Murid yang lebih luas -->
+                    <div class="flex-grow overflow-y-auto p-4 bg-gray-50/50 space-y-2" id="student-list-container">
+                        <!-- Rendered via JS -->
                     </div>
                 </div>
             </div>
 
-            <!-- ================= PEMARKAHAN PUKAL ================= -->
-            <div id="view-pemarkahan" class="hidden animate-fade-in h-full flex flex-col space-y-4">
-                <!-- Panel Kawalan -->
-                <div id="panel-bulk-filter" class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 shrink-0 transition-all duration-300">
-                    <div class="flex justify-between items-center mb-4 border-b pb-2">
-                        <h2 class="text-sm font-bold text-corp-dark uppercase"><i class="fa-solid fa-filter mr-2 text-corp-blue"></i> Tetapan Kelas & Subjek</h2>
-                        <button onclick="app.toggleBulkFilter()" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- ================= PEMARKAHAN PUKAL (SUBJEK) ================= -->
+            <div id="view-pukal" class="hidden animate-fade-in h-full flex flex-col space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-4 items-center justify-between shrink-0">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 w-full flex-1">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Kelas</label>
-                            <select id="bulk-class" onchange="app.loadBulkMarksTable()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50"></select>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Pilih Kelas</label>
+                            <select id="pukal-kelas" onchange="app.renderBulkStudents()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-semibold focus:border-corp-blue outline-none bg-gray-50"></select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Penggal Penilaian</label>
-                            <select id="bulk-term" onchange="app.loadBulkMarksTable()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Penggal Penilaian</label>
+                            <select id="pukal-term" onchange="app.renderBulkStudents()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-semibold focus:border-corp-blue outline-none bg-gray-50">
                                 <option value="mid">Pertengahan Penggal</option>
-                                <option value="end" selected>Akhir Tahun</option>
+                                <option value="end">Akhir Tahun</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Mata Pelajaran</label>
-                            <select id="bulk-subject" onchange="app.loadBulkMarksTable()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50"></select>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tahap Murid</label>
+                            <select id="pukal-tahap" onchange="app.updateBulkSubjects()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-semibold focus:border-corp-blue outline-none bg-gray-50">
+                                <option value="1">Tahap 1 (Tahun 1-3)</option>
+                                <option value="2">Tahap 2 (Tahun 4-6)</option>
+                            </select>
                         </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Pilih Mata Pelajaran</label>
+                            <select id="pukal-subject" onchange="app.renderBulkStudents()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-semibold focus:border-corp-blue outline-none bg-gray-50 font-bold text-corp-blue"></select>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 self-end lg:self-center">
+                        <button onclick="app.toggleBulkHeader()" id="btn-toggle-bulk" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Sembunyikan/Papar Menu Pilihan">
+                            <i class="fa-solid fa-chevron-up" id="bulk-toggle-icon"></i> <span id="bulk-toggle-text">Tutup Menu</span>
+                        </button>
+                        <button onclick="app.saveBulkMarks()" class="bg-corp-gold text-corp-dark hover:bg-yellow-500 px-5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center gap-2">
+                            <i class="fa-solid fa-save"></i> Simpan Pukal
+                        </button>
                     </div>
                 </div>
 
-                <!-- Jadual -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex-1 flex flex-col overflow-hidden">
-                    <div class="bg-corp-dark px-6 py-4 flex justify-between items-center text-white shrink-0">
-                        <h3 class="font-bold text-sm uppercase tracking-wide" id="bulk-title-display">Paparan Markah</h3>
-                        <div class="flex items-center gap-3">
-                            <button onclick="app.toggleBulkFilter()" class="text-xs bg-white text-gray-800 hover:text-corp-blue hover:bg-gray-100 px-3 py-1.5 rounded font-semibold shadow-sm transition flex items-center gap-2">
-                                <i class="fa-solid fa-filter"></i> <span class="hidden sm:inline">Tetapan</span>
-                            </button>
-                            <button onclick="app.saveBulkMarks()" class="bg-corp-gold hover:bg-yellow-500 text-corp-dark px-4 py-1.5 rounded text-xs font-bold shadow flex items-center gap-2 transition">
-                                <i class="fa-solid fa-save"></i> Simpan Semua
-                            </button>
-                        </div>
+                <!-- Jadual Pemarkahan Pukal -->
+                <div class="flex-grow bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+                    <div class="bg-gray-50 px-6 py-3 border-b flex justify-between items-center shrink-0">
+                        <h3 class="font-bold text-gray-800 text-sm">Key-In Pukal: <span id="lbl-bulk-info" class="text-corp-blue">-</span></h3>
+                        <span class="text-xs text-gray-500 italic">Markah tersimpan automatik apabila butang 'Simpan Pukal' ditekan.</span>
                     </div>
-                    <div class="flex-grow overflow-y-auto">
-                        <table class="w-full text-sm relative">
-                            <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm border-b">
-                                <tr>
-                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-16">Bil</th>
-                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nama Murid</th>
-                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-40">Tahap PBD (1-6)</th>
-                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-40">Peratus UASA (%)</th>
+                    <div class="flex-grow overflow-y-auto p-4 bg-gray-50/50">
+                        <table class="w-full text-sm border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-xs uppercase text-gray-600 font-bold border-b">
+                                    <th class="p-3 w-16 text-center">No</th>
+                                    <th class="p-3">Nama Murid</th>
+                                    <th class="p-3 w-40 text-center">PBD (Tahap 1-6)</th>
+                                    <th class="p-3 w-40 text-center">UASA (%)</th>
                                 </tr>
                             </thead>
-                            <tbody id="bulk-marks-tbody" class="divide-y divide-gray-100">
-                                <tr><td colspan="4" class="text-center py-8 text-gray-500 italic">Sila pilih kelas dan subjek untuk mula.</td></tr>
+                            <tbody id="bulk-tbody" class="divide-y divide-gray-100">
+                                <!-- Rendered via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -336,7 +365,7 @@
                 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h2 class="text-lg font-bold text-corp-dark mb-1"><i class="fa-solid fa-database mr-2 text-corp-blue"></i> Pengurusan Master Data</h2>
-                    <p class="text-xs text-gray-500 mb-6">Tambah atau padam senarai rujukan bagi Akademik, Kokurikulum dan HEM. Tetapan baharu telah ditambah secara automatik.</p>
+                    <p class="text-xs text-gray-500 mb-6">Tambah atau padam senarai rujukan bagi Akademik, Kokurikulum dan HEM.</p>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <!-- Subjek Tahap 1 -->
@@ -371,7 +400,7 @@
 
                 <div class="bg-red-50 p-6 rounded-xl border border-red-200">
                     <h3 class="font-bold text-red-700 mb-2">Reset Sistem</h3>
-                    <button onclick="if(confirm('Pasti padam semua data murid dan markah? Muat turun laporan PDF sebelum meneruskan tindakan ini.')) app.executeClearData()" class="bg-red-600 text-white px-4 py-2 rounded text-sm font-bold shadow hover:bg-red-700">Kosongkan Semua Data Pelajar</button>
+                    <button onclick="if(confirm('Pasti padam semua data murid dan markah?')) app.executeClearData()" class="bg-red-600 text-white px-4 py-2 rounded text-sm font-bold shadow hover:bg-red-700">Kosongkan Semua Data Pelajar</button>
                 </div>
 
             </div>
@@ -554,8 +583,47 @@
         </div>
     </div>
 
+    <!-- ================= MODAL KEPUTUSAN TERBAIK (RANKING) ================= -->
+    <div id="rank-modal" class="fixed inset-0 bg-corp-dark/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
+            <div class="bg-gradient-to-r from-corp-blue to-blue-800 px-6 py-4 flex justify-between items-center text-white shrink-0">
+                <div>
+                    <h3 class="font-bold text-lg"><i class="fa-solid fa-medal text-corp-gold mr-2"></i> Kriteria Penganugerahan</h3>
+                    <p id="rank-student-name" class="text-xs text-blue-200 font-bold uppercase tracking-wider">NAMA MURID</p>
+                </div>
+                <button onclick="app.closeRankModal()" class="text-white hover:text-red-400 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 bg-gray-50 flex-1 overflow-y-auto">
+                <div class="mb-4 flex justify-between items-center border-b pb-2">
+                    <span class="text-xs font-bold text-gray-500 uppercase">Kelas: <span id="rank-student-class" class="text-corp-blue text-sm"></span></span>
+                    <span class="text-xs font-bold text-gray-500 uppercase">Ujian: <span id="rank-term-info" class="text-corp-blue"></span></span>
+                </div>
+                
+                <!-- Seksyen Anugerah (Sebab Tokoh) -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-black text-corp-gold uppercase mb-3 flex items-center gap-2"><i class="fa-solid fa-trophy"></i> Pencapaian Layak Sijil</h4>
+                    <div id="rank-achievements-container" class="space-y-2">
+                        <!-- Disuntik JS -->
+                    </div>
+                </div>
+
+                <!-- Seksyen Keputusan Penuh -->
+                <div>
+                    <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 border-b pb-1">Keputusan Kedudukan (Ranking) Kelas</h4>
+                    <div id="rank-list-container" class="space-y-3">
+                        <!-- JS Rendered -->
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-100 px-6 py-4 flex justify-end gap-3 border-t shrink-0">
+                <button onclick="app.closeRankModal()" class="px-6 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 shadow-sm">Tutup</button>
+                <button onclick="app.cetakSijil()" class="px-6 py-2 bg-corp-gold text-corp-dark rounded-lg text-sm font-bold hover:bg-yellow-500 shadow-md flex items-center gap-2"><i class="fa-solid fa-certificate"></i> Jana Sijil</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // --- DEFAULT MASTER DATA (Dikemaskini dengan keperluan anugerah SK Bikang) ---
+        // --- DEFAULT MASTER DATA ---
         const defaultSettings = {
             subT1: [
                 'BAHASA MELAYU', 'BAHASA INGGERIS', 'MATEMATIK', 'SAINS', 
@@ -581,7 +649,8 @@
                 students: [],
                 selectedClass: '',
                 currentStudentId: null,
-                tempJawatan: [] // holds jaws while modal is open
+                tempJawatan: [],
+                currentAchievements: [] // Menyimpan pencapaian layak sijil untuk sesi cetakan
             },
 
             init() {
@@ -600,7 +669,6 @@
                     this.state.classes = parsed.classes || [];
                     this.state.students = parsed.students || [];
                     
-                    // Smart Merge: Gabungkan master data lama dengan default baru tanpa perlu padam rekod
                     let savedSettings = parsed.settings || {};
                     this.state.settings = {
                         subT1: savedSettings.subT1 || [],
@@ -608,7 +676,6 @@
                         hemJaw: savedSettings.hemJaw || []
                     };
                     
-                    // Suntik subjek baharu secara automatik jika tiada
                     defaultSettings.subT1.forEach(sub => { if(!this.state.settings.subT1.includes(sub)) this.state.settings.subT1.push(sub); });
                     defaultSettings.subT2.forEach(sub => { if(!this.state.settings.subT2.includes(sub)) this.state.settings.subT2.push(sub); });
                     defaultSettings.hemJaw.forEach(jaw => { if(!this.state.settings.hemJaw.includes(jaw)) this.state.settings.hemJaw.push(jaw); });
@@ -636,35 +703,25 @@
                 toast.classList.replace(isError ? 'border-corp-gold' : 'border-red-500', isError ? 'border-red-500' : 'border-corp-gold');
                 
                 toast.classList.remove('opacity-0', 'translate-x-[150%]');
-                setTimeout(() => toast.classList.add('opacity-0', 'translate-x-[150%]'), 3000);
+                setTimeout(() => toast.classList.add('opacity-0', 'translate-x-[150%]', 3000));
             },
 
             generateId() { return 'std_' + Math.random().toString(36).substr(2, 9); },
 
-            // --- FUNGSI CETAK TOKOH (Menggunakan CSS Print Media) ---
             cetakTokoh() {
                 const tbody = document.getElementById('dashboard-tbody');
-                
                 if (tbody.innerHTML.includes('Tiada data murid dinilai')) {
                     this.showToast('Ralat', 'Tiada data tokoh untuk dicetak.', true);
                     return;
                 }
-
-                // Tambah kelas khusus pada body untuk print jadual tokoh sahaja
                 document.body.classList.add('print-tokoh-only');
-                
-                // Panggil fungsi cetakan terbina pelayar
                 window.print();
-                
-                // Buang kelas khusus selepas cetakan selesai / dibatalkan
-                setTimeout(() => {
-                    document.body.classList.remove('print-tokoh-only');
-                }, 500);
+                setTimeout(() => { document.body.classList.remove('print-tokoh-only'); }, 500);
             },
 
             // --- NAVIGATION ---
             switchMainTab(tab) {
-                ['dashboard', 'pendaftaran', 'pemarkahan', 'tetapan'].forEach(t => {
+                ['dashboard', 'pendaftaran', 'pukal', 'tetapan'].forEach(t => {
                     const btn = document.getElementById('btn-tab-' + t);
                     const view = document.getElementById('view-' + t);
                     if(t === tab) {
@@ -677,124 +734,126 @@
                     }
                 });
                 if(tab === 'dashboard') this.renderDashboard();
-                if(tab === 'pemarkahan') {
-                    this.renderBulkFilters();
-                    this.loadBulkMarksTable();
-                }
+                if(tab === 'pukal') this.initBulkView();
             },
 
-            // --- FUNGSI TOGGLE BULK FILTER ---
-            toggleBulkFilter() {
-                const panel = document.getElementById('panel-bulk-filter');
-                if (panel.classList.contains('hidden')) {
+            // --- MANUAL ADD TOGGLE ---
+            toggleManualAdd() {
+                const panel = document.getElementById('panel-manual-add');
+                const lbl = document.getElementById('lbl-toggle-text');
+                const isHidden = panel.classList.contains('hidden');
+                if(isHidden) {
                     panel.classList.remove('hidden');
-                    panel.classList.add('block');
+                    lbl.innerText = 'Tutup';
                 } else {
                     panel.classList.add('hidden');
-                    panel.classList.remove('block');
+                    lbl.innerText = 'Tambah Murid';
                 }
             },
 
-            // --- PEMARKAHAN PUKAL ---
-            renderBulkFilters() {
-                // Classes
-                const selCls = document.getElementById('bulk-class');
-                selCls.innerHTML = '<option value="">-- Pilih Kelas --</option>' + this.state.classes.map(c => `<option value="${c}">${c}</option>`).join('');
+            // --- BULK GRADING SYSTEM ---
+            initBulkView() {
+                const selClass = document.getElementById('pukal-kelas');
+                selClass.innerHTML = '<option value="">-- Pilih Kelas --</option>' + this.state.classes.map(c => `<option value="${c}">${c}</option>`).join('');
                 if(this.state.selectedClass && this.state.classes.includes(this.state.selectedClass)) {
-                    selCls.value = this.state.selectedClass;
+                    selClass.value = this.state.selectedClass;
+                } else if(this.state.classes.length > 0) {
+                    selClass.value = this.state.classes[0];
                 }
-
-                // Subjects (Combine Tahap 1 & 2 without duplicates, sorted)
-                const allSubs = [...new Set([...(this.state.settings.subT1||[]), ...(this.state.settings.subT2||[])])].sort();
-                const selSub = document.getElementById('bulk-subject');
-                const currSub = selSub.value; 
-                selSub.innerHTML = '<option value="">-- Pilih Subjek --</option>' + allSubs.map(s => `<option value="${s}">${s}</option>`).join('');
-                if(currSub && allSubs.includes(currSub)) selSub.value = currSub;
+                this.updateBulkSubjects();
             },
 
-            loadBulkMarksTable() {
-                const cls = document.getElementById('bulk-class').value;
-                const term = document.getElementById('bulk-term').value; 
-                const sub = document.getElementById('bulk-subject').value;
-                const tbody = document.getElementById('bulk-marks-tbody');
-                const theadTitle = document.getElementById('bulk-title-display');
+            updateBulkSubjects() {
+                const tahap = document.getElementById('pukal-tahap').value;
+                const subs = tahap === '2' ? this.state.settings.subT2 : this.state.settings.subT1;
+                const selSub = document.getElementById('pukal-subject');
+                selSub.innerHTML = (subs || []).map(s => `<option value="${s}">${s}</option>`).join('');
+                this.renderBulkStudents();
+            },
+
+            renderBulkStudents() {
+                const cls = document.getElementById('pukal-kelas').value;
+                const term = document.getElementById('pukal-term').value;
+                const sub = document.getElementById('pukal-subject').value;
+                const termName = term === 'mid' ? 'Pertengahan Penggal' : 'Akhir Tahun';
                 
-                if(!cls || !sub) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500 italic">Sila pilih kelas dan subjek untuk mula memasukkan markah.</td></tr>';
-                    theadTitle.innerText = "Paparan Markah";
-                    return;
-                }
+                document.getElementById('lbl-bulk-info').innerText = `${cls || 'Tiada Kelas'} | ${sub || '-'} (${termName})`;
 
                 const list = this.state.students.filter(s => s.className === cls);
-                theadTitle.innerText = `${sub} - ${term === 'mid' ? 'Pertengahan Penggal' : 'Akhir Tahun'} (${cls})`;
+                const tbody = document.getElementById('bulk-tbody');
 
-                if(list.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500 italic">Tiada murid dalam kelas ini.</td></tr>';
+                if(!cls || list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 italic">Sila pilih kelas yang mempunyai murid.</td></tr>`;
                     return;
                 }
 
                 tbody.innerHTML = list.map((s, idx) => {
-                    const pbd = s?.acad?.[term]?.sub?.[sub]?.pbd || '';
-                    const uasa = s?.acad?.[term]?.sub?.[sub]?.uasa || '';
+                    const pbd = s.acad?.[term]?.sub?.[sub]?.pbd || '';
+                    const uasa = s.acad?.[term]?.sub?.[sub]?.uasa || '';
                     return `
-                    <tr data-studentid="${s.id}" class="hover:bg-blue-50 border-b border-gray-100 transition group">
-                        <td class="px-4 py-2 text-center text-gray-500 font-semibold">${idx+1}</td>
-                        <td class="px-4 py-2 font-bold text-gray-800 text-sm group-hover:text-corp-blue">${s.name}</td>
-                        <td class="px-4 py-2 text-center">
-                            <select class="bulk-pbd border-2 border-gray-200 rounded-lg p-1.5 outline-none focus:border-corp-blue text-sm font-semibold w-full max-w-[120px] bg-white cursor-pointer">
-                                <option value="">-</option>
-                                <option value="1" ${pbd=='1'?'selected':''}>TP 1</option>
-                                <option value="2" ${pbd=='2'?'selected':''}>TP 2</option>
-                                <option value="3" ${pbd=='3'?'selected':''}>TP 3</option>
-                                <option value="4" ${pbd=='4'?'selected':''}>TP 4</option>
-                                <option value="5" ${pbd=='5'?'selected':''}>TP 5</option>
-                                <option value="6" ${pbd=='6'?'selected':''}>TP 6</option>
+                    <tr class="hover:bg-blue-50/50 border-b" data-id="${s.id}">
+                        <td class="p-3 text-center font-bold text-gray-500 text-xs">${idx+1}</td>
+                        <td class="p-3 font-semibold text-gray-800">${s.name}</td>
+                        <td class="p-2 text-center">
+                            <select class="bulk-pbd border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue">
+                                <option value="">- Pilih PBD -</option>
+                                <option value="1" ${pbd=='1'?'selected':''}>1</option>
+                                <option value="2" ${pbd=='2'?'selected':''}>2</option>
+                                <option value="3" ${pbd=='3'?'selected':''}>3</option>
+                                <option value="4" ${pbd=='4'?'selected':''}>4</option>
+                                <option value="5" ${pbd=='5'?'selected':''}>5</option>
+                                <option value="6" ${pbd=='6'?'selected':''}>6</option>
                             </select>
                         </td>
-                        <td class="px-4 py-2 text-center">
-                            <input type="number" class="bulk-uasa border-2 border-gray-200 rounded-lg p-1.5 outline-none focus:border-corp-blue text-sm font-semibold w-full max-w-[100px] text-center" placeholder="%" value="${uasa}">
+                        <td class="p-2 text-center">
+                            <input type="number" class="bulk-uasa border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue" placeholder="%" value="${uasa}">
                         </td>
                     </tr>`;
                 }).join('');
             },
 
-            saveBulkMarks() {
-                const cls = document.getElementById('bulk-class').value;
-                const term = document.getElementById('bulk-term').value;
-                const sub = document.getElementById('bulk-subject').value;
+            toggleBulkHeader() {
+                const pane = document.querySelector('#view-pukal .grid-cols-1');
+                const txt = document.getElementById('bulk-toggle-text');
+                const icon = document.getElementById('bulk-toggle-icon');
+                if(pane.classList.contains('hidden')) {
+                    pane.classList.remove('hidden');
+                    txt.innerText = 'Tutup Menu';
+                    icon.className = 'fa-solid fa-chevron-up';
+                } else {
+                    pane.classList.add('hidden');
+                    txt.innerText = 'Buka Menu';
+                    icon.className = 'fa-solid fa-chevron-down';
+                }
+            },
 
-                if(!cls || !sub) {
-                    this.showToast('Ralat', 'Sila pilih kelas dan subjek.', true);
-                    return;
+            saveBulkMarks() {
+                const term = document.getElementById('pukal-term').value;
+                const sub = document.getElementById('pukal-subject').value;
+                const rows = document.querySelectorAll('#bulk-tbody tr');
+
+                if(rows.length === 0 || rows[0].innerText.includes('Sila pilih')) {
+                    return this.showToast('Ralat', 'Tiada senarai murid untuk disimpan.', true);
                 }
 
-                const rows = document.querySelectorAll('#bulk-marks-tbody tr[data-studentid]');
-                let count = 0;
                 rows.forEach(tr => {
-                    const sId = tr.getAttribute('data-studentid');
-                    const pbd = tr.querySelector('.bulk-pbd').value;
-                    const uasa = tr.querySelector('.bulk-uasa').value;
-
-                    const student = this.state.students.find(s => s.id === sId);
-                    if(student) {
-                        if(!student.acad) student.acad = { mid:{sub:{}}, end:{sub:{}} };
-                        if(!student.acad[term].sub) student.acad[term].sub = {};
-                        if(!student.acad[term].sub[sub]) student.acad[term].sub[sub] = {};
+                    const id = tr.getAttribute('data-id');
+                    if(!id) return;
+                    const s = this.state.students.find(x => x.id === id);
+                    if(s) {
+                        if(!s.acad) s.acad = { mid:{sub:{}}, end:{sub:{}} };
+                        if(!s.acad[term]) s.acad[term] = { sub:{} };
+                        if(!s.acad[term].sub) s.acad[term].sub = {};
                         
-                        student.acad[term].sub[sub].pbd = pbd;
-                        student.acad[term].sub[sub].uasa = uasa;
-                        count++;
+                        s.acad[term].sub[sub] = {
+                            pbd: tr.querySelector('.bulk-pbd').value,
+                            uasa: tr.querySelector('.bulk-uasa').value
+                        };
                     }
                 });
 
                 this.saveState();
-                
-                // Refresh modal background list if the edited class is currently selected in registration
-                if (this.state.selectedClass === cls) {
-                    this.renderStudentList(); 
-                }
-                
-                this.showToast('Berjaya', `Markah ${count} murid disimpan.`);
+                this.showToast('Berjaya', 'Semua markah subjek berjaya disimpan!');
             },
 
             // --- MASTER DATA SETTINGS ---
@@ -878,18 +937,6 @@
                 };
             },
 
-            // --- FUNGSI TOGGLE MANUAL ADD ---
-            toggleManualAdd() {
-                const panel = document.getElementById('panel-manual-add');
-                if (panel.classList.contains('hidden')) {
-                    panel.classList.remove('hidden');
-                    panel.classList.add('block');
-                } else {
-                    panel.classList.add('hidden');
-                    panel.classList.remove('block');
-                }
-            },
-
             addStudentManual() {
                 const name = document.getElementById('input-manual-name').value.trim().toUpperCase();
                 const tahun = document.getElementById('input-manual-tahun').value.trim();
@@ -909,14 +956,12 @@
             renderStudentList() {
                 const list = this.state.students.filter(s => s.className === this.state.selectedClass);
                 document.getElementById('lbl-student-count').innerText = list.length;
-                
-                // Pengecilan padding elemen (p-3 kepada p-2.5) membolehkan senarai dimampatkan sedikit untuk lihat lebih banyak entiti
                 document.getElementById('student-list-container').innerHTML = list.map((s, idx) => `
-                    <div onclick="app.openModal('${s.id}')" class="bg-white p-2.5 rounded-lg border hover:border-corp-blue hover:shadow-md cursor-pointer transition flex justify-between items-center group">
+                    <div onclick="app.openModal('${s.id}')" class="bg-white p-3 rounded-lg border hover:border-corp-blue hover:shadow-md cursor-pointer transition flex justify-between items-center group">
                         <div class="flex items-center gap-3">
                             <span class="w-6 h-6 rounded bg-blue-100 text-corp-blue text-xs font-bold flex items-center justify-center">${idx+1}</span>
                             <div>
-                                <h4 class="text-sm font-bold text-gray-800 leading-tight">${s.name}</h4>
+                                <h4 class="text-sm font-bold text-gray-800">${s.name}</h4>
                                 <span class="text-[10px] text-gray-500 font-mono">Tahun ${s.tahun || '-'} | Tahap ${s.tahap} | ${s.ic || 'Tiada KP'}</span>
                             </div>
                         </div>
@@ -1022,6 +1067,139 @@
 
             closeModal() { document.getElementById('student-modal').classList.add('hidden'); },
 
+            // --- FUNGSI RANKING / KEDUDUKAN & SIJIL ---
+            showStudentRanks(id) {
+                const s = this.state.students.find(x => x.id === id);
+                if(!s) return;
+                
+                this.state.currentStudentId = id; // Set id untuk cetak sijil
+                document.getElementById('rank-student-name').innerText = s.name;
+                document.getElementById('rank-student-class').innerText = s.className;
+
+                // Tentukan penggal mana yang ada data markah UASA
+                let term = 'end';
+                let termName = 'Akhir Tahun';
+                let hasEnd = s.acad?.end?.sub && Object.values(s.acad.end.sub).some(v => v.uasa);
+                if(!hasEnd) {
+                    term = 'mid';
+                    termName = 'Pertengahan Penggal';
+                }
+                document.getElementById('rank-term-info').innerText = termName;
+
+                // Ambil semua rakan sekelas untuk bandingkan markah
+                const cohort = this.state.students.filter(x => x.className === s.className);
+                let rankings = [];
+                let achievements = []; // Array khas untuk senarai anugerah sijil
+
+                if(s.acad && s.acad[term] && s.acad[term].sub) {
+                    for(const [sub, data] of Object.entries(s.acad[term].sub)) {
+                        let myMark = parseFloat(data.uasa);
+                        let myPbd = parseInt(data.pbd);
+
+                        // 1. Semak Pencapaian PBD (TP6)
+                        if (myPbd === 6) {
+                            achievements.push({ type: 'PBD', text: `Terbaik PBD (TP6) - ${sub}` });
+                        }
+
+                        if(isNaN(myMark)) continue;
+
+                        // Ambil markah kawan-kawan
+                        let allMarks = cohort.map(c => {
+                            let m = parseFloat(c.acad?.[term]?.sub?.[sub]?.uasa);
+                            return isNaN(m) ? null : m;
+                        }).filter(m => m !== null);
+
+                        // Buang duplikasi markah untuk "Dense Ranking"
+                        let uniqueMarks = [...new Set(allMarks)].sort((a,b) => b-a);
+                        let rank = uniqueMarks.indexOf(myMark) + 1;
+
+                        rankings.push({ subject: sub, mark: myMark, rank: rank });
+
+                        // 2. Semak Kedudukan UASA (Top 3)
+                        if (rank <= 3) {
+                            achievements.push({ type: 'UASA', text: `Tempat Ke-${rank} Terbaik UASA - ${sub} (${myMark}%)` });
+                        }
+                    }
+                }
+
+                // Simpan pencapaian ke state untuk sijil
+                this.state.currentAchievements = achievements;
+
+                // Render Pencapaian (Sebab Tokoh)
+                const achContainer = document.getElementById('rank-achievements-container');
+                if (achievements.length === 0) {
+                    achContainer.innerHTML = '<div class="bg-orange-50 text-orange-600 text-xs p-3 rounded border border-orange-200">Tiada pencapaian Top 3 atau TP6 yang direkodkan untuk anugerah. Sijil akan dijana secara am.</div>';
+                } else {
+                    achContainer.innerHTML = achievements.map(a => 
+                        `<div class="bg-blue-50 text-corp-blue text-sm font-bold p-2.5 rounded border border-blue-200 shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-star text-corp-gold text-xs"></i> ${a.text}
+                        </div>`
+                    ).join('');
+                }
+
+                // Susun senarai ranking penuh
+                rankings.sort((a,b) => a.rank - b.rank || b.mark - a.mark);
+
+                const container = document.getElementById('rank-list-container');
+                if(rankings.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500 italic text-center py-4">Tiada rekod markah UASA untuk dinilai.</p>';
+                } else {
+                    container.innerHTML = rankings.map(r => {
+                        let badgeClass = 'bg-gray-200 text-gray-700';
+                        let icon = '';
+                        if(r.rank === 1) { badgeClass = 'bg-yellow-100 text-yellow-700 border-yellow-300 shadow-sm'; icon = '<i class="fa-solid fa-medal text-yellow-500 mr-1"></i>'; }
+                        else if(r.rank === 2) { badgeClass = 'bg-gray-200 text-gray-800 border-gray-300 shadow-sm'; icon = '<i class="fa-solid fa-medal text-gray-500 mr-1"></i>'; }
+                        else if(r.rank === 3) { badgeClass = 'bg-orange-100 text-orange-800 border-orange-300 shadow-sm'; icon = '<i class="fa-solid fa-medal text-orange-500 mr-1"></i>'; }
+
+                        return `
+                        <div class="flex justify-between items-center bg-white p-3 rounded-lg border shadow-sm ${r.rank <= 3 ? 'border-l-4 ' + badgeClass.split(' ')[0].replace('bg-', 'border-') : 'border-gray-200'}">
+                            <div class="font-bold text-sm text-gray-800">${r.subject}</div>
+                            <div class="flex items-center gap-4">
+                                <span class="font-bold text-corp-blue">${r.mark}%</span>
+                                <span class="w-16 text-center text-xs font-black px-2 py-1 rounded border ${badgeClass}">
+                                    ${icon} No. ${r.rank}
+                                </span>
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+                }
+
+                document.getElementById('rank-modal').classList.remove('hidden');
+            },
+
+            closeRankModal() {
+                document.getElementById('rank-modal').classList.add('hidden');
+            },
+
+            cetakSijil() {
+                const s = this.state.students.find(x => x.id === this.state.currentStudentId);
+                if(!s) return;
+
+                // Masukkan Maklumat ke Templat Sijil
+                document.getElementById('sijil-name').innerText = s.name;
+                document.getElementById('sijil-class').innerText = s.className;
+
+                const achDiv = document.getElementById('sijil-achievements');
+                if (this.state.currentAchievements.length > 0) {
+                    achDiv.innerHTML = this.state.currentAchievements.map(a => 
+                        `<div><i class="fa-solid fa-star text-corp-gold text-lg mr-2"></i> ${a.text}</div>`
+                    ).join('');
+                } else {
+                    achDiv.innerHTML = `<div><i class="fa-solid fa-star text-corp-gold text-lg mr-2"></i> Pencapaian Akademik, Kokurikulum & Sahsiah Keseluruhan Terpuji</div>`;
+                }
+
+                // Tambah class untuk mod cetak sijil
+                document.body.classList.add('print-sijil-only');
+                
+                // Minta cetak (saranan kepada pengguna untuk set orientation)
+                setTimeout(() => {
+                    window.print();
+                    // Kembalikan ke mod asal lepas dialog cetak ditutup
+                    setTimeout(() => document.body.classList.remove('print-sijil-only'), 500);
+                }, 100);
+            },
+
             switchModalTab(tab) {
                 document.querySelectorAll('.modal-tab-btn').forEach(b => {
                     b.classList.remove('modal-tab-active'); b.classList.add('text-gray-500');
@@ -1056,7 +1234,6 @@
                     return `
                     <tr class="hover:bg-gray-50" data-subject="${sub}">
                         <td class="p-2 border-b font-semibold text-xs text-gray-700">${sub}</td>
-                        <!-- Mid -->
                         <td class="p-1 border-b border-l bg-amber-50/30">
                             <select class="inp-acad-mid-pbd w-full border p-1 rounded text-center text-xs outline-none focus:ring-1 focus:ring-amber-400">
                                 <option value="">-</option><option value="1" ${mPbd=='1'?'selected':''}>1</option><option value="2" ${mPbd=='2'?'selected':''}>2</option><option value="3" ${mPbd=='3'?'selected':''}>3</option><option value="4" ${mPbd=='4'?'selected':''}>4</option><option value="5" ${mPbd=='5'?'selected':''}>5</option><option value="6" ${mPbd=='6'?'selected':''}>6</option>
@@ -1065,7 +1242,6 @@
                         <td class="p-1 border-b border-r bg-amber-50/30">
                             <input type="number" class="inp-acad-mid-uasa w-full border p-1 rounded text-center text-xs outline-none focus:ring-1 focus:ring-amber-400" placeholder="%" value="${mUasa}">
                         </td>
-                        <!-- End -->
                         <td class="p-1 border-b border-l bg-blue-50/30">
                             <select class="inp-acad-end-pbd w-full border p-1 rounded text-center text-xs outline-none focus:ring-1 focus:ring-corp-blue">
                                 <option value="">-</option><option value="1" ${ePbd=='1'?'selected':''}>1</option><option value="2" ${ePbd=='2'?'selected':''}>2</option><option value="3" ${ePbd=='3'?'selected':''}>3</option><option value="4" ${ePbd=='4'?'selected':''}>4</option><option value="5" ${ePbd=='5'?'selected':''}>5</option><option value="6" ${ePbd=='6'?'selected':''}>6</option>
@@ -1108,7 +1284,6 @@
                 s.ic = document.getElementById('prof-ic').value;
                 s.delima = document.getElementById('prof-delima').value;
 
-                // Acad
                 if(!s.acad) s.acad = { mid:{sub:{}}, end:{sub:{}} };
                 s.acad.mid.pak = document.getElementById('acad-pak-mid').value;
                 s.acad.end.pak = document.getElementById('acad-pak-end').value;
@@ -1128,7 +1303,6 @@
                     };
                 });
 
-                // Koko
                 ['uni','suk','kel'].forEach(t => {
                     s.koko[t] = {
                         nama: document.getElementById(`koko-${t}-nama`).value.trim().toUpperCase(),
@@ -1137,7 +1311,6 @@
                     };
                 });
 
-                // HEM
                 s.hem.hadir = document.getElementById('hem-hadir').value;
                 s.hem.sahsiah = document.getElementById('hem-sahsiah').value;
                 s.hem.jawatan = [...this.state.tempJawatan];
@@ -1179,10 +1352,10 @@
 
             calcHem(hem) {
                 if(!hem) return 0;
-                let hPt = hem.hadir ? (Math.min(parseFloat(hem.hadir), 100)/100)*10 : 0; // Max 10
-                let sPt = {'Terpuji':5, 'Amat Baik':4, 'Baik':3, 'Memuaskan':1}[hem.sahsiah] || 0; // Max 5
-                let jPt = (hem.jawatan && hem.jawatan.length > 0) ? 5 : 0; // If any jawatan, max 5
-                return hPt + sPt + jPt; // Max 20
+                let hPt = hem.hadir ? (Math.min(parseFloat(hem.hadir), 100)/100)*10 : 0;
+                let sPt = {'Terpuji':5, 'Amat Baik':4, 'Baik':3, 'Memuaskan':1}[hem.sahsiah] || 0;
+                let jPt = (hem.jawatan && hem.jawatan.length > 0) ? 5 : 0;
+                return hPt + sPt + jPt;
             },
 
             renderDashboard() {
@@ -1193,7 +1366,6 @@
                 let overall = [];
 
                 this.state.students.forEach(s => {
-                    // Calc UASA Only Diff (For Most Improved)
                     let mU=0, mC=0, eU=0, eC=0;
                     if(s.acad?.mid?.sub) Object.values(s.acad.mid.sub).forEach(v=>{ if(v.uasa){ mU+=parseFloat(v.uasa); mC++; }});
                     if(s.acad?.end?.sub) Object.values(s.acad.end.sub).forEach(v=>{ if(v.uasa){ eU+=parseFloat(v.uasa); eC++; }});
@@ -1208,7 +1380,6 @@
                         }
                     }
 
-                    // Calc Overall (End Year Academic prioritize, else Mid)
                     let scAcd = 0;
                     if(s.acad?.end && Object.keys(s.acad.end.sub||{}).some(k => s.acad.end.sub[k].uasa || s.acad.end.sub[k].pbd)) {
                         scAcd = this.calcAcadScores(s.acad.end) * 0.5;
@@ -1220,10 +1391,9 @@
                     let scHem = this.calcHem(s.hem);
                     let tot = scAcd + scKok + scHem;
 
-                    if(tot > 0) overall.push({ name: s.name, cls: s.className, acad: scAcd.toFixed(1), koko: scKok.toFixed(1), hem: scHem.toFixed(1), total: tot.toFixed(1) });
+                    if(tot > 0) overall.push({ id: s.id, name: s.name, cls: s.className, acad: scAcd.toFixed(1), koko: scKok.toFixed(1), hem: scHem.toFixed(1), total: tot.toFixed(1) });
                 });
 
-                // Render Improved
                 improved.sort((a,b) => b.diff - a.diff);
                 const tbImp = document.getElementById('dash-improved-tbody');
                 if(improved.length === 0) tbImp.innerHTML = '<tr><td colspan="4" class="py-4 text-center opacity-70">Belum ada data perbandingan UASA yang lengkap.</td></tr>';
@@ -1235,15 +1405,14 @@
                         <td class="py-2 text-right text-amber-300 font-bold">+${i.diff.toFixed(1)}% <i class="fa-solid fa-caret-up"></i></td>
                     </tr>`).join('');
 
-                // Render Overall
                 overall.sort((a,b) => parseFloat(b.total) - parseFloat(a.total));
                 const tbAll = document.getElementById('dashboard-tbody');
                 if(overall.length === 0) tbAll.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 italic">Tiada data murid dinilai.</td></tr>';
                 else tbAll.innerHTML = overall.map((o, idx) => `
-                    <tr class="hover:bg-blue-50 transition border-b border-gray-100 ${idx<3?'bg-yellow-50/50':''}">
+                    <tr onclick="app.showStudentRanks('${o.id}')" class="cursor-pointer hover:bg-blue-100 hover:shadow-md transition border-b border-gray-100 ${idx<3?'bg-yellow-50/50':''}" title="Klik untuk lihat kedudukan subjek terbaik">
                         <td class="px-6 py-3 whitespace-nowrap font-bold text-gray-700">#${idx+1}</td>
                         <td class="px-6 py-3 whitespace-nowrap">
-                            <div class="font-bold text-sm text-gray-800">${o.name}</div>
+                            <div class="font-bold text-sm text-gray-800 group-hover:text-corp-blue">${o.name} <i class="fa-solid fa-arrow-pointer text-gray-300 text-[10px] ml-1"></i></div>
                             <div class="text-[10px] text-gray-500 bg-gray-100 px-2 rounded-full inline-block border mt-0.5">${o.cls}</div>
                         </td>
                         <td class="px-4 py-3 text-center font-semibold text-blue-700">${o.acad}</td>
@@ -1254,7 +1423,6 @@
             }
         };
 
-        // Bootstrap App
         document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
