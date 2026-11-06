@@ -340,6 +340,9 @@
                     </div>
 
                     <div class="flex items-center gap-2 self-end lg:self-center">
+                        <button onclick="app.openPasteModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow transition-all duration-300 flex items-center gap-1.5" title="Salin dan Tampal dari Excel">
+                            <i class="fa-solid fa-paste"></i> Tampal Excel
+                        </button>
                         <button onclick="app.toggleBulkHeader()" id="btn-toggle-bulk" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Sembunyikan/Papar Menu Pilihan">
                             <i class="fa-solid fa-chevron-up" id="bulk-toggle-icon"></i> <span id="bulk-toggle-text">Tutup Menu</span>
                         </button>
@@ -669,6 +672,35 @@
         </div>
     </div>
 
+    <!-- ================= MODAL TAMPAL EXCEL (BARU) ================= -->
+    <div id="paste-modal" class="fixed inset-0 bg-corp-dark/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
+            <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center text-white shrink-0">
+                <div>
+                    <h3 class="font-bold text-lg"><i class="fa-solid fa-file-excel mr-2"></i> Tampal Markah UASA (Excel)</h3>
+                    <p class="text-xs text-indigo-200">Salin terus barisan data dari hamparan elektronik (Excel).</p>
+                </div>
+                <button onclick="app.closePasteModal()" class="text-white hover:text-red-400 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-6 bg-gray-50 flex-1 overflow-y-auto flex flex-col">
+                <p class="text-xs text-gray-600 mb-3 bg-indigo-50 border border-indigo-200 p-3 rounded-lg"><i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> <strong>Cara Penggunaan:</strong> Pilih (highlight) barisan nama dan markah di Excel, tekan CTRL+C, kemudian klik petak di bawah dan tekan CTRL+V. Sistem akan mengekstrak peratusan markah secara pintar berdasarkan nama murid.</p>
+                
+                <div class="flex items-center gap-4 mb-2">
+                    <span class="text-xs font-bold text-gray-500 uppercase">Destinasi Kelas: <span id="paste-dest-class" class="text-corp-blue text-sm"></span></span>
+                    <span class="text-xs font-bold text-gray-500 uppercase">Subjek: <span id="paste-dest-sub" class="text-corp-blue"></span></span>
+                </div>
+                
+                <textarea id="paste-textarea" class="w-full flex-1 border-2 border-gray-300 rounded-lg p-3 text-sm focus:border-indigo-500 outline-none min-h-[200px] bg-white" placeholder="Contoh:&#10;DAYANG NURSYIFA INSYIRAH   24   AL GHAZALI&#10;NAMA MURID KEDUA         85   AL GHAZALI"></textarea>
+            </div>
+
+            <div class="bg-gray-100 px-6 py-4 flex justify-end gap-3 border-t shrink-0">
+                <button onclick="app.closePasteModal()" class="px-6 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 shadow-sm">Batal</button>
+                <button onclick="app.processPasteData()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-md flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> Ekstrak & Masukkan Markah</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- DEFAULT MASTER DATA ---
         const defaultSettings = {
@@ -856,6 +888,109 @@
 
             closeSummaryModal() {
                 document.getElementById('summary-modal').classList.add('hidden');
+            },
+
+            // --- FUNGSI TAMPAL EXCEL (SMART EXTRACT) ---
+            openPasteModal() {
+                const cls = document.getElementById('pukal-kelas').value;
+                const sub = document.getElementById('pukal-subject').value;
+                
+                if (!cls || !sub) {
+                    this.showToast('Ralat', 'Sila pilih kelas dan subjek terlebih dahulu di menu atas.', true);
+                    return;
+                }
+                
+                document.getElementById('paste-dest-class').innerText = cls;
+                document.getElementById('paste-dest-sub').innerText = sub;
+                document.getElementById('paste-textarea').value = '';
+                document.getElementById('paste-modal').classList.remove('hidden');
+            },
+
+            closePasteModal() {
+                document.getElementById('paste-modal').classList.add('hidden');
+            },
+
+            processPasteData() {
+                const text = document.getElementById('paste-textarea').value;
+                const cls = document.getElementById('pukal-kelas').value;
+                const term = document.getElementById('pukal-term').value;
+                const sub = document.getElementById('pukal-subject').value;
+
+                if(!text.trim()) {
+                    this.showToast('Ralat', 'Sila tampal data dari Excel terlebih dahulu.', true);
+                    return;
+                }
+
+                const rows = text.split('\n');
+                let matchCount = 0;
+                let classStudents = this.state.students.filter(s => s.className === cls);
+
+                rows.forEach(row => {
+                    if(!row.trim()) return;
+                    // Excel akan dipisahkan dengan 'tab' apabila ditampal
+                    const cols = row.split('\t').map(c => c.trim().toUpperCase());
+                    
+                    let mark = '';
+                    let matchedStudent = null;
+
+                    // 1. Kenal pasti Nama Murid
+                    for (let col of cols) {
+                        if (!col || col.length < 3) continue; // Abaikan data terlalu pendek
+                        // Cari sama ada kolum ini terkandung dalam mana-mana nama murid (separa atau penuh)
+                        let found = classStudents.find(s => s.name === col || s.name.includes(col) || col.includes(s.name));
+                        if (found) {
+                            matchedStudent = found;
+                            break;
+                        }
+                    }
+
+                    // 2. Kenal pasti Markah
+                    for (let col of cols) {
+                        if (!col) continue;
+                        let isMark = false;
+                        
+                        if (/^(TH|TD|P)$/i.test(col)) {
+                            isMark = true; // Tangkap markah huruf
+                        } else {
+                            let num = parseFloat(col);
+                            // Sahkan nombor adalah markah logik (0-100) dan bukannya nombor kad pengenalan dsb
+                            if (!isNaN(num) && num >= 0 && num <= 100 && col.length <= 3) {
+                                isMark = true;
+                            }
+                        }
+                        
+                        if (isMark) {
+                            mark = col;
+                            break; 
+                        }
+                    }
+
+                    // 3. Masukkan ke state jika padanan berjaya dijumpai
+                    if (matchedStudent && mark !== '') {
+                        if(!matchedStudent.acad) matchedStudent.acad = { mid:{sub:{}}, end:{sub:{}} };
+                        if(!matchedStudent.acad[term]) matchedStudent.acad[term] = { sub:{} };
+                        if(!matchedStudent.acad[term].sub) matchedStudent.acad[term].sub = {};
+                        
+                        // Pengekalan nilai PBD jika sudah ada
+                        let existingPbd = matchedStudent.acad[term].sub[sub]?.pbd || '';
+                        
+                        matchedStudent.acad[term].sub[sub] = {
+                            pbd: existingPbd,
+                            uasa: mark
+                        };
+                        matchCount++;
+                    }
+                });
+
+                this.saveState();
+                this.renderBulkStudents(); // Muat semula jadual supaya markah baharu dipaparkan
+                this.closePasteModal();
+                
+                if (matchCount > 0) {
+                    this.showToast('Berjaya', `${matchCount} rekod markah telah berjaya diekstrak dan dimasukkan.`);
+                } else {
+                    this.showToast('Amaran', 'Tiada padanan nama atau markah dijumpai. Pastikan kelas yang dipilih adalah betul.', true);
+                }
             },
 
             cetakTokoh() {
