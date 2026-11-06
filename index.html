@@ -18,11 +18,27 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .tab-active { background-color: #e0e7ff; color: #1e3a8a; border-right: 4px solid #1e3a8a; font-weight: 600; }
-        .tab-inactive { color: #64748b; }
-        .tab-inactive:hover { background-color: #f1f5f9; color: #334155; }
         
-        /* Print Styles for Certificate & Slip */
+        /* Tab Styles (Menarik) */
+        .tab-active { 
+            background: linear-gradient(135deg, #1e40af, #1e3a8a); 
+            color: white; 
+            font-weight: 700; 
+            border-radius: 0.75rem; 
+            box-shadow: 0 4px 6px -1px rgba(29, 78, 216, 0.4);
+        }
+        .tab-inactive { 
+            color: #64748b; 
+            background-color: transparent; 
+            border-radius: 0.75rem; 
+            font-weight: 500;
+        }
+        .tab-inactive:hover { 
+            background-color: #f1f5f9; 
+            color: #1e3a8a; 
+        }
+        
+        /* Print Styles */
         @media print {
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
@@ -51,15 +67,18 @@
                 <p class="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">SK Bikang</p>
             </div>
         </div>
-        <nav class="flex-1 py-4 flex flex-col gap-1">
-            <button onclick="app.switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full text-left px-6 py-3 transition flex items-center gap-3 tab-active">
+        <nav class="flex-1 px-4 py-6 flex flex-col gap-2">
+            <button onclick="app.switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full text-left px-4 py-3 transition flex items-center gap-3 tab-active">
                 <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
             </button>
-            <button onclick="app.switchTab('murid')" id="nav-murid" class="nav-btn w-full text-left px-6 py-3 transition flex items-center gap-3 tab-inactive">
+            <button onclick="app.switchTab('murid')" id="nav-murid" class="nav-btn w-full text-left px-4 py-3 transition flex items-center gap-3 tab-inactive">
                 <i class="fa-solid fa-users w-5 text-center"></i> Murid dan Kelas
             </button>
-            <button onclick="app.switchTab('markah')" id="nav-markah" class="nav-btn w-full text-left px-6 py-3 transition flex items-center gap-3 tab-inactive">
-                <i class="fa-solid fa-file-pen w-5 text-center"></i> Markah dan Pelaporan
+            <button onclick="app.switchTab('markah')" id="nav-markah" class="nav-btn w-full text-left px-4 py-3 transition flex items-center gap-3 tab-inactive">
+                <i class="fa-solid fa-file-pen w-5 text-center"></i> Markah & Pelaporan
+            </button>
+            <button onclick="app.switchTab('tetapan')" id="nav-tetapan" class="nav-btn w-full text-left px-4 py-3 transition flex items-center gap-3 tab-inactive mt-auto">
+                <i class="fa-solid fa-gear w-5 text-center"></i> Tetapan
             </button>
         </nav>
         <div class="p-4 border-t border-gray-100 text-xs text-gray-400 text-center">
@@ -79,54 +98,52 @@
         </div>
 
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center z-10">
+        <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center z-10 shadow-sm">
             <h2 id="page-title" class="text-xl font-bold text-corp-dark">Dashboard Keseluruhan</h2>
             <div class="flex items-center gap-4">
-                <span class="text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full"><i class="fa-regular fa-clock mr-2"></i>Sesi 2024/2025</span>
+                <span class="text-sm font-semibold text-gray-600 bg-gray-100 px-4 py-2 rounded-full shadow-inner"><i class="fa-regular fa-clock mr-2"></i>Sesi 2024/2025</span>
             </div>
         </header>
 
         <!-- VIEW: DASHBOARD -->
         <div id="view-dashboard" class="flex-1 overflow-y-auto p-8 view-section">
-            <!-- Stat Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div onclick="app.openModalTotalStudents()" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-corp-blue transition group">
+                <div onclick="app.openModalTotalStudents()" class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-md hover:border-corp-blue transition group">
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Jumlah Murid</p>
-                            <h3 class="text-3xl font-black text-corp-dark" id="stat-students">0</h3>
+                            <h3 class="text-4xl font-black text-corp-dark" id="stat-students">0</h3>
                         </div>
-                        <div class="w-12 h-12 rounded-full bg-blue-50 text-corp-blue flex items-center justify-center text-xl group-hover:scale-110 transition"><i class="fa-solid fa-user-graduate"></i></div>
+                        <div class="w-14 h-14 rounded-xl bg-blue-50 text-corp-blue flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-user-graduate"></i></div>
                     </div>
                 </div>
-                <div onclick="app.openModalTotalClasses()" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-corp-blue transition group">
+                <div onclick="app.openModalTotalClasses()" class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-md hover:border-corp-blue transition group">
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Jumlah Kelas</p>
-                            <h3 class="text-3xl font-black text-corp-dark" id="stat-classes">0</h3>
+                            <h3 class="text-4xl font-black text-corp-dark" id="stat-classes">0</h3>
                         </div>
-                        <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl group-hover:scale-110 transition"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <div class="w-14 h-14 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-chalkboard-user"></i></div>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Status Pengisian</p>
-                            <h3 class="text-3xl font-black text-green-600">Aktif</h3>
+                            <h3 class="text-3xl font-black text-green-600 mt-1">Aktif</h3>
                         </div>
-                        <div class="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xl"><i class="fa-solid fa-check-double"></i></div>
+                        <div class="w-14 h-14 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-2xl"><i class="fa-solid fa-check-double"></i></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Top Tokoh Section -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-ranking-star text-corp-gold text-lg"></i>
-                        <h3 class="font-bold text-gray-800">Senarai Top Tokoh Murid</h3>
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-yellow-100 rounded-lg text-corp-gold"><i class="fa-solid fa-ranking-star text-lg"></i></div>
+                        <h3 class="font-bold text-gray-800 text-lg">Senarai Top Tokoh Murid</h3>
                     </div>
-                    <select id="filter-tokoh-class" onchange="app.renderTopTokoh()" class="border border-gray-300 rounded-md px-3 py-1 text-sm outline-none focus:border-corp-blue">
+                    <select id="filter-tokoh-class" onchange="app.renderTopTokoh()" class="border-2 border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold outline-none focus:border-corp-blue">
                         <option value="all">Semua Kelas</option>
                     </select>
                 </div>
@@ -151,14 +168,13 @@
 
         <!-- VIEW: MURID DAN KELAS -->
         <div id="view-murid" class="hidden flex-1 overflow-hidden p-6 view-section flex gap-6">
-            <!-- Class List Panel -->
-            <div class="w-1/3 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+            <div class="w-1/3 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
                 <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
-                    <h3 class="font-bold text-gray-800 text-sm">Pengurusan Kelas</h3>
+                    <h3 class="font-bold text-gray-800 text-sm"><i class="fa-solid fa-list mr-2"></i> Pengurusan Kelas</h3>
                 </div>
                 <div class="p-4 border-b">
                     <div class="flex gap-2">
-                        <input type="text" id="input-new-class" placeholder="Contoh: 1 Arif" class="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-corp-blue outline-none transition">
+                        <input type="text" id="input-new-class" placeholder="Contoh: 1 Arif" class="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-corp-blue outline-none transition font-semibold">
                         <button onclick="app.addClass()" class="bg-corp-blue text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-800 transition"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
@@ -167,12 +183,11 @@
                 </div>
             </div>
 
-            <!-- Student List Panel -->
-            <div id="class-workspace" class="hidden flex-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+            <div id="class-workspace" class="hidden flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
                 <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
                     <div class="flex items-center gap-3">
-                        <h3 class="font-bold text-gray-800 text-sm">Murid: <span id="lbl-current-class" class="text-corp-blue"></span></h3>
-                        <span class="text-xs bg-corp-blue text-white px-3 py-1 rounded-full font-bold" id="lbl-student-count">0</span>
+                        <h3 class="font-bold text-gray-800 text-sm">Senerai Murid: <span id="lbl-current-class" class="text-corp-blue ml-1"></span></h3>
+                        <span class="text-xs bg-corp-blue text-white px-3 py-1 rounded-full font-bold shadow-sm" id="lbl-student-count">0</span>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="app.toggleMoveStudentsPanel()" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm transition flex items-center gap-2">
@@ -185,26 +200,26 @@
                 </div>
 
                 <!-- Panel Pindah Murid -->
-                <div id="panel-move-students" class="hidden bg-blue-50 p-4 border-b border-blue-100 animate-fade-in flex items-end gap-3">
+                <div id="panel-move-students" class="hidden bg-blue-50 p-4 border-b border-blue-100 animate-fade-in flex items-end gap-3 shadow-inner">
                     <div class="flex-1">
                         <label class="block text-xs font-bold text-gray-600 mb-1">Pindah Murid Terpilih Ke Kelas:</label>
-                        <select id="select-move-class" class="w-full border-2 border-gray-200 rounded-lg p-2 text-xs font-semibold outline-none bg-white focus:border-corp-blue"></select>
+                        <select id="select-move-class" class="w-full border-2 border-blue-200 rounded-lg p-2 text-sm font-semibold outline-none bg-white focus:border-corp-blue"></select>
                     </div>
-                    <button onclick="app.moveSelectedStudents()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-xs shadow transition">
+                    <button onclick="app.moveSelectedStudents()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow transition">
                         Sahkan Pindahan
                     </button>
                 </div>
 
                 <!-- Panel Tambah Murid -->
-                <div id="panel-manual-student" class="hidden bg-yellow-50/50 p-4 border-b border-yellow-100 animate-fade-in">
+                <div id="panel-manual-student" class="hidden bg-yellow-50/50 p-4 border-b border-yellow-100 animate-fade-in shadow-inner">
                     <div class="grid grid-cols-2 gap-3 mb-3">
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Penuh</label>
-                            <input type="text" id="add-student-name" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm focus:border-corp-gold outline-none bg-white">
+                            <input type="text" id="add-student-name" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm font-semibold focus:border-corp-gold outline-none bg-white">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Jantina</label>
-                            <select id="add-student-gender" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm focus:border-corp-gold outline-none bg-white">
+                            <select id="add-student-gender" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm font-semibold focus:border-corp-gold outline-none bg-white">
                                 <option value="L">Lelaki</option>
                                 <option value="P">Perempuan</option>
                             </select>
@@ -220,59 +235,58 @@
                 </div>
             </div>
             
-            <!-- Placeholder if no class selected -->
-            <div id="no-class-selected" class="flex-1 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-gray-100">
-                <i class="fa-solid fa-hand-pointer text-4xl mb-3 text-gray-300"></i>
-                <p class="font-medium">Sila pilih kelas di sebelah kiri</p>
+            <div id="no-class-selected" class="flex-1 flex flex-col items-center justify-center text-gray-400 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4"><i class="fa-solid fa-hand-pointer text-3xl text-gray-300"></i></div>
+                <p class="font-bold text-gray-500">Sila pilih kelas di panel kiri</p>
+                <p class="text-sm">Untuk mula menguruskan senarai murid</p>
             </div>
         </div>
 
         <!-- VIEW: MARKAH -->
         <div id="view-markah" class="hidden flex-1 overflow-hidden p-6 view-section flex flex-col gap-4">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex gap-4 items-end flex-wrap">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex gap-4 items-end flex-wrap">
                 <div class="flex-1 min-w-[200px]">
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Pilih Kelas</label>
-                    <select id="sel-markah-class" onchange="app.loadMarkah()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50">
+                    <select id="sel-markah-class" onchange="app.loadMarkah()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50">
                         <option value="">-- Pilih Kelas --</option>
                     </select>
                 </div>
                 <div class="flex-1 min-w-[150px]">
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Kategori Taksiran</label>
-                    <select id="sel-markah-term" onchange="app.loadMarkah()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50">
+                    <select id="sel-markah-term" onchange="app.loadMarkah()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50">
                         <option value="uasa">UASA (Ujian)</option>
                         <option value="pbd">PBD (Tahap Penguasaan)</option>
                     </select>
                 </div>
                 <div class="flex-1 min-w-[200px]">
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mata Pelajaran</label>
-                    <select id="sel-markah-subjek" onchange="app.loadMarkah()" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50">
+                    <select id="sel-markah-subjek" onchange="app.loadMarkah()" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm font-semibold focus:border-corp-blue outline-none bg-gray-50">
                         <!-- Populated by JS based on Tahap -->
                     </select>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="app.showPasteExcelModal()" class="bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition flex items-center gap-2">
-                        <i class="fa-solid fa-file-excel"></i> Tampal Excel
+                    <button onclick="app.showPasteExcelModal()" class="bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 px-4 py-2.5 rounded-lg font-bold text-sm shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel text-green-600"></i> Tampal Excel
                     </button>
-                    <button onclick="app.saveMarkah()" id="btn-save-markah" class="bg-green-600 text-white hover:bg-green-700 px-6 py-2 rounded-lg font-bold text-sm shadow transition flex items-center gap-2">
+                    <button onclick="app.saveMarkah()" id="btn-save-markah" class="bg-green-600 text-white hover:bg-green-700 px-6 py-2.5 rounded-lg font-bold text-sm shadow transition flex items-center gap-2">
                         <i class="fa-solid fa-floppy-disk"></i> Simpan
                     </button>
                 </div>
             </div>
 
-            <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative">
-                <!-- Overlay Loading -->
-                <div id="markah-overlay" class="absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center text-gray-400">
-                    <i class="fa-solid fa-list-check text-4xl mb-3 text-gray-300"></i>
-                    <p class="font-medium">Sila pilih Kelas, Kategori dan Subjek di atas</p>
+            <div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative">
+                <div id="markah-overlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center text-gray-400">
+                    <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4"><i class="fa-solid fa-list-check text-3xl text-gray-300"></i></div>
+                    <p class="font-bold text-gray-500">Sila pilih Kelas, Kategori dan Subjek di atas</p>
                 </div>
                 
-                <div class="overflow-auto flex-1">
+                <div class="overflow-auto flex-1 p-0">
                     <table class="w-full text-left border-collapse">
                         <thead class="sticky top-0 bg-gray-100 shadow-sm z-10">
                             <tr class="text-xs uppercase tracking-wider text-gray-600 border-b border-gray-200">
-                                <th class="p-3 font-semibold w-12 text-center">No</th>
-                                <th class="p-3 font-semibold">Nama Murid</th>
-                                <th class="p-3 font-semibold w-48 text-center bg-blue-50/50">Markah/Gred <br><span class="text-[9px] text-gray-400 lowercase normal-case font-normal">(Tekan ↑ ↓ utk ke kotak lain)</span></th>
+                                <th class="p-4 font-bold w-16 text-center">No</th>
+                                <th class="p-4 font-bold">Nama Murid</th>
+                                <th class="p-4 font-bold w-48 text-center bg-blue-50/80">Markah/Gred <br><span class="text-[9px] text-gray-400 lowercase normal-case font-medium">(Tekan ↑ ↓ utk ke kotak lain)</span></th>
                             </tr>
                         </thead>
                         <tbody id="markah-tbody" class="divide-y divide-gray-100 text-sm">
@@ -282,9 +296,53 @@
                 </div>
             </div>
         </div>
+
+        <!-- VIEW: TETAPAN (SETTINGS) -->
+        <div id="view-tetapan" class="hidden flex-1 overflow-y-auto p-8 view-section">
+            <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-bold text-gray-800 text-lg"><i class="fa-solid fa-gear mr-2 text-gray-500"></i> Tetapan Sistem & Pengurusan Data</h3>
+                </div>
+                <div class="p-6 space-y-6">
+                    
+                    <!-- Backup / Export -->
+                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
+                        <div>
+                            <h4 class="font-bold text-gray-800"><i class="fa-solid fa-download text-blue-600 mr-2"></i> Muat Turun Data (Backup)</h4>
+                            <p class="text-xs text-gray-500 mt-1">Simpan rekod semua kelas, murid, dan markah ke dalam satu fail selamat ke komputer anda.</p>
+                        </div>
+                        <button onclick="app.exportData()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow transition whitespace-nowrap">Muat Turun .json</button>
+                    </div>
+
+                    <!-- Restore / Import -->
+                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between p-4 bg-green-50/50 border border-green-100 rounded-xl">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800"><i class="fa-solid fa-upload text-green-600 mr-2"></i> Muat Naik Data (Restore)</h4>
+                            <p class="text-xs text-gray-500 mt-1">Pulihkan sistem menggunakan fail data (.json) yang pernah dimuat turun sebelum ini.</p>
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <input type="file" id="import-file" accept=".json" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-green-100 file:text-green-700 hover:file:bg-green-200 transition">
+                            <button onclick="app.importData()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow transition">Pulihkan</button>
+                        </div>
+                    </div>
+
+                    <!-- Reset Data -->
+                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between p-4 bg-red-50/50 border border-red-100 rounded-xl">
+                        <div>
+                            <h4 class="font-bold text-red-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Padam Semua Data</h4>
+                            <p class="text-xs text-red-500 mt-1">Kosongkan sistem sepenuhnya. Sesuai untuk memulakan sesi akademik baharu.</p>
+                        </div>
+                        <button onclick="app.clearAllData()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow transition whitespace-nowrap">Padam Semua Rekod</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- MODALS -->
+    
     <!-- Modal: Paste Excel -->
     <div id="modal-paste-excel" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col animate-fade-in">
@@ -295,8 +353,8 @@
             <div class="p-6 text-sm text-gray-600 flex flex-col gap-4">
                 <p><strong>Cara Penggunaan:</strong> Salin (Copy) barisan nama dan markah dari fail Excel anda, kemudian Tampal (Paste) ke dalam kotak di bawah. Sistem akan memadankan nama secara automatik.</p>
                 <textarea id="excel-paste-area" rows="10" class="w-full border-2 border-gray-200 rounded-lg p-3 text-xs font-mono outline-none focus:border-green-500 bg-gray-50" placeholder="DAYANG NURSYIFA INSYIRAH   85&#10;MOHAMMAD ALI BIN ABU   90"></textarea>
-                <div class="flex justify-end gap-2 mt-2">
-                    <button onclick="app.closeModal('modal-paste-excel')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-bold transition">Batal</button>
+                <div class="flex justify-end gap-3 mt-2">
+                    <button onclick="app.closeModal('modal-paste-excel')" class="px-5 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-bold transition">Batal</button>
                     <button onclick="app.processExcelPaste()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow transition">Ekstrak & Masukkan Markah</button>
                 </div>
             </div>
@@ -314,9 +372,9 @@
                 <ul id="empty-marks-list" class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200 max-h-40 overflow-y-auto mb-4 space-y-1">
                     <!-- Populated by JS -->
                 </ul>
-                <div class="flex justify-end gap-2">
-                    <button onclick="app.closeModal('modal-empty-marks')" class="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg font-bold text-sm transition">Semak Semula</button>
-                    <button onclick="app.forceSaveMarkah()" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-bold text-sm shadow transition">Abaikan & Simpan</button>
+                <div class="flex justify-end gap-3">
+                    <button onclick="app.closeModal('modal-empty-marks')" class="px-5 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg font-bold text-sm transition">Semak Semula</button>
+                    <button onclick="app.forceSaveMarkah()" class="px-5 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-bold text-sm shadow transition">Abaikan & Simpan</button>
                 </div>
             </div>
         </div>
@@ -332,8 +390,8 @@
             <div class="p-6">
                 <input type="hidden" id="edit-class-old">
                 <label class="block text-xs font-bold text-gray-500 mb-2">Nama Kelas Baharu:</label>
-                <input type="text" id="edit-class-new" class="w-full border-2 border-gray-200 rounded-lg p-2 text-sm focus:border-corp-blue outline-none mb-4">
-                <button onclick="app.saveEditClass()" class="w-full bg-corp-blue text-white px-4 py-2 rounded-lg font-bold text-sm shadow">Simpan Perubahan</button>
+                <input type="text" id="edit-class-new" class="w-full border-2 border-gray-200 rounded-lg p-3 text-sm font-semibold focus:border-corp-blue outline-none mb-5">
+                <button onclick="app.saveEditClass()" class="w-full bg-corp-blue text-white px-4 py-3 rounded-lg font-bold text-sm shadow hover:bg-blue-800 transition">Simpan Perubahan</button>
             </div>
         </div>
     </div>
@@ -362,10 +420,10 @@
                 <table class="w-full text-left text-sm border-collapse">
                     <thead>
                         <tr class="bg-gray-100 text-gray-600">
-                            <th class="p-2 border-b">Kelas</th>
-                            <th class="p-2 border-b text-center text-blue-600">Lelaki (L)</th>
-                            <th class="p-2 border-b text-center text-pink-600">Perempuan (P)</th>
-                            <th class="p-2 border-b text-center font-bold">Jumlah</th>
+                            <th class="p-3 border-b rounded-tl-lg">Kelas</th>
+                            <th class="p-3 border-b text-center text-blue-600">Lelaki (L)</th>
+                            <th class="p-3 border-b text-center text-pink-600">Perempuan (P)</th>
+                            <th class="p-3 border-b text-center font-bold rounded-tr-lg">Jumlah</th>
                         </tr>
                     </thead>
                     <tbody id="list-total-students" class="divide-y divide-gray-100"></tbody>
@@ -379,28 +437,28 @@
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col animate-fade-in max-h-[90vh]">
             <div class="bg-corp-blue p-5 text-white flex justify-between items-start">
                 <div>
-                    <h2 class="text-xl font-bold" id="ms-name">Nama Murid</h2>
-                    <p class="text-blue-200 text-sm font-mono mt-1"><span id="ms-class">Kelas</span> | Tahun <span id="ms-tahun"></span> (Tahap <span id="ms-tahap"></span>)</p>
+                    <h2 class="text-2xl font-bold" id="ms-name">Nama Murid</h2>
+                    <p class="text-blue-200 text-sm mt-1"><i class="fa-solid fa-chalkboard text-xs mr-1"></i> <span id="ms-class" class="font-bold">Kelas</span> &nbsp;|&nbsp; Tahun <span id="ms-tahun"></span> (Tahap <span id="ms-tahap"></span>)</p>
                 </div>
                 <button onclick="app.closeModal('modal-student')" class="text-white hover:text-gray-200"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
             
             <div class="p-6 overflow-y-auto bg-gray-50 flex-1">
                 <!-- Achievement Box -->
-                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-                    <h3 class="text-sm font-bold text-yellow-800 mb-2 flex items-center"><i class="fa-solid fa-medal mr-2 text-corp-gold"></i> Pencapaian Cemerlang (Layak Sijil)</h3>
-                    <ul id="ms-achievements" class="text-sm text-yellow-900 space-y-1 ml-6 list-disc font-medium">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 shadow-sm">
+                    <h3 class="text-sm font-bold text-yellow-800 mb-2 flex items-center"><i class="fa-solid fa-medal text-lg mr-2 text-corp-gold"></i> Pencapaian Cemerlang (Layak Sijil)</h3>
+                    <ul id="ms-achievements" class="text-sm text-yellow-900 space-y-1 ml-7 list-disc font-medium">
                         <!-- Populated by JS -->
                     </ul>
                 </div>
 
                 <!-- Marks & Ranking Table -->
-                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-                    <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 font-bold text-sm text-gray-700">Keputusan UASA & Kedudukan Dalam Kelas</div>
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6 shadow-sm">
+                    <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 font-bold text-sm text-gray-700">Keputusan UASA & Kedudukan Dalam Kelas</div>
                     <table class="w-full text-left text-sm">
                         <thead class="bg-gray-50 text-xs uppercase text-gray-500">
                             <tr>
-                                <th class="p-3 border-b">Mata Pelajaran</th>
+                                <th class="p-3 pl-5 border-b">Mata Pelajaran</th>
                                 <th class="p-3 border-b text-center">Markah</th>
                                 <th class="p-3 border-b text-center">Gred</th>
                                 <th class="p-3 border-b text-center">Kedudukan (Kelas)</th>
@@ -413,26 +471,24 @@
                 </div>
 
                 <!-- Result Slip Summary -->
-                <div class="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-4 text-center justify-around items-center mb-4">
-                    <div><p class="text-xs text-gray-500 uppercase font-bold">Jum. Markah</p><p class="text-xl font-black text-gray-800" id="ms-total-marks">0</p></div>
-                    <div><p class="text-xs text-gray-500 uppercase font-bold">Purata</p><p class="text-xl font-black text-blue-600" id="ms-avg-marks">0%</p></div>
-                    <div><p class="text-xs text-gray-500 uppercase font-bold">Status UASA</p><p class="text-lg font-black" id="ms-status">MTM</p></div>
-                    <div><p class="text-xs text-gray-500 uppercase font-bold">Ked. Kelas</p><p class="text-xl font-black text-corp-dark" id="ms-rank-class">-</p></div>
-                    <div><p class="text-xs text-gray-500 uppercase font-bold">Ked. Tahun</p><p class="text-xl font-black text-indigo-600" id="ms-rank-year">-</p></div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 flex flex-wrap gap-4 text-center justify-around items-center mb-2 shadow-sm">
+                    <div><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Jum. Markah</p><p class="text-2xl font-black text-gray-800" id="ms-total-marks">0</p></div>
+                    <div><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Purata</p><p class="text-2xl font-black text-blue-600" id="ms-avg-marks">0%</p></div>
+                    <div><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Status UASA</p><p class="text-xl font-black" id="ms-status">MTM</p></div>
+                    <div><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Ked. Kelas</p><p class="text-2xl font-black text-corp-dark" id="ms-rank-class">-</p></div>
+                    <div><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Ked. Tahun</p><p class="text-2xl font-black text-indigo-600" id="ms-rank-year">-</p></div>
                 </div>
             </div>
 
-            <div class="p-4 bg-white border-t border-gray-100 flex justify-end gap-3">
-                <button onclick="app.printSlip()" class="px-5 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-bold shadow-sm transition"><i class="fa-solid fa-file-lines mr-2"></i>Cetak Slip</button>
-                <button onclick="app.printCertificate()" class="px-5 py-2 bg-corp-gold hover:bg-yellow-500 text-corp-dark rounded-lg font-bold shadow transition"><i class="fa-solid fa-award mr-2"></i>Jana Sijil</button>
+            <div class="p-5 bg-white border-t border-gray-100 flex justify-end gap-3 shadow-inner">
+                <button onclick="app.printSlip()" class="px-6 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg font-bold shadow-sm transition"><i class="fa-solid fa-file-lines mr-2"></i>Cetak Slip</button>
+                <button onclick="app.printCertificate()" class="px-6 py-2.5 bg-corp-gold hover:bg-yellow-500 text-corp-dark rounded-lg font-bold shadow transition"><i class="fa-solid fa-award mr-2"></i>Jana Sijil</button>
             </div>
         </div>
     </div>
 
-    <!-- Print Area (Hidden on screen, visible on print) -->
-    <div id="print-area" class="hidden bg-white">
-        <!-- Will be populated dynamically by JS before printing -->
-    </div>
+    <!-- Print Area -->
+    <div id="print-area" class="hidden bg-white"></div>
 
     <script>
         const SUBJECTS = {
@@ -442,27 +498,27 @@
 
         const app = {
             state: {
-                classes: ['1 Arif', '2 Bijak', '3 Cerdas', '4 Dinamik', '5 Elit', '6 Fokus'],
+                classes: [],
                 students: [],
-                marks: {}, // Format: { studentId: { subject: { uasa: '85', pbd: 'TP5' } } }
+                marks: {}, 
                 selectedClass: '',
                 activeTab: 'dashboard'
             },
 
             init() {
                 this.loadState();
-                if(this.state.students.length === 0) this.seedDummyData();
                 
                 // Set default dropdowns
                 this.updateClassDropdowns();
                 this.switchTab('dashboard');
 
-                // Auto-save on window blur or tab hide
+                // Auto-save
                 window.addEventListener('blur', () => this.saveState());
             },
 
             loadState() {
-                const saved = localStorage.getItem('spak_data_v2');
+                // Recover data from old key 'spak_data' if 'spak_data_v2' is empty, or just use one consistent key
+                let saved = localStorage.getItem('spak_data') || localStorage.getItem('spak_data_v2');
                 if(saved) {
                     try {
                         this.state = JSON.parse(saved);
@@ -471,7 +527,7 @@
             },
 
             saveState() {
-                localStorage.setItem('spak_data_v2', JSON.stringify(this.state));
+                localStorage.setItem('spak_data', JSON.stringify(this.state));
             },
 
             showToast(title, msg, isError = false) {
@@ -493,25 +549,74 @@
             },
 
             switchTab(tab) {
-                // Save marks if switching away from markah
-                if(this.state.activeTab === 'markah' && tab !== 'markah') {
-                    this.silentSaveMarkah();
-                }
+                if(this.state.activeTab === 'markah' && tab !== 'markah') this.silentSaveMarkah();
+                
+                // Set Page Title
+                const titles = {
+                    'dashboard': 'Dashboard Keseluruhan',
+                    'murid': 'Pengurusan Murid dan Kelas',
+                    'markah': 'Markah dan Pelaporan Sistem',
+                    'tetapan': 'Tetapan Sistem & Data'
+                };
+                document.getElementById('page-title').innerText = titles[tab];
 
                 this.state.activeTab = tab;
-                ['dashboard', 'murid', 'markah'].forEach(t => {
+                ['dashboard', 'murid', 'markah', 'tetapan'].forEach(t => {
                     document.getElementById(`view-${t}`).classList.add('hidden');
-                    document.getElementById(`nav-${t}`).className = "nav-btn w-full text-left px-6 py-3 transition flex items-center gap-3 tab-inactive";
+                    let btn = document.getElementById(`nav-${t}`);
+                    if(btn) btn.className = "nav-btn w-full text-left px-4 py-3 transition flex items-center gap-3 tab-inactive";
                 });
                 
                 document.getElementById(`view-${tab}`).classList.remove('hidden');
-                document.getElementById(`nav-${tab}`).className = "nav-btn w-full text-left px-6 py-3 transition flex items-center gap-3 tab-active";
+                let actBtn = document.getElementById(`nav-${tab}`);
+                if(actBtn) actBtn.className = "nav-btn w-full text-left px-4 py-3 transition flex items-center gap-3 tab-active";
                 
                 if(tab === 'dashboard') this.renderDashboard();
                 if(tab === 'murid') this.renderClassList();
-                if(tab === 'markah') {
-                    this.updateClassDropdowns();
-                    this.loadMarkah();
+                if(tab === 'markah') { this.updateClassDropdowns(); this.loadMarkah(); }
+            },
+
+            // --- TETAPAN LOGIC ---
+            exportData() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.state));
+                const dn = document.createElement('a');
+                dn.setAttribute("href", dataStr);
+                dn.setAttribute("download", `Backup_SPAK_${new Date().toISOString().slice(0,10)}.json`);
+                document.body.appendChild(dn);
+                dn.click();
+                dn.remove();
+                this.showToast('Berjaya', 'Data berjaya dimuat turun.');
+            },
+
+            importData() {
+                const file = document.getElementById('import-file').files[0];
+                if(!file) return this.showToast('Ralat', 'Sila pilih fail .json dahulu.', true);
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        if(parsed.students && parsed.classes) {
+                            this.state = parsed;
+                            this.saveState();
+                            this.showToast('Berjaya', 'Sistem dipulihkan dengan data baharu.');
+                            setTimeout(() => location.reload(), 1500); // Reload to apply changes smoothly
+                        } else {
+                            this.showToast('Ralat', 'Format fail tidak sah.', true);
+                        }
+                    } catch(err) {
+                        this.showToast('Ralat', 'Gagal membaca fail JSON.', true);
+                    }
+                };
+                reader.readAsText(file);
+            },
+
+            clearAllData() {
+                if(confirm("AMARAN: Anda pasti ingin memadam SEMUA kelas, murid dan markah? Tindakan ini tidak boleh diundur!")) {
+                    this.state = { classes: [], students: [], marks: {}, selectedClass: '', activeTab: 'tetapan' };
+                    this.saveState();
+                    this.showToast('Berjaya', 'Semua data telah dikosongkan.');
+                    setTimeout(() => location.reload(), 1000);
                 }
             },
 
@@ -548,7 +653,7 @@
                 ranked.sort((a,b) => b.totalMarks - a.totalMarks);
                 
                 if(ranked.length === 0 || ranked[0].totalMarks === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada data markah yang mencukupi.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Belum ada rekod markah yang mencukupi.</td></tr>`;
                     return;
                 }
 
@@ -556,7 +661,7 @@
                     <tr class="hover:bg-blue-50/50 cursor-pointer transition" onclick="app.openModalStudent('${s.id}')">
                         <td class="p-4 text-center font-bold ${i<3 ? 'text-corp-gold text-lg': 'text-gray-500'}">${i+1}</td>
                         <td class="p-4 font-bold text-gray-800">${s.name}</td>
-                        <td class="p-4 text-gray-500 text-xs">${s.className}</td>
+                        <td class="p-4 text-gray-500 text-xs font-semibold">${s.className}</td>
                         <td class="p-4 text-center font-black text-gray-700">${s.totalMarks}</td>
                         <td class="p-4 text-center font-bold text-blue-600">${s.avg}%</td>
                     </tr>
@@ -568,7 +673,7 @@
                 list.innerHTML = this.state.classes.map(c => `
                     <li class="p-3 bg-gray-50 border border-gray-100 rounded-lg flex justify-between items-center">
                         <span class="font-bold text-gray-700">${c}</span>
-                        <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">${this.state.students.filter(s=>s.className===c).length} Murid</span>
+                        <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">${this.state.students.filter(s=>s.className===c).length} Murid</span>
                     </li>
                 `).join('');
                 document.getElementById('modal-total-classes').classList.remove('hidden');
@@ -582,9 +687,9 @@
                     const p = stds.filter(s=>s.gender==='P').length;
                     return `
                         <tr>
-                            <td class="p-3 font-semibold text-gray-700">${c}</td>
-                            <td class="p-3 text-center text-blue-600 font-medium">${l}</td>
-                            <td class="p-3 text-center text-pink-600 font-medium">${p}</td>
+                            <td class="p-3 font-bold text-gray-700">${c}</td>
+                            <td class="p-3 text-center text-blue-600 font-bold">${l}</td>
+                            <td class="p-3 text-center text-pink-600 font-bold">${p}</td>
                             <td class="p-3 text-center font-black text-gray-800">${stds.length}</td>
                         </tr>
                     `;
@@ -602,11 +707,11 @@
             renderClassList() {
                 const container = document.getElementById('class-list-container');
                 container.innerHTML = this.state.classes.map(c => `
-                    <div class="bg-gray-50 p-3 rounded-lg border hover:border-corp-blue transition flex justify-between items-center cursor-pointer ${this.state.selectedClass === c ? 'border-corp-blue ring-1 ring-corp-blue bg-blue-50' : ''}">
+                    <div class="bg-gray-50 p-4 rounded-xl border hover:border-corp-blue transition flex justify-between items-center cursor-pointer ${this.state.selectedClass === c ? 'border-corp-blue ring-2 ring-corp-blue bg-blue-50 shadow-sm' : ''}">
                         <div class="flex-1 font-bold text-sm text-gray-700" onclick="app.selectClass('${c}')">${c}</div>
-                        <div class="flex gap-2 text-gray-400">
-                            <button onclick="app.editClass('${c}')" class="hover:text-blue-600"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button onclick="app.deleteClass('${c}')" class="hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                        <div class="flex gap-3 text-gray-400">
+                            <button onclick="app.editClass('${c}')" class="hover:text-blue-600 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="app.deleteClass('${c}')" class="hover:text-red-500 transition"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
                 `).join('');
@@ -637,7 +742,6 @@
                 const idx = this.state.classes.indexOf(oldName);
                 if(idx > -1) this.state.classes[idx] = newName;
                 
-                // Update student records
                 this.state.students.forEach(s => {
                     if(s.className === oldName) {
                         s.className = newName;
@@ -658,9 +762,8 @@
 
             deleteClass(name) {
                 const count = this.state.students.filter(s => s.className === name).length;
-                if(count > 0) {
-                    return this.showToast('Gagal', `Tidak boleh padam. Ada ${count} murid dalam kelas ini. Pindahkan mereka dahulu.`, true);
-                }
+                if(count > 0) return this.showToast('Gagal', `Pindahkan ${count} murid dahulu sebelum memadam kelas.`, true);
+                
                 if(confirm(`Padam kelas ${name}?`)) {
                     this.state.classes = this.state.classes.filter(c => c !== name);
                     if(this.state.selectedClass === name) this.state.selectedClass = '';
@@ -685,18 +788,18 @@
                 const list = this.state.students.filter(s => s.className === this.state.selectedClass);
                 document.getElementById('lbl-student-count').innerText = list.length;
                 document.getElementById('student-list-container').innerHTML = list.map((s, idx) => `
-                    <div class="bg-white p-3 rounded-lg border hover:border-corp-blue transition flex justify-between items-center group">
+                    <div class="bg-white p-3 rounded-xl border hover:border-corp-blue transition flex justify-between items-center group shadow-sm">
                         <div class="flex items-center gap-3 flex-1">
-                            <input type="checkbox" class="student-checkbox w-4 h-4 cursor-pointer text-corp-blue rounded" value="${s.id}">
+                            <input type="checkbox" class="student-checkbox w-4 h-4 cursor-pointer text-corp-blue rounded ml-2" value="${s.id}">
                             <div class="flex items-center gap-3 flex-1 cursor-pointer" onclick="app.openModalStudent('${s.id}')">
-                                <span class="w-6 h-6 rounded bg-blue-100 text-corp-blue text-xs font-bold flex items-center justify-center">${idx+1}</span>
+                                <span class="w-7 h-7 rounded bg-blue-100 text-corp-blue text-xs font-bold flex items-center justify-center">${idx+1}</span>
                                 <div>
                                     <h4 class="text-sm font-bold text-gray-800">${s.name}</h4>
                                     <span class="text-[10px] text-gray-500 font-mono">Tahun ${s.tahun} | Tahap ${s.tahap} | Jantina: ${s.gender}</span>
                                 </div>
                             </div>
                         </div>
-                        <button onclick="app.deleteStudent('${s.id}')" class="text-red-300 hover:text-red-600 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                        <button onclick="app.deleteStudent('${s.id}')" class="text-red-300 hover:text-red-600 p-2 transition"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                 `).join('');
             },
@@ -719,21 +822,12 @@
                 const gender = document.getElementById('add-student-gender').value;
                 if(!name) return this.showToast('Ralat', 'Nama wajib diisi', true);
                 
-                let tahun = 1;
-                let tahap = '1';
+                let tahun = 1, tahap = '1';
                 let thnMatch = this.state.selectedClass.match(/[1-6]/);
-                if(thnMatch) {
-                    tahun = parseInt(thnMatch[0]);
-                    tahap = (tahun >= 4) ? '2' : '1';
-                }
+                if(thnMatch) { tahun = parseInt(thnMatch[0]); tahap = (tahun >= 4) ? '2' : '1'; }
 
                 this.state.students.push({
-                    id: 'std_' + Date.now(),
-                    name: name,
-                    className: this.state.selectedClass,
-                    gender: gender,
-                    tahun: tahun,
-                    tahap: tahap
+                    id: 'std_' + Date.now(), name: name, className: this.state.selectedClass, gender: gender, tahun: tahun, tahap: tahap
                 });
 
                 document.getElementById('add-student-name').value = '';
@@ -764,10 +858,7 @@
                     if(s) {
                         s.className = dest;
                         let thnMatch = dest.match(/[1-6]/);
-                        if(thnMatch) {
-                            s.tahun = parseInt(thnMatch[0]);
-                            s.tahap = (s.tahun >= 4) ? '2' : '1';
-                        }
+                        if(thnMatch) { s.tahun = parseInt(thnMatch[0]); s.tahap = (s.tahun >= 4) ? '2' : '1'; }
                     }
                 });
                 
@@ -780,30 +871,21 @@
             // --- MARKAH LOGIC ---
             loadMarkah() {
                 const cls = document.getElementById('sel-markah-class').value;
-                const term = document.getElementById('sel-markah-term').value; // uasa or pbd
+                const term = document.getElementById('sel-markah-term').value;
                 const subSel = document.getElementById('sel-markah-subjek');
                 
-                if(!cls) {
-                    document.getElementById('markah-overlay').classList.remove('hidden');
-                    return;
-                }
+                if(!cls) { document.getElementById('markah-overlay').classList.remove('hidden'); return; }
 
-                // Determine Tahap to load subjects
                 let thnMatch = cls.match(/[1-6]/);
                 let tahap = '1';
                 if(thnMatch && parseInt(thnMatch[0]) >= 4) tahap = '2';
 
-                // Populate subjects if empty or changed tahap
                 if(subSel.options.length <= 1 || !SUBJECTS[tahap].includes(subSel.value)) {
                     subSel.innerHTML = '<option value="">-- Pilih Subjek --</option>' + SUBJECTS[tahap].map(s => `<option value="${s}">${s}</option>`).join('');
                 }
 
                 const subj = subSel.value;
-                if(!subj) {
-                    document.getElementById('markah-overlay').classList.remove('hidden');
-                    return;
-                }
-
+                if(!subj) { document.getElementById('markah-overlay').classList.remove('hidden'); return; }
                 document.getElementById('markah-overlay').classList.add('hidden');
                 
                 const students = this.state.students.filter(s => s.className === cls);
@@ -811,12 +893,12 @@
                 document.getElementById('markah-tbody').innerHTML = students.map((s, idx) => {
                     const m = this.state.marks[s.id]?.[subj]?.[term] || '';
                     return `
-                    <tr class="hover:bg-blue-50/30 transition border-b border-gray-100">
+                    <tr class="hover:bg-blue-50/50 transition border-b border-gray-100">
                         <td class="p-3 text-center text-xs text-gray-500 font-bold">${idx+1}</td>
-                        <td class="p-3 font-bold text-sm text-gray-800">${s.name}</td>
-                        <td class="p-3 text-center bg-blue-50/20">
+                        <td class="p-3 font-bold text-sm text-gray-800 pl-4">${s.name}</td>
+                        <td class="p-3 text-center bg-blue-50/30">
                             <input type="text" data-id="${s.id}" value="${m}" 
-                                class="markah-input w-20 text-center border border-gray-300 rounded p-1 font-bold text-sm focus:border-corp-blue focus:ring-2 focus:ring-blue-200 outline-none uppercase"
+                                class="markah-input w-24 text-center border-2 border-gray-200 rounded-lg p-1.5 font-bold text-sm focus:border-corp-blue focus:ring-2 focus:ring-blue-100 outline-none uppercase transition"
                                 oninput="app.autoSaveCell('${s.id}', '${subj}', '${term}', this.value)"
                                 onkeydown="app.handleArrowNav(event, ${idx})">
                         </td>
@@ -826,26 +908,21 @@
 
             handleArrowNav(e, idx) {
                 const inputs = document.querySelectorAll('.markah-input');
-                if(e.key === 'ArrowDown' && idx < inputs.length - 1) {
-                    e.preventDefault(); inputs[idx+1].focus(); inputs[idx+1].select();
-                } else if(e.key === 'ArrowUp' && idx > 0) {
-                    e.preventDefault(); inputs[idx-1].focus(); inputs[idx-1].select();
-                }
+                if(e.key === 'ArrowDown' && idx < inputs.length - 1) { e.preventDefault(); inputs[idx+1].focus(); inputs[idx+1].select(); }
+                else if(e.key === 'ArrowUp' && idx > 0) { e.preventDefault(); inputs[idx-1].focus(); inputs[idx-1].select(); }
             },
 
             autoSaveCell(sId, subj, term, val) {
                 if(!this.state.marks[sId]) this.state.marks[sId] = {};
                 if(!this.state.marks[sId][subj]) this.state.marks[sId][subj] = {};
                 this.state.marks[sId][subj][term] = val.toUpperCase().trim();
-                // Silent state save
-                localStorage.setItem('spak_data_v2', JSON.stringify(this.state));
+                localStorage.setItem('spak_data', JSON.stringify(this.state));
             },
 
             silentSaveMarkah() {
                 const subj = document.getElementById('sel-markah-subjek').value;
                 const term = document.getElementById('sel-markah-term').value;
                 if(!subj) return;
-
                 document.querySelectorAll('.markah-input').forEach(inp => {
                     const id = inp.getAttribute('data-id');
                     const val = inp.value.toUpperCase().trim();
@@ -858,13 +935,11 @@
 
             saveMarkah() {
                 const btn = document.getElementById('btn-save-markah');
-                btn.classList.add('animate-pop');
-                setTimeout(() => btn.classList.remove('animate-pop'), 300);
+                btn.classList.add('animate-pop'); setTimeout(() => btn.classList.remove('animate-pop'), 300);
 
                 const subj = document.getElementById('sel-markah-subjek').value;
                 const term = document.getElementById('sel-markah-term').value;
                 
-                // Check for empty marks
                 let emptyList = [];
                 document.querySelectorAll('.markah-input').forEach(inp => {
                     const id = inp.getAttribute('data-id');
@@ -872,7 +947,6 @@
                     if(!this.state.marks[id]) this.state.marks[id] = {};
                     if(!this.state.marks[id][subj]) this.state.marks[id][subj] = {};
                     this.state.marks[id][subj][term] = val;
-                    
                     if(val === '') {
                         const sName = this.state.students.find(x=>x.id===id).name;
                         emptyList.push(`<li><i class="fa-solid fa-xmark text-red-500 mr-2"></i>${sName}</li>`);
@@ -883,9 +957,7 @@
                     document.getElementById('empty-marks-count').innerText = emptyList.length + " orang";
                     document.getElementById('empty-marks-list').innerHTML = emptyList.join('');
                     document.getElementById('modal-empty-marks').classList.remove('hidden');
-                } else {
-                    this.forceSaveMarkah();
-                }
+                } else { this.forceSaveMarkah(); }
             },
 
             forceSaveMarkah() {
@@ -896,9 +968,7 @@
 
             // --- TAMPAL EXCEL ---
             showPasteExcelModal() {
-                if(!document.getElementById('sel-markah-subjek').value) {
-                    return this.showToast('Perhatian', 'Sila pilih Subjek terlebih dahulu.', true);
-                }
+                if(!document.getElementById('sel-markah-subjek').value) return this.showToast('Perhatian', 'Sila pilih Subjek terlebih dahulu.', true);
                 document.getElementById('excel-paste-area').value = '';
                 document.getElementById('modal-paste-excel').classList.remove('hidden');
             },
@@ -906,29 +976,22 @@
             processExcelPaste() {
                 const text = document.getElementById('excel-paste-area').value;
                 if(!text.trim()) return;
-
                 const cls = document.getElementById('sel-markah-class').value;
                 const classStudents = this.state.students.filter(s => s.className === cls);
-                
                 const lines = text.split('\n');
                 let count = 0;
 
                 lines.forEach(line => {
                     const parts = line.split('\t');
-                    if(parts.length < 2) return; // Need at least name and mark
-                    
+                    if(parts.length < 2) return;
                     const excelName = parts[0].trim().toUpperCase();
-                    let mark = parts[parts.length - 1].trim().toUpperCase(); // Assume last column is mark
+                    let mark = parts[parts.length - 1].trim().toUpperCase();
                     
-                    // Fuzzy match name
                     const matchedStudent = classStudents.find(s => s.name.includes(excelName) || excelName.includes(s.name));
-                    
                     if(matchedStudent) {
-                        // Find input box in UI and update it
                         const input = document.querySelector(`input[data-id="${matchedStudent.id}"]`);
                         if(input) {
                             input.value = mark;
-                            // Trigger autosave
                             const subj = document.getElementById('sel-markah-subjek').value;
                             const term = document.getElementById('sel-markah-term').value;
                             this.autoSaveCell(matchedStudent.id, subj, term, mark);
@@ -936,116 +999,73 @@
                         }
                     }
                 });
-
                 this.closeModal('modal-paste-excel');
-                if(count > 0) {
-                    this.showToast('Berjaya Diserap', `Markah ${count} murid berjaya ditampal.`);
-                    this.saveMarkah(); // Force final save UI trigger
-                } else {
-                    this.showToast('Gagal', 'Tiada nama yang sepadan ditemui.', true);
-                }
+                if(count > 0) { this.showToast('Berjaya', `Markah ${count} murid ditampal.`); this.saveMarkah(); } 
+                else { this.showToast('Gagal', 'Tiada nama yang sepadan.', true); }
             },
 
-            // --- STUDENT PROFILE / RESULT SLIP / CERTIFICATE ---
+            // --- STUDENT RANKING & PRINTING ---
             openModalStudent(id) {
                 const s = this.state.students.find(x => x.id === id);
                 if(!s) return;
-                
-                document.getElementById('ms-name').innerText = s.name;
-                document.getElementById('ms-class').innerText = s.className;
-                document.getElementById('ms-tahun').innerText = s.tahun;
-                document.getElementById('ms-tahap').innerText = s.tahap;
+                document.getElementById('ms-name').innerText = s.name; document.getElementById('ms-class').innerText = s.className;
+                document.getElementById('ms-tahun').innerText = s.tahun; document.getElementById('ms-tahap').innerText = s.tahap;
 
                 const sMarks = this.state.marks[id] || {};
-                let totalMarks = 0, count = 0;
-                let bmtmCount = 0;
-
-                const tbody = document.getElementById('ms-marks-body');
-                let rowsHtml = '';
-                let achievements = [];
+                let totalMarks = 0, count = 0, bmtmCount = 0, rowsHtml = '', achievements = [];
 
                 SUBJECTS[s.tahap].forEach(sub => {
                     const mVal = sMarks[sub]?.uasa || '';
                     const mNum = parseInt(mVal);
-                    
-                    let markDisplay = mVal || '-';
-                    let grade = '-';
-                    let isZeroOrAbsent = false;
+                    let grade = '-'; let isZero = false;
 
                     if(!isNaN(mNum)) {
                         totalMarks += mNum; count++;
-                        if(mNum >= 80) grade = 'A';
-                        else if(mNum >= 65) grade = 'B';
-                        else if(mNum >= 50) grade = 'C';
-                        else if(mNum >= 40) grade = 'D';
-                        else { grade = 'E'; bmtmCount++; }
-                    } else if (['TH','TD','P'].includes(mVal)) {
-                        count++;
-                        bmtmCount++; // Count as fail/BMTM
-                        isZeroOrAbsent = true;
-                    }
+                        if(mNum >= 80) grade = 'A'; else if(mNum >= 65) grade = 'B'; else if(mNum >= 50) grade = 'C'; else if(mNum >= 40) grade = 'D'; else { grade = 'E'; bmtmCount++; }
+                    } else if (['TH','TD','P'].includes(mVal)) { count++; bmtmCount++; isZero = true; }
 
-                    // Calculate subject rank
                     let rankInClass = this.getSubjectRank(id, sub, s.className, 'class');
-                    if(rankInClass === 1 && !isZeroOrAbsent) achievements.push(`Terbaik UASA ${sub} (No.1)`);
-                    else if(rankInClass === 2 && !isZeroOrAbsent) achievements.push(`Kedudukan Ke-2 UASA ${sub}`);
-                    else if(rankInClass === 3 && !isZeroOrAbsent) achievements.push(`Kedudukan Ke-3 UASA ${sub}`);
+                    if(rankInClass === 1 && !isZero) achievements.push(`Terbaik UASA ${sub} (No.1)`);
+                    else if(rankInClass === 2 && !isZero) achievements.push(`Kedudukan Ke-2 UASA ${sub}`);
+                    else if(rankInClass === 3 && !isZero) achievements.push(`Kedudukan Ke-3 UASA ${sub}`);
 
-                    rowsHtml += `
-                        <tr>
-                            <td class="p-3 border-b text-gray-800 font-medium">${sub}</td>
-                            <td class="p-3 border-b text-center font-bold">${markDisplay}</td>
-                            <td class="p-3 border-b text-center font-bold ${grade==='E' ? 'text-red-500' : 'text-gray-700'}">${grade}</td>
-                            <td class="p-3 border-b text-center font-bold text-blue-600">${rankInClass > 0 && !isZeroOrAbsent ? '#'+rankInClass : '-'}</td>
-                        </tr>
-                    `;
+                    rowsHtml += `<tr>
+                        <td class="p-3 pl-5 border-b text-gray-800 font-medium">${sub}</td>
+                        <td class="p-3 border-b text-center font-bold">${mVal || '-'}</td>
+                        <td class="p-3 border-b text-center font-bold ${grade==='E'?'text-red-500':'text-gray-700'}">${grade}</td>
+                        <td class="p-3 border-b text-center font-bold text-blue-600">${rankInClass>0 && !isZero?'#'+rankInClass:'-'}</td>
+                    </tr>`;
                 });
-
-                tbody.innerHTML = rowsHtml;
+                document.getElementById('ms-marks-body').innerHTML = rowsHtml;
                 
                 const avg = count ? (totalMarks/count).toFixed(1) : 0;
-                document.getElementById('ms-total-marks').innerText = totalMarks;
-                document.getElementById('ms-avg-marks').innerText = avg + '%';
+                document.getElementById('ms-total-marks').innerText = totalMarks; document.getElementById('ms-avg-marks').innerText = avg + '%';
                 
                 const statusEl = document.getElementById('ms-status');
-                if(count === 0) {
-                    statusEl.innerText = '-'; statusEl.className = "text-lg font-black text-gray-400";
-                } else if(bmtmCount > 0) {
-                    statusEl.innerText = 'BMTM'; statusEl.className = "text-lg font-black text-red-600";
-                } else {
-                    statusEl.innerText = 'MTM'; statusEl.className = "text-lg font-black text-green-600";
-                }
+                if(count === 0) { statusEl.innerText = '-'; statusEl.className = "text-xl font-black text-gray-400"; } 
+                else if(bmtmCount > 0) { statusEl.innerText = 'BMTM'; statusEl.className = "text-xl font-black text-red-600"; } 
+                else { statusEl.innerText = 'MTM'; statusEl.className = "text-xl font-black text-green-600"; }
 
                 document.getElementById('ms-rank-class').innerText = this.getOverallRank(id, s.className, 'class');
                 document.getElementById('ms-rank-year').innerText = this.getOverallRank(id, s.tahun, 'year');
 
                 const achvEl = document.getElementById('ms-achievements');
-                if(achievements.length > 0) {
-                    achvEl.innerHTML = achievements.map(a => `<li>${a}</li>`).join('');
-                } else {
-                    achvEl.innerHTML = `<li class="text-gray-500 italic list-none">Tiada pencapaian direkodkan.</li>`;
-                }
+                if(achievements.length > 0) achvEl.innerHTML = achievements.map(a => `<li>${a}</li>`).join('');
+                else achvEl.innerHTML = `<li class="text-gray-500 italic list-none">Tiada pencapaian direkodkan.</li>`;
 
-                // Store for printing
                 this.currentPrintData = { s, totalMarks, avg, achievements, status: statusEl.innerText };
-
                 document.getElementById('modal-student').classList.remove('hidden');
             },
 
             getSubjectRank(studentId, subject, filterVal, filterType) {
-                // filterType: 'class' or 'year'
                 let peers = this.state.students.filter(s => filterType === 'class' ? s.className === filterVal : s.tahun === filterVal);
                 let validScores = [];
-                
                 peers.forEach(p => {
-                    let markStr = this.state.marks[p.id]?.[subject]?.uasa;
-                    let m = parseInt(markStr);
+                    let m = parseInt(this.state.marks[p.id]?.[subject]?.uasa);
                     if(!isNaN(m)) validScores.push({id: p.id, mark: m});
                 });
-
                 if(validScores.length === 0) return 0;
                 validScores.sort((a,b) => b.mark - a.mark);
-                
                 const idx = validScores.findIndex(x => x.id === studentId);
                 return idx === -1 ? 0 : idx + 1;
             },
@@ -1053,20 +1073,13 @@
             getOverallRank(studentId, filterVal, filterType) {
                 let peers = this.state.students.filter(s => filterType === 'class' ? s.className === filterVal : s.tahun === filterVal);
                 let scores = [];
-                
                 peers.forEach(p => {
                     let total = 0;
-                    const pMarks = this.state.marks[p.id] || {};
-                    for(let sub in pMarks) {
-                        let m = parseInt(pMarks[sub].uasa);
-                        if(!isNaN(m)) total += m;
-                    }
+                    for(let sub in (this.state.marks[p.id]||{})) { let m = parseInt(this.state.marks[p.id][sub].uasa); if(!isNaN(m)) total += m; }
                     if(total > 0) scores.push({id: p.id, total: total});
                 });
-
                 if(scores.length === 0) return '-';
                 scores.sort((a,b) => b.total - a.total);
-                
                 const idx = scores.findIndex(x => x.id === studentId);
                 return idx === -1 ? '-' : (idx + 1) + ' / ' + scores.length;
             },
@@ -1075,60 +1088,39 @@
                 if(!this.currentPrintData) return;
                 const d = this.currentPrintData;
                 const area = document.getElementById('print-area');
-                
-                // Set landscape print hint
                 const style = document.createElement('style');
                 style.innerHTML = `@page { size: landscape; margin: 0; } body { -webkit-print-color-adjust: exact; }`;
                 area.appendChild(style);
-
                 let reason = d.achievements.length > 0 ? d.achievements[0] : `Pencapaian UASA (Purata: ${d.avg}%)`;
 
                 area.innerHTML += `
                 <div style="width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; background:white; padding:40px; box-sizing:border-box; font-family: 'Inter', sans-serif;">
-                    <div style="width:100%; height:100%; border: 15px solid #1e3a8a; border-radius: 20px; padding: 40px; text-align:center; position:relative; background-image: radial-gradient(#fbbf24 1px, transparent 1px); background-size: 40px 40px; background-position: center; background-color: #fafaf9;">
-                        
+                    <div style="width:100%; height:100%; border: 15px solid #1e3a8a; border-radius: 20px; padding: 40px; text-align:center; position:relative; background-image: radial-gradient(#fbbf24 1px, transparent 1px); background-size: 40px 40px; background-color: #fafaf9;">
                         <div style="position:absolute; top:40px; left:40px; color:#1e3a8a; font-size:60px;"><i class="fa-solid fa-award"></i></div>
                         <div style="position:absolute; top:40px; right:40px; color:#1e3a8a; font-size:60px;"><i class="fa-solid fa-award"></i></div>
-
                         <h3 style="color:#64748b; letter-spacing: 5px; text-transform:uppercase; margin-bottom:10px;">Sekolah Kebangsaan Bikang</h3>
                         <h1 style="color:#1e3a8a; font-size:50px; font-weight:900; margin:10px 0; text-transform:uppercase;">Sijil Penghargaan</h1>
-                        
                         <p style="font-size:18px; color:#475569; margin-top:40px;">Dengan ini diperakui bahawa</p>
                         <h2 style="font-size:40px; color:#0f172a; margin: 15px 0; border-bottom: 2px solid #cbd5e1; display:inline-block; padding-bottom:5px;">${d.s.name}</h2>
                         <p style="font-size:18px; color:#475569; font-weight:bold;">${d.s.className} (Tahun ${d.s.tahun})</p>
-
                         <p style="font-size:18px; color:#475569; margin-top:30px;">Telah menunjukkan prestasi yang cemerlang dan dianugerahkan sebagai</p>
-                        <h3 style="font-size:24px; color:#b45309; margin-top:10px; font-weight:bold; background:#fef3c7; display:inline-block; padding:10px 20px; border-radius:10px;">
-                            ${reason}
-                        </h3>
-
-                        <div style="position:absolute; bottom:50px; left:100px; text-align:center;">
-                            <div style="width:200px; border-bottom:1px solid #000; height:40px;"></div>
-                            <p style="margin-top:10px; font-size:14px; font-weight:bold;">Guru Besar</p>
-                        </div>
-                        <div style="position:absolute; bottom:50px; right:100px; text-align:center;">
-                            <div style="width:200px; border-bottom:1px solid #000; height:40px;"></div>
-                            <p style="margin-top:10px; font-size:14px; font-weight:bold;">Guru Kelas</p>
-                        </div>
+                        <h3 style="font-size:24px; color:#b45309; margin-top:10px; font-weight:bold; background:#fef3c7; display:inline-block; padding:10px 20px; border-radius:10px;">${reason}</h3>
+                        <div style="position:absolute; bottom:50px; left:100px; text-align:center;"><div style="width:200px; border-bottom:1px solid #000; height:40px;"></div><p style="margin-top:10px; font-size:14px; font-weight:bold;">Guru Besar</p></div>
+                        <div style="position:absolute; bottom:50px; right:100px; text-align:center;"><div style="width:200px; border-bottom:1px solid #000; height:40px;"></div><p style="margin-top:10px; font-size:14px; font-weight:bold;">Guru Kelas</p></div>
                     </div>
                 </div>`;
-                window.print();
-                setTimeout(() => { area.innerHTML = ''; }, 1000);
+                window.print(); setTimeout(() => { area.innerHTML = ''; }, 1000);
             },
 
             printSlip() {
                  if(!this.currentPrintData) return;
                 const d = this.currentPrintData;
                 const area = document.getElementById('print-area');
-                
-                // Set portrait print hint
                 const style = document.createElement('style');
                 style.innerHTML = `@page { size: portrait; margin: 1cm; } body { -webkit-print-color-adjust: exact; } table { width: 100%; border-collapse: collapse; margin-top: 20px;} th, td { border: 1px solid #ccc; padding: 8px; text-align: center; } th { background-color: #f3f4f6; } td:first-child, th:first-child { text-align: left; }`;
                 area.appendChild(style);
 
-                let marksTableHTML = `<table>
-                    <thead><tr><th>Mata Pelajaran</th><th>Markah</th><th>Gred</th><th>Catatan</th></tr></thead><tbody>`;
-                
+                let marksTableHTML = `<table><thead><tr><th>Mata Pelajaran</th><th>Markah</th><th>Gred</th><th>Catatan</th></tr></thead><tbody>`;
                 const sMarks = this.state.marks[d.s.id] || {};
                 SUBJECTS[d.s.tahap].forEach(sub => {
                     const mVal = sMarks[sub]?.uasa || '';
@@ -1146,20 +1138,11 @@
                 <div style="width:100%; max-width:800px; margin: 0 auto; font-family: 'Inter', sans-serif;">
                     <h2 style="text-align:center; font-size:24px; text-transform:uppercase; font-weight:bold; margin-bottom:5px;">SK BIKANG</h2>
                     <h3 style="text-align:center; font-size:18px; color:#555; margin-bottom:20px;">SLIP KEPUTUSAN UJIAN AKHIR SESI AKADEMIK</h3>
-                    
                     <div style="display:flex; justify-content:space-between; margin-bottom: 20px; font-size:14px; border:1px solid #eee; padding:15px; border-radius:8px;">
-                        <div>
-                            <p><strong>Nama:</strong> ${d.s.name}</p>
-                            <p><strong>Kelas:</strong> ${d.s.className}</p>
-                        </div>
-                        <div style="text-align:right;">
-                            <p><strong>Tahun:</strong> ${d.s.tahun}</p>
-                            <p><strong>Jantina:</strong> ${d.s.gender}</p>
-                        </div>
+                        <div><p><strong>Nama:</strong> ${d.s.name}</p><p><strong>Kelas:</strong> ${d.s.className}</p></div>
+                        <div style="text-align:right;"><p><strong>Tahun:</strong> ${d.s.tahun}</p><p><strong>Jantina:</strong> ${d.s.gender}</p></div>
                     </div>
-
                     ${marksTableHTML}
-
                     <div style="display:flex; justify-content:space-between; margin-top:20px; border:2px solid #333; padding:15px; border-radius:8px; font-weight:bold;">
                         <div><p style="font-size:12px; color:#666;">Jumlah Markah</p><p style="font-size:20px;">${d.totalMarks}</p></div>
                         <div><p style="font-size:12px; color:#666;">Purata</p><p style="font-size:20px;">${d.avg}%</p></div>
@@ -1170,34 +1153,13 @@
                         </div>
                     </div>
                 </div>`;
-                window.print();
-                setTimeout(() => { area.innerHTML = ''; }, 1000);
+                window.print(); setTimeout(() => { area.innerHTML = ''; }, 1000);
             },
 
-            closeModal(id) {
-                document.getElementById(id).classList.add('hidden');
-            },
-
-            // Dummy Data Generator for initial use
-            seedDummyData() {
-                const names = ['AHMAD ALBA', 'NUR FATIMAH', 'CHONG WEI', 'KAVITHA', 'DAYANG NURSYIFA'];
-                this.state.classes.forEach(c => {
-                    let thnMatch = c.match(/[1-6]/);
-                    let thn = thnMatch ? parseInt(thnMatch[0]) : 1;
-                    names.forEach((n, i) => {
-                        this.state.students.push({
-                            id: `dummy_${c}_${i}`, name: `${n} ${i+1}`, className: c, gender: i%2===0?'L':'P', tahun: thn, tahap: thn>=4?'2':'1'
-                        });
-                    });
-                });
-                this.saveState();
-            }
+            closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         };
 
-        window.onload = () => {
-            window.app = app;
-            app.init();
-        };
+        window.onload = () => { window.app = app; app.init(); };
     </script>
 </body>
 </html>
