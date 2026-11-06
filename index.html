@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPAK - SK Bikang</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        corp: { blue: '#1e3a8a', dark: '#172554', gold: '#fbbf24', light: '#f3f4f6' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- PapaParse (Untuk Import CSV) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <style>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sidebar-active { background-color: #172554; border-right: 4px solid #fbbf24; color: #fbbf24; }
+        .modal-tab-active { background-color: #1e3a8a; color: white; border-bottom: none; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Pengurusan Cetakan Global & Khusus */
+        @media print {
+            /* Pastikan warna latar (bg-color) dicetak dengan tepat */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            /* Buka kunci scroll supaya boleh cetak berbilang muka surat */
+            body, main, .flex-1, #view-dashboard, .hide-scrollbar {
+                height: auto !important;
+                overflow: visible !important;
+                display: block !important;
+            }
+            /* Sembunyikan elemen navigasi ketika mencetak */
+            aside { display: none !important; }
+            header button { display: none !important; }
+            
+            /* Logik Cetak Tokoh Sahaja */
+            .print-tokoh-only header,
+            .print-tokoh-only #view-dashboard > div:not(.tokoh-container) {
+                display: none !important;
+            }
+            .print-tokoh-only .tokoh-container {
+                box-shadow: none !important;
+                border: none !important;
+                margin-top: 0 !important;
+            }
+            .print-tokoh-only .tokoh-header-btn { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 antialiased h-screen flex overflow-hidden font-sans">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 bg-white border-l-4 border-corp-gold shadow-xl px-6 py-4 rounded-md z-[100] transform transition-all duration-300 translate-x-[150%] opacity-0 flex items-center gap-3">
+        <i id="toast-icon" class="fa-solid fa-check-circle text-corp-gold text-xl"></i>
+        <div class="flex flex-col">
+            <span id="toast-title" class="font-bold text-sm text-gray-800">Berjaya</span>
+            <span id="toast-message" class="text-xs text-gray-600">Tindakan selesai.</span>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-corp-blue text-white flex flex-col shadow-2xl z-20 shrink-0">
+        <div class="p-6 flex flex-col items-center border-b border-blue-800">
+            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-3 shadow-lg border-2 border-corp-gold">
+                <i class="fa-solid fa-award text-3xl text-corp-gold"></i>
+            </div>
+            <h1 class="text-xl font-extrabold tracking-tight text-center">SPAK <span class="text-corp-gold">SK Bikang</span></h1>
+            <p class="text-[10px] text-blue-200 mt-1 uppercase tracking-widest text-center">Sistem Pengurusan Anugerah</p>
+        </div>
+        
+        <nav class="flex-1 py-6 space-y-2 px-3">
+            <button onclick="app.switchMainTab('dashboard')" id="btn-tab-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition sidebar-active">
+                <i class="fa-solid fa-chart-line w-5"></i> Dashboard
+            </button>
+            <button onclick="app.switchMainTab('pendaftaran')" id="btn-tab-pendaftaran" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
+                <i class="fa-solid fa-users-gear w-5"></i> Pendaftaran
+            </button>
+            <button onclick="app.switchMainTab('tetapan')" id="btn-tab-tetapan" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
+                <i class="fa-solid fa-cogs w-5"></i> Tetapan (Master)
+            </button>
+        </nav>
+        
+        <div class="p-4 border-t border-blue-800 text-xs text-center text-blue-300">
+            <p>&copy; 2026 SK Bikang</p>
+            <p>Versi 4.1 (Stable Build)</p>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden relative">
+        <!-- Header -->
+        <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center z-10">
+            <h2 id="page-title" class="text-xl font-bold text-corp-dark">Dashboard Analitik</h2>
+            <div class="flex items-center gap-4">
+                <span class="text-sm font-semibold text-gray-500" id="current-date">Senarai Sesi</span>
+                <button onclick="window.print()" class="bg-corp-gold hover:bg-yellow-500 text-corp-dark px-4 py-2 rounded-md font-bold text-sm shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak Penuh
+                </button>
+            </div>
+        </header>
+
+        <!-- Container -->
+        <div class="flex-1 overflow-y-auto p-6 md:p-8 hide-scrollbar">
+            
+            <!-- ================= DASHBOARD ================= -->
+            <div id="view-dashboard" class="block animate-fade-in space-y-6">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Stats Card -->
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-corp-blue text-xl"><i class="fa-solid fa-users"></i></div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">Jumlah Murid</p>
+                                <h3 class="text-2xl font-black text-gray-800" id="dash-total-students">0</h3>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-corp-gold text-xl"><i class="fa-solid fa-school"></i></div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">Jumlah Kelas</p>
+                                <h3 class="text-2xl font-black text-gray-800" id="dash-total-classes">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Peningkatan Terbaik (Most Improved) -->
+                    <div class="lg:col-span-2 bg-gradient-to-br from-green-500 to-green-700 rounded-xl shadow-sm overflow-hidden flex flex-col text-white relative">
+                        <div class="absolute right-0 top-0 opacity-10"><i class="fa-solid fa-arrow-trend-up text-9xl"></i></div>
+                        <div class="px-6 py-4 border-b border-green-400/50 z-10 relative">
+                            <h3 class="font-bold text-lg"><i class="fa-solid fa-rocket text-amber-300 mr-2"></i> Anugerah Peningkatan Terbaik (UASA)</h3>
+                            <p class="text-xs text-green-100">Peningkatan Peratus UASA Pertengahan Penggal vs Akhir Tahun</p>
+                        </div>
+                        <div class="p-4 z-10 relative flex-1">
+                            <div class="bg-white/10 rounded-lg backdrop-blur-sm p-4 h-full">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="text-left text-green-100 border-b border-green-400/50">
+                                            <th class="pb-2 font-semibold">Nama Murid</th>
+                                            <th class="pb-2 font-semibold text-center">Tengahan</th>
+                                            <th class="pb-2 font-semibold text-center">Akhir</th>
+                                            <th class="pb-2 font-semibold text-right">Peningkatan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dash-improved-tbody">
+                                        <!-- JS Rendered -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tokoh Keseluruhan (Ditanda dengan 'tokoh-container' untuk cetakan khusus) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden tokoh-container">
+                    <div class="bg-corp-dark px-6 py-4 flex justify-between items-center text-white">
+                        <h3 class="font-bold text-sm uppercase tracking-wide"><i class="fa-solid fa-trophy text-corp-gold mr-2"></i> Senarai Top Tokoh Murid (Keseluruhan)</h3>
+                        <button onclick="app.cetakTokoh()" class="tokoh-header-btn bg-corp-gold hover:bg-yellow-500 text-corp-dark px-3 py-1.5 rounded text-xs font-bold shadow flex items-center gap-2 transition">
+                            <i class="fa-solid fa-print"></i> Cetak Tokoh
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Kedudukan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nama & Kelas</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Akad (50)</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Koko (30)</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">HEM (20)</th>
+                                    <th class="px-6 py-3 text-center text-xs font-black text-corp-blue uppercase bg-blue-50">Skor (100)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-tbody" class="bg-white divide-y divide-gray-100">
+                                <!-- Rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ================= PENDAFTARAN ================= -->
+            <div id="view-pendaftaran" class="hidden animate-fade-in h-full flex flex-col">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col xl:flex-row gap-6 shrink-0">
+                    <div class="flex-1 flex gap-4">
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Pilih Kelas</label>
+                            <select id="select-kelas" onchange="app.selectClass()" class="w-full border-2 border-gray-200 rounded-lg p-3 text-sm font-semibold focus:border-corp-blue outline-none cursor-pointer bg-gray-50"></select>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Tambah Kelas Baharu</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="input-new-class" placeholder="Cth: 1 ARIF" class="flex-1 border-2 border-gray-200 rounded-lg p-3 text-sm uppercase focus:border-corp-blue outline-none">
+                                <button onclick="app.addClass()" class="bg-corp-blue text-white px-4 rounded-lg font-bold hover:bg-blue-800"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="xl:w-1/3 bg-blue-50 border border-blue-200 p-4 rounded-xl relative overflow-hidden flex flex-col justify-center items-center">
+                        <h3 class="font-bold text-sm text-corp-blue mb-2"><i class="fa-solid fa-file-csv"></i> Import Pukal CSV (Pintar)</h3>
+                        <label class="bg-white border-2 border-corp-blue text-corp-blue hover:bg-corp-blue hover:text-white cursor-pointer font-bold py-2 px-6 rounded-lg shadow-sm transition text-sm">
+                            Pilih Fail CSV
+                            <input type="file" accept=".csv" class="hidden" onchange="app.handleCSV(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <div id="class-workspace" class="hidden flex-grow overflow-hidden gap-6 flex-col md:flex-row">
+                    <!-- Manual Add -->
+                    <div class="md:w-1/3 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
+                        <h3 class="font-bold text-gray-800 mb-4 border-b pb-2 text-sm uppercase"><i class="fa-solid fa-user-plus mr-2 text-corp-blue"></i>Tambah Murid Manual</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Nama Penuh</label>
+                                <input type="text" id="input-manual-name" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm uppercase outline-none focus:border-corp-blue">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Tahun (Cth: 1, 4)</label>
+                                <input type="number" id="input-manual-tahun" class="w-full border-2 border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-corp-blue">
+                            </div>
+                            <button onclick="app.addStudentManual()" class="w-full bg-corp-gold text-corp-dark py-2.5 rounded-lg font-bold text-sm hover:bg-yellow-500 shadow">Simpan Murid</button>
+                        </div>
+                    </div>
+
+                    <!-- Student List -->
+                    <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+                        <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
+                            <h3 class="font-bold text-gray-800">Senarai: <span id="lbl-current-class" class="text-corp-blue"></span></h3>
+                            <span class="text-xs bg-corp-blue text-white px-3 py-1 rounded-full font-bold" id="lbl-student-count">0</span>
+                        </div>
+                        <div class="flex-grow overflow-y-auto p-4 bg-gray-50/50 space-y-2" id="student-list-container">
+                            <!-- Rendered via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= TETAPAN (MASTER DATA) ================= -->
+            <div id="view-tetapan" class="hidden animate-fade-in space-y-6">
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-bold text-corp-dark mb-1"><i class="fa-solid fa-database mr-2 text-corp-blue"></i> Pengurusan Master Data</h2>
+                    <p class="text-xs text-gray-500 mb-6">Tambah atau padam senarai rujukan bagi Akademik, Kokurikulum dan HEM. Tetapan baharu telah ditambah secara automatik.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Subjek Tahap 1 -->
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <h4 class="font-bold text-sm mb-3">Subjek Tahap 1</h4>
+                            <div class="flex gap-2 mb-3">
+                                <input type="text" id="new-sub1" class="flex-1 border p-2 rounded text-sm uppercase" placeholder="Nama Subjek">
+                                <button onclick="app.addMasterData('subT1', 'new-sub1')" class="bg-green-600 text-white px-3 rounded"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <ul id="list-subT1" class="space-y-1 text-sm max-h-40 overflow-y-auto"></ul>
+                        </div>
+                        <!-- Subjek Tahap 2 -->
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <h4 class="font-bold text-sm mb-3">Subjek Tahap 2</h4>
+                            <div class="flex gap-2 mb-3">
+                                <input type="text" id="new-sub2" class="flex-1 border p-2 rounded text-sm uppercase" placeholder="Nama Subjek">
+                                <button onclick="app.addMasterData('subT2', 'new-sub2')" class="bg-green-600 text-white px-3 rounded"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <ul id="list-subT2" class="space-y-1 text-sm max-h-40 overflow-y-auto"></ul>
+                        </div>
+                        <!-- Jawatan HEM -->
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <h4 class="font-bold text-sm mb-3">Jawatan Kepimpinan (HEM)</h4>
+                            <div class="flex gap-2 mb-3">
+                                <input type="text" id="new-hem" class="flex-1 border p-2 rounded text-sm uppercase" placeholder="Jawatan">
+                                <button onclick="app.addMasterData('hemJaw', 'new-hem')" class="bg-green-600 text-white px-3 rounded"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <ul id="list-hemJaw" class="space-y-1 text-sm max-h-40 overflow-y-auto"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-red-50 p-6 rounded-xl border border-red-200">
+                    <h3 class="font-bold text-red-700 mb-2">Reset Sistem</h3>
+                    <button onclick="if(confirm('Pasti padam semua data murid dan markah? Muat turun laporan PDF sebelum meneruskan tindakan ini.')) app.executeClearData()" class="bg-red-600 text-white px-4 py-2 rounded text-sm font-bold shadow hover:bg-red-700">Kosongkan Semua Data Pelajar</button>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ================= MODAL MURID ================= -->
+    <div id="student-modal" class="fixed inset-0 bg-corp-dark/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+            
+            <!-- Header -->
+            <div class="bg-corp-blue px-6 py-4 flex justify-between items-center text-white shrink-0">
+                <div>
+                    <h3 class="font-bold text-lg"><i class="fa-solid fa-user-graduate text-corp-gold mr-2"></i> Profil & Penilaian</h3>
+                    <p id="modal-student-name" class="text-sm text-blue-200 font-bold uppercase tracking-wider">NAMA MURID</p>
+                </div>
+                <button onclick="app.closeModal()" class="text-white hover:text-red-400 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-gray-100 flex border-b shrink-0 overflow-x-auto hide-scrollbar">
+                <button onclick="app.switchModalTab('profil')" id="mtab-profil" class="modal-tab-btn flex-1 py-3 text-sm font-bold text-gray-500 hover:text-corp-blue border-r whitespace-nowrap"><i class="fa-solid fa-id-card mr-2"></i>Profil</button>
+                <button onclick="app.switchModalTab('akademik')" id="mtab-akademik" class="modal-tab-btn flex-1 py-3 text-sm font-bold text-gray-500 hover:text-corp-blue border-r whitespace-nowrap"><i class="fa-solid fa-book-open mr-2"></i>Akademik (2 Penggal)</button>
+                <button onclick="app.switchModalTab('koko')" id="mtab-koko" class="modal-tab-btn flex-1 py-3 text-sm font-bold text-gray-500 hover:text-corp-blue border-r whitespace-nowrap"><i class="fa-solid fa-medal mr-2"></i>Kokurikulum</button>
+                <button onclick="app.switchModalTab('hem')" id="mtab-hem" class="modal-tab-btn flex-1 py-3 text-sm font-bold text-gray-500 hover:text-corp-blue whitespace-nowrap"><i class="fa-solid fa-handshake mr-2"></i>HEM / Sahsiah</button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-6 bg-white relative">
+                <input type="hidden" id="modal-student-id">
+                
+                <!-- PROFIL -->
+                <div id="mcontent-profil" class="modal-section hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Nama Penuh</label>
+                            <input type="text" id="prof-name" class="w-full border-2 rounded-lg p-2.5 uppercase bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Kelas</label>
+                            <input type="text" id="prof-class" class="w-full border-2 rounded-lg p-2.5 uppercase bg-gray-100" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Tahun (Tahap)</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="prof-tahun" class="w-1/2 border-2 rounded-lg p-2.5 text-center" onchange="app.updateTahapFromTahun()">
+                                <select id="prof-tahap" class="w-1/2 border-2 rounded-lg p-2.5 font-bold" onchange="app.renderAcademicTable()">
+                                    <option value="1">Tahap 1</option>
+                                    <option value="2">Tahap 2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">No Kad Pengenalan / MyKid</label>
+                            <input type="text" id="prof-ic" class="w-full border-2 rounded-lg p-2.5">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">ID DELIMa</label>
+                            <input type="text" id="prof-delima" class="w-full border-2 rounded-lg p-2.5">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AKADEMIK (2 PENGGAL) -->
+                <div id="mcontent-akademik" class="modal-section hidden">
+                    
+                    <!-- Special Academics -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 grid grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-corp-blue mb-2">Penilaian PAK (Tahap 1 Sahaja)</h4>
+                            <div class="flex gap-4">
+                                <select id="acad-pak-mid" class="flex-1 border p-2 rounded text-sm"><option value="">Tengahan -</option><option value="Cemerlang">Cemerlang</option><option value="Baik">Baik</option><option value="Memuaskan">Memuaskan</option></select>
+                                <select id="acad-pak-end" class="flex-1 border p-2 rounded text-sm"><option value="">Akhir -</option><option value="Cemerlang">Cemerlang</option><option value="Baik">Baik</option><option value="Memuaskan">Memuaskan</option></select>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-corp-blue mb-2">Penilaian MPT4 (Tahun 4 Sahaja)</h4>
+                            <div class="flex gap-4">
+                                <input type="number" id="acad-mpt4-mid" class="flex-1 border p-2 rounded text-sm text-center" placeholder="Tengahan">
+                                <input type="number" id="acad-mpt4-end" class="flex-1 border p-2 rounded text-sm text-center" placeholder="Akhir">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subject Table -->
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-3 text-left border-b font-bold w-1/3">Mata Pelajaran</th>
+                                    <th class="p-2 border-b border-l bg-amber-50 text-center font-bold" colspan="2">Pertengahan Penggal</th>
+                                    <th class="p-2 border-b border-l bg-blue-50 text-center font-bold" colspan="2">Akhir Tahun</th>
+                                </tr>
+                                <tr>
+                                    <th class="p-2 border-b border-r text-xs text-gray-500 bg-white">Berdasarkan Tetapan Master</th>
+                                    <th class="p-2 border-b border-r bg-amber-50 text-xs w-16 text-center">PBD (1-6)</th>
+                                    <th class="p-2 border-b bg-amber-50 text-xs w-20 text-center">UASA (%)</th>
+                                    <th class="p-2 border-b border-l border-r bg-blue-50 text-xs w-16 text-center">PBD (1-6)</th>
+                                    <th class="p-2 border-b bg-blue-50 text-xs w-20 text-center">UASA (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="academic-tbody" class="divide-y">
+                                <!-- JS Rendered -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- KOKURIKULUM -->
+                <div id="mcontent-koko" class="modal-section hidden space-y-6">
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-bold text-sm mb-3">Badan Beruniform</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <input type="text" id="koko-uni-nama" class="border p-2 rounded text-sm uppercase" placeholder="Nama Pasukan">
+                            <select id="koko-uni-peringkat" class="border p-2 rounded text-sm"><option value="">Peringkat -</option><option value="Antarabangsa">Antarabangsa</option><option value="Kebangsaan">Kebangsaan</option><option value="Negeri">Negeri</option><option value="Daerah">Daerah</option><option value="Sekolah">Sekolah</option></select>
+                            <select id="koko-uni-jawatan" class="border p-2 rounded text-sm"><option value="">Jawatan -</option><option value="Pengerusi">Pengerusi</option><option value="AJK">AJK</option><option value="Ahli Aktif">Ahli Aktif</option><option value="Ahli Biasa">Ahli Biasa</option></select>
+                        </div>
+                    </div>
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-bold text-sm mb-3">Sukan & Permainan</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <input type="text" id="koko-suk-nama" class="border p-2 rounded text-sm uppercase" placeholder="Nama Sukan">
+                            <select id="koko-suk-peringkat" class="border p-2 rounded text-sm"><option value="">Peringkat -</option><option value="Antarabangsa">Antarabangsa</option><option value="Kebangsaan">Kebangsaan</option><option value="Negeri">Negeri</option><option value="Daerah">Daerah</option><option value="Sekolah">Sekolah</option></select>
+                            <select id="koko-suk-jawatan" class="border p-2 rounded text-sm"><option value="">Jawatan -</option><option value="Kapten">Kapten</option><option value="Wakil Sekolah">Wakil Sekolah</option><option value="Ahli Aktif">Ahli Aktif</option><option value="Ahli Biasa">Ahli Biasa</option></select>
+                        </div>
+                    </div>
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-bold text-sm mb-3">Kelab & Persatuan</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <input type="text" id="koko-kel-nama" class="border p-2 rounded text-sm uppercase" placeholder="Nama Kelab">
+                            <select id="koko-kel-peringkat" class="border p-2 rounded text-sm"><option value="">Peringkat -</option><option value="Antarabangsa">Antarabangsa</option><option value="Kebangsaan">Kebangsaan</option><option value="Negeri">Negeri</option><option value="Daerah">Daerah</option><option value="Sekolah">Sekolah</option></select>
+                            <select id="koko-kel-jawatan" class="border p-2 rounded text-sm"><option value="">Jawatan -</option><option value="Pengerusi">Pengerusi</option><option value="AJK">AJK</option><option value="Ahli Aktif">Ahli Aktif</option></select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HEM & SAHSIAH -->
+                <div id="mcontent-hem" class="modal-section hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-6">
+                            <div class="p-4 border rounded-lg bg-gray-50">
+                                <label class="block text-sm font-bold mb-2">Peratus Kehadiran Tahunan</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="hem-hadir" class="w-24 border p-2 rounded font-bold text-center text-lg"><span class="font-bold">%</span>
+                                </div>
+                            </div>
+                            <div class="p-4 border rounded-lg bg-gray-50">
+                                <label class="block text-sm font-bold mb-2">Penilaian Sahsiah Am</label>
+                                <select id="hem-sahsiah" class="w-full border p-2 rounded font-semibold">
+                                    <option value="">Sila Pilih -</option>
+                                    <option value="Terpuji">A - Terpuji</option>
+                                    <option value="Amat Baik">B - Amat Baik</option>
+                                    <option value="Baik">C - Baik</option>
+                                    <option value="Memuaskan">D - Memuaskan</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Multi Jawatan HEM -->
+                        <div class="p-4 border rounded-lg bg-blue-50/50">
+                            <label class="block text-sm font-bold text-corp-blue mb-2"><i class="fa-solid fa-users-cog mr-1"></i> Jawatan Kepimpinan (Boleh lebih dari satu)</label>
+                            <div class="flex gap-2 mb-3">
+                                <select id="hem-jawatan-select" class="flex-1 border p-2 rounded text-sm"></select>
+                                <button onclick="app.addJawatanToStudent()" class="bg-corp-blue text-white px-3 py-2 rounded text-sm font-bold">Tambah</button>
+                            </div>
+                            <div id="student-jawatan-tags" class="flex flex-wrap gap-2 mt-2">
+                                <!-- Tags JS Rendered -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-100 px-6 py-4 flex justify-end gap-3 shrink-0 border-t">
+                <button onclick="app.closeModal()" class="px-6 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50">Tutup</button>
+                <button onclick="app.saveStudentData()" class="px-6 py-2 bg-corp-gold text-corp-dark rounded-lg text-sm font-bold hover:bg-yellow-500 shadow-md flex items-center gap-2"><i class="fa-solid fa-save"></i> Simpan Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DEFAULT MASTER DATA (Dikemaskini dengan keperluan anugerah SK Bikang) ---
+        const defaultSettings = {
+            subT1: [
+                'BAHASA MELAYU', 'BAHASA INGGERIS', 'MATEMATIK', 'SAINS', 
+                'PEND. ISLAM/MORAL', 'PEND. SENI VISUAL', 'PEND. JASMANI & KESIHATAN',
+                'BAHASA ARAB', 'PENDIDIKAN MUZIK', 'TASMIK'
+            ],
+            subT2: [
+                'BAHASA MELAYU', 'BAHASA INGGERIS', 'MATEMATIK', 'SAINS', 
+                'SEJARAH', 'REKA BENTUK TEKNOLOGI', 'PEND. ISLAM/MORAL',
+                'BAHASA ARAB', 'PENDIDIKAN MUZIK', 'TASMIK'
+            ],
+            hemJaw: [
+                'KETUA MURID', 'PENOLONG KETUA MURID', 'PENGAWAS SEKOLAH', 
+                'PENGAWAS PSS', 'KETUA KELAS', 'PENOLONG KETUA KELAS',
+                'BADAN PENGAWAS PUSAT SUMBER SEKOLAH'
+            ]
+        };
+
+        const app = {
+            state: {
+                settings: null,
+                classes: [],
+                students: [],
+                selectedClass: '',
+                currentStudentId: null,
+                tempJawatan: [] // holds jaws while modal is open
+            },
+
+            init() {
+                document.getElementById('current-date').innerText = new Date().toLocaleDateString('ms-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                
+                this.loadData();
+                this.renderMasterDataLists();
+                this.renderClassDropdown();
+                this.switchMainTab('dashboard');
+            },
+
+            loadData() {
+                const ls = localStorage.getItem('spakData_v4');
+                if(ls) {
+                    const parsed = JSON.parse(ls);
+                    this.state.classes = parsed.classes || [];
+                    this.state.students = parsed.students || [];
+                    
+                    // Smart Merge: Gabungkan master data lama dengan default baru tanpa perlu padam rekod
+                    let savedSettings = parsed.settings || {};
+                    this.state.settings = {
+                        subT1: savedSettings.subT1 || [],
+                        subT2: savedSettings.subT2 || [],
+                        hemJaw: savedSettings.hemJaw || []
+                    };
+                    
+                    // Suntik subjek baharu secara automatik jika tiada
+                    defaultSettings.subT1.forEach(sub => { if(!this.state.settings.subT1.includes(sub)) this.state.settings.subT1.push(sub); });
+                    defaultSettings.subT2.forEach(sub => { if(!this.state.settings.subT2.includes(sub)) this.state.settings.subT2.push(sub); });
+                    defaultSettings.hemJaw.forEach(jaw => { if(!this.state.settings.hemJaw.includes(jaw)) this.state.settings.hemJaw.push(jaw); });
+                    
+                } else {
+                    this.state.settings = JSON.parse(JSON.stringify(defaultSettings));
+                }
+            },
+
+            saveState() {
+                localStorage.setItem('spakData_v4', JSON.stringify({
+                    settings: this.state.settings,
+                    classes: this.state.classes,
+                    students: this.state.students
+                }));
+            },
+
+            showToast(title, msg, isError=false) {
+                const toast = document.getElementById('toast');
+                const tIcon = document.getElementById('toast-icon');
+                document.getElementById('toast-title').innerText = title;
+                document.getElementById('toast-message').innerText = msg;
+                
+                tIcon.className = isError ? 'fa-solid fa-triangle-exclamation text-red-500 text-xl' : 'fa-solid fa-check-circle text-corp-gold text-xl';
+                toast.classList.replace(isError ? 'border-corp-gold' : 'border-red-500', isError ? 'border-red-500' : 'border-corp-gold');
+                
+                toast.classList.remove('opacity-0', 'translate-x-[150%]');
+                setTimeout(() => toast.classList.add('opacity-0', 'translate-x-[150%]'), 3000);
+            },
+
+            generateId() { return 'std_' + Math.random().toString(36).substr(2, 9); },
+
+            // --- FUNGSI CETAK TOKOH (Menggunakan CSS Print Media) ---
+            cetakTokoh() {
+                const tbody = document.getElementById('dashboard-tbody');
+                
+                if (tbody.innerHTML.includes('Tiada data murid dinilai')) {
+                    this.showToast('Ralat', 'Tiada data tokoh untuk dicetak.', true);
+                    return;
+                }
+
+                // Tambah kelas khusus pada body untuk print jadual tokoh sahaja
+                document.body.classList.add('print-tokoh-only');
+                
+                // Panggil fungsi cetakan terbina pelayar
+                window.print();
+                
+                // Buang kelas khusus selepas cetakan selesai / dibatalkan
+                setTimeout(() => {
+                    document.body.classList.remove('print-tokoh-only');
+                }, 500);
+            },
+
+            // --- NAVIGATION ---
+            switchMainTab(tab) {
+                ['dashboard', 'pendaftaran', 'tetapan'].forEach(t => {
+                    const btn = document.getElementById('btn-tab-' + t);
+                    const view = document.getElementById('view-' + t);
+                    if(t === tab) {
+                        btn.classList.add('sidebar-active'); btn.classList.remove('text-blue-100');
+                        view.classList.remove('hidden'); view.classList.add('block');
+                        document.getElementById('page-title').innerText = btn.innerText.trim();
+                    } else {
+                        btn.classList.remove('sidebar-active'); btn.classList.add('text-blue-100');
+                        view.classList.add('hidden'); view.classList.remove('block');
+                    }
+                });
+                if(tab === 'dashboard') this.renderDashboard();
+            },
+
+            // --- MASTER DATA SETTINGS ---
+            renderMasterDataLists() {
+                const renderList = (key, elemId) => {
+                    const ul = document.getElementById(elemId);
+                    ul.innerHTML = (this.state.settings[key] || []).map((item, idx) => `
+                        <li class="flex justify-between items-center bg-white p-2 border rounded">
+                            <span class="font-semibold text-gray-700">${item}</span>
+                            <button onclick="app.removeMasterData('${key}', ${idx})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button>
+                        </li>`).join('');
+                };
+                renderList('subT1', 'list-subT1');
+                renderList('subT2', 'list-subT2');
+                renderList('hemJaw', 'list-hemJaw');
+            },
+
+            addMasterData(key, inputId) {
+                const input = document.getElementById(inputId);
+                const val = input.value.trim().toUpperCase();
+                if(!val) return;
+                if(!this.state.settings[key]) this.state.settings[key] = [];
+                if(!this.state.settings[key].includes(val)) {
+                    this.state.settings[key].push(val);
+                    this.saveState();
+                    this.renderMasterDataLists();
+                    input.value = '';
+                }
+            },
+
+            removeMasterData(key, idx) {
+                this.state.settings[key].splice(idx, 1);
+                this.saveState();
+                this.renderMasterDataLists();
+            },
+
+            executeClearData() {
+                this.state.classes = []; this.state.students = []; this.saveState();
+                this.renderClassDropdown(); this.selectClass(); this.renderDashboard();
+                this.showToast('Berjaya', 'Semua data dipadam.');
+            },
+
+            // --- CLASSES & REGISTRATION ---
+            renderClassDropdown() {
+                const sel = document.getElementById('select-kelas');
+                sel.innerHTML = '<option value="">-- Pilih Kelas --</option>' + this.state.classes.map(c => `<option value="${c}">${c}</option>`).join('');
+                if(this.state.selectedClass && this.state.classes.includes(this.state.selectedClass)) sel.value = this.state.selectedClass;
+            },
+
+            addClass() {
+                const val = document.getElementById('input-new-class').value.trim().toUpperCase();
+                if(!val) return;
+                if(!this.state.classes.includes(val)) {
+                    this.state.classes.push(val);
+                    this.saveState();
+                    this.renderClassDropdown();
+                    document.getElementById('select-kelas').value = val;
+                    this.selectClass();
+                    document.getElementById('input-new-class').value = '';
+                }
+            },
+
+            selectClass() {
+                this.state.selectedClass = document.getElementById('select-kelas').value;
+                const ws = document.getElementById('class-workspace');
+                if(this.state.selectedClass) {
+                    ws.classList.remove('hidden'); ws.classList.add('flex');
+                    document.getElementById('lbl-current-class').innerText = this.state.selectedClass;
+                    this.renderStudentList();
+                } else {
+                    ws.classList.add('hidden'); ws.classList.remove('flex');
+                }
+            },
+
+            createEmptyStudent(name, className, ic='', delima='', tahun='', tahap='1') {
+                return {
+                    id: this.generateId(), name, className, ic, delima, tahun, tahap,
+                    acad: { mid: { sub:{} }, end: { sub:{} } },
+                    koko: { uni: {}, suk: {}, kel: {} },
+                    hem: { hadir: '', sahsiah: '', jawatan: [] }
+                };
+            },
+
+            addStudentManual() {
+                const name = document.getElementById('input-manual-name').value.trim().toUpperCase();
+                const tahun = document.getElementById('input-manual-tahun').value.trim();
+                if(!name) return this.showToast('Ralat', 'Nama diperlukan.', true);
+                
+                let tahap = '1';
+                if (tahun.match(/[456]/) || this.state.selectedClass.match(/[456]/)) tahap = '2';
+
+                this.state.students.push(this.createEmptyStudent(name, this.state.selectedClass, '', '', tahun, tahap));
+                this.saveState();
+                this.renderStudentList();
+                document.getElementById('input-manual-name').value = '';
+                document.getElementById('input-manual-tahun').value = '';
+                this.showToast('Berjaya', 'Murid ditambah.');
+            },
+
+            renderStudentList() {
+                const list = this.state.students.filter(s => s.className === this.state.selectedClass);
+                document.getElementById('lbl-student-count').innerText = list.length;
+                document.getElementById('student-list-container').innerHTML = list.map((s, idx) => `
+                    <div onclick="app.openModal('${s.id}')" class="bg-white p-3 rounded-lg border hover:border-corp-blue hover:shadow-md cursor-pointer transition flex justify-between items-center group">
+                        <div class="flex items-center gap-3">
+                            <span class="w-6 h-6 rounded bg-blue-100 text-corp-blue text-xs font-bold flex items-center justify-center">${idx+1}</span>
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-800">${s.name}</h4>
+                                <span class="text-[10px] text-gray-500 font-mono">Tahun ${s.tahun || '-'} | Tahap ${s.tahap} | ${s.ic || 'Tiada KP'}</span>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-corp-blue"></i>
+                    </div>`).join('');
+            },
+
+            // --- SMART CSV ---
+            handleCSV(e) {
+                const file = e.target.files[0];
+                if(!file) return;
+                Papa.parse(file, {
+                    header: true, skipEmptyLines: true,
+                    complete: (res) => { this.processCSV(res.data, res.meta.fields); e.target.value = ''; }
+                });
+            },
+            processCSV(data, headers) {
+                const map = { name:'', class:'', ic:'', delima:'', tahun:'' };
+                headers.forEach(h => {
+                    const hl = h.toLowerCase().trim();
+                    if(/nama|name|murid/i.test(hl) && !map.name) map.name = h;
+                    else if(/kelas|class|tingkatan/i.test(hl) && !map.class) map.class = h;
+                    else if(/ic|kp|kad|mykid/i.test(hl) && !map.ic) map.ic = h;
+                    else if(/delima|moe|emel/i.test(hl) && !map.delima) map.delima = h;
+                    else if(/tahun|year|darjah/i.test(hl) && !map.tahun) map.tahun = h;
+                });
+
+                if(!map.name) return this.showToast('Ralat', 'Lajur Nama tidak dijumpai.', true);
+
+                let added = 0;
+                data.forEach(row => {
+                    const n = (row[map.name]||'').trim().toUpperCase();
+                    if(!n) return;
+                    let c = map.class ? (row[map.class]||'').trim().toUpperCase() : (this.state.selectedClass || 'TIADA KELAS');
+                    const thn = map.tahun ? (row[map.tahun]||'').trim() : '';
+                    let thp = (thn.match(/[456]/) || c.match(/[456]/)) ? '2' : '1';
+
+                    if(!this.state.classes.includes(c)) this.state.classes.push(c);
+                    
+                    this.state.students.push(this.createEmptyStudent(
+                        n, c, row[map.ic]||'', row[map.delima]||'', thn, thp
+                    ));
+                    added++;
+                });
+
+                this.saveState();
+                this.renderClassDropdown();
+                if(!this.state.selectedClass && this.state.classes.length > 0) {
+                    document.getElementById('select-kelas').value = this.state.classes[0];
+                    this.selectClass();
+                } else { this.renderStudentList(); }
+                this.showToast('Berjaya', `${added} murid diimport.`);
+            },
+
+            // --- MODAL & LOGIC ---
+            openModal(id) {
+                const s = this.state.students.find(x => x.id === id);
+                if(!s) return;
+                this.state.currentStudentId = id;
+                
+                document.getElementById('modal-student-name').innerText = `${s.name} (${s.className})`;
+                
+                // Profil
+                document.getElementById('prof-name').value = s.name;
+                document.getElementById('prof-class').value = s.className;
+                document.getElementById('prof-tahun').value = s.tahun || '';
+                document.getElementById('prof-tahap').value = s.tahap || '1';
+                document.getElementById('prof-ic').value = s.ic || '';
+                document.getElementById('prof-delima').value = s.delima || '';
+
+                // Khas
+                document.getElementById('acad-pak-mid').value = s.acad?.mid?.pak || '';
+                document.getElementById('acad-pak-end').value = s.acad?.end?.pak || '';
+                document.getElementById('acad-mpt4-mid').value = s.acad?.mid?.mpt4 || '';
+                document.getElementById('acad-mpt4-end').value = s.acad?.end?.mpt4 || '';
+
+                // Render Table Academic
+                this.renderAcademicTable(s);
+
+                // Koko
+                ['uni','suk','kel'].forEach(t => {
+                    if(s.koko && s.koko[t]) {
+                        document.getElementById(`koko-${t}-nama`).value = s.koko[t].nama || '';
+                        document.getElementById(`koko-${t}-peringkat`).value = s.koko[t].peringkat || '';
+                        document.getElementById(`koko-${t}-jawatan`).value = s.koko[t].jawatan || '';
+                    }
+                });
+
+                // HEM
+                document.getElementById('hem-hadir').value = s.hem?.hadir || '';
+                document.getElementById('hem-sahsiah').value = s.hem?.sahsiah || '';
+                
+                // Multiple Jawatan HEM
+                const selJaw = document.getElementById('hem-jawatan-select');
+                selJaw.innerHTML = '<option value="">- Pilih Jawatan -</option>' + (this.state.settings.hemJaw||[]).map(j => `<option value="${j}">${j}</option>`).join('');
+                this.state.tempJawatan = s.hem?.jawatan ? [...s.hem.jawatan] : [];
+                this.renderJawatanTags();
+
+                this.switchModalTab('profil');
+                const m = document.getElementById('student-modal');
+                m.classList.remove('hidden');
+            },
+
+            closeModal() { document.getElementById('student-modal').classList.add('hidden'); },
+
+            switchModalTab(tab) {
+                document.querySelectorAll('.modal-tab-btn').forEach(b => {
+                    b.classList.remove('modal-tab-active'); b.classList.add('text-gray-500');
+                });
+                document.getElementById('mtab-'+tab).classList.add('modal-tab-active');
+                document.getElementById('mtab-'+tab).classList.remove('text-gray-500');
+
+                document.querySelectorAll('.modal-section').forEach(s => s.classList.add('hidden'));
+                document.getElementById('mcontent-'+tab).classList.remove('hidden');
+            },
+
+            updateTahapFromTahun() {
+                const thn = document.getElementById('prof-tahun').value;
+                if(thn) {
+                    document.getElementById('prof-tahap').value = thn.match(/[456]/) ? '2' : '1';
+                    this.renderAcademicTable();
+                }
+            },
+
+            renderAcademicTable(studentObj = null) {
+                const s = studentObj || this.state.students.find(x => x.id === this.state.currentStudentId);
+                const tahap = document.getElementById('prof-tahap').value;
+                const subjects = tahap === '2' ? (this.state.settings.subT2 || []) : (this.state.settings.subT1 || []);
+                
+                const tbody = document.getElementById('academic-tbody');
+                tbody.innerHTML = subjects.map(sub => {
+                    const mPbd = s?.acad?.mid?.sub?.[sub]?.pbd || '';
+                    const mUasa = s?.acad?.mid?.sub?.[sub]?.uasa || '';
+                    const ePbd = s?.acad?.end?.sub?.[sub]?.pbd || '';
+                    const eUasa = s?.acad?.end?.sub?.[sub]?.uasa || '';
+                    
+                    return `
+                    <tr class="hover:bg-gray-50" data-subject="${sub}">
+                        <td class="p-2 border-b font-semibold text-xs text-gray-700">${sub}</td>
+                        <!-- Mid -->
+                        <td class="p-1 border-b border-l bg-amber-50/30">
+                            <select class="inp-acad-mid-pbd w-full border p-1 rounded text-center text-xs outline-none focus:ring-1 focus:ring-amber-400">
+                                <option value="">-</option><option value="1" ${mPbd=='1'?'selected':''}>1</option><option value="2" ${mPbd=='2'?'selected':''}>2</option><option value="3" ${mPbd=='3'?'selected':''}>3</option><option value="4" ${mPbd=='4'?'selected':''}>4</option><option value="5" ${mPbd=='5'?'selected':''}>5</option><option value="6" ${mPbd=='6'?'selected':''}>6</option>
+                            </select>
+                        </td>
+                        <td class="p-1 border-b border-r bg-amber-50/30">
+                            <input type="number" class="inp-acad-mid-uasa w-full border p-1 rounded text-center text-xs outline-none focus:ring-1 focus:ring-amber-400" placeholder="%" value="${mUasa}">
+                        </td>
+                        <!-- End -->
+                        <td class="p-1 border-b border-l bg-blue-50/30">
+                            <select class="inp-acad-end-pbd w-full border p-1 rounded text-center text-xs outline-none focus:ring-1 focus:ring-corp-blue">
+                                <option value="">-</option><option value="1" ${ePbd=='1'?'selected':''}>1</option><option value="2" ${ePbd=='2'?'selected':''}>2</option><option value="3" ${ePbd=='3'?'selected':''}>3</option><option value="4" ${ePbd=='4'?'selected':''}>4</option><option value="5" ${ePbd=='5'?'selected':''}>5</option><option value="6" ${ePbd=='6'?'selected':''}>6</option>
+                            </select>
+                        </td>
+                        <td class="p-1 border-b bg-blue-50/30">
+                            <input type="number" class="inp-acad-end-uasa w-full border p-1 rounded text-center text-xs outline-none focus:ring-1 focus:ring-corp-blue" placeholder="%" value="${eUasa}">
+                        </td>
+                    </tr>`;
+                }).join('');
+            },
+
+            addJawatanToStudent() {
+                const sel = document.getElementById('hem-jawatan-select');
+                const val = sel.value;
+                if(val && !this.state.tempJawatan.includes(val)) {
+                    this.state.tempJawatan.push(val);
+                    this.renderJawatanTags();
+                    sel.value = '';
+                }
+            },
+            removeJawatanStudent(idx) {
+                this.state.tempJawatan.splice(idx, 1);
+                this.renderJawatanTags();
+            },
+            renderJawatanTags() {
+                document.getElementById('student-jawatan-tags').innerHTML = this.state.tempJawatan.map((j, i) => `
+                    <span class="bg-corp-blue text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-2 shadow-sm">
+                        ${j} <button onclick="app.removeJawatanStudent(${i})" class="text-blue-200 hover:text-white"><i class="fa-solid fa-times"></i></button>
+                    </span>`).join('');
+            },
+
+            saveStudentData() {
+                const s = this.state.students.find(x => x.id === this.state.currentStudentId);
+                if(!s) return;
+
+                s.name = document.getElementById('prof-name').value.trim().toUpperCase();
+                s.tahun = document.getElementById('prof-tahun').value;
+                s.tahap = document.getElementById('prof-tahap').value;
+                s.ic = document.getElementById('prof-ic').value;
+                s.delima = document.getElementById('prof-delima').value;
+
+                // Acad
+                if(!s.acad) s.acad = { mid:{sub:{}}, end:{sub:{}} };
+                s.acad.mid.pak = document.getElementById('acad-pak-mid').value;
+                s.acad.end.pak = document.getElementById('acad-pak-end').value;
+                s.acad.mid.mpt4 = document.getElementById('acad-mpt4-mid').value;
+                s.acad.end.mpt4 = document.getElementById('acad-mpt4-end').value;
+
+                const trs = document.querySelectorAll('#academic-tbody tr');
+                trs.forEach(tr => {
+                    const sub = tr.getAttribute('data-subject');
+                    s.acad.mid.sub[sub] = {
+                        pbd: tr.querySelector('.inp-acad-mid-pbd').value,
+                        uasa: tr.querySelector('.inp-acad-mid-uasa').value
+                    };
+                    s.acad.end.sub[sub] = {
+                        pbd: tr.querySelector('.inp-acad-end-pbd').value,
+                        uasa: tr.querySelector('.inp-acad-end-uasa').value
+                    };
+                });
+
+                // Koko
+                ['uni','suk','kel'].forEach(t => {
+                    s.koko[t] = {
+                        nama: document.getElementById(`koko-${t}-nama`).value.trim().toUpperCase(),
+                        peringkat: document.getElementById(`koko-${t}-peringkat`).value,
+                        jawatan: document.getElementById(`koko-${t}-jawatan`).value
+                    };
+                });
+
+                // HEM
+                s.hem.hadir = document.getElementById('hem-hadir').value;
+                s.hem.sahsiah = document.getElementById('hem-sahsiah').value;
+                s.hem.jawatan = [...this.state.tempJawatan];
+
+                this.saveState();
+                this.closeModal();
+                if(this.state.selectedClass) this.renderStudentList();
+                this.showToast('Berjaya', 'Data disimpan.');
+            },
+
+            // --- DASHBOARD ALGORITHMS ---
+            calcAcadScores(acadObj) {
+                if(!acadObj || !acadObj.sub) return 0;
+                let tUasa=0, cUasa=0, tPbd=0, cPbd=0;
+                Object.values(acadObj.sub).forEach(v => {
+                    if(v.uasa) { tUasa += parseFloat(v.uasa); cUasa++; }
+                    if(v.pbd) { tPbd += (parseInt(v.pbd)/6)*100; cPbd++; }
+                });
+                let avg = 0;
+                if(cUasa>0 && cPbd>0) avg = ((tUasa/cUasa) + (tPbd/cPbd)) / 2;
+                else if(cUasa>0) avg = tUasa/cUasa;
+                else if(cPbd>0) avg = tPbd/cPbd;
+                return avg;
+            },
+
+            calcKoko(koko) {
+                if(!koko) return 0;
+                const ptPer = { 'Antarabangsa': 60, 'Kebangsaan': 50, 'Negeri': 40, 'Daerah': 30, 'Sekolah': 20, '': 0 };
+                const ptJaw = { 'Pengerusi': 40, 'Kapten': 40, 'AJK': 30, 'Wakil Sekolah': 30, 'Ahli Aktif': 20, 'Ahli Biasa': 10, '': 0 };
+                let t=0, c=0;
+                ['uni','suk','kel'].forEach(k => {
+                    if(koko[k] && koko[k].nama) {
+                        t += (ptPer[koko[k].peringkat||''] || 0) + (ptJaw[koko[k].jawatan||''] || 0);
+                        c++;
+                    }
+                });
+                return c>0 ? t/c : 0;
+            },
+
+            calcHem(hem) {
+                if(!hem) return 0;
+                let hPt = hem.hadir ? (Math.min(parseFloat(hem.hadir), 100)/100)*10 : 0; // Max 10
+                let sPt = {'Terpuji':5, 'Amat Baik':4, 'Baik':3, 'Memuaskan':1}[hem.sahsiah] || 0; // Max 5
+                let jPt = (hem.jawatan && hem.jawatan.length > 0) ? 5 : 0; // If any jawatan, max 5
+                return hPt + sPt + jPt; // Max 20
+            },
+
+            renderDashboard() {
+                document.getElementById('dash-total-students').innerText = this.state.students.length;
+                document.getElementById('dash-total-classes').innerText = this.state.classes.length;
+
+                let improved = [];
+                let overall = [];
+
+                this.state.students.forEach(s => {
+                    // Calc UASA Only Diff (For Most Improved)
+                    let mU=0, mC=0, eU=0, eC=0;
+                    if(s.acad?.mid?.sub) Object.values(s.acad.mid.sub).forEach(v=>{ if(v.uasa){ mU+=parseFloat(v.uasa); mC++; }});
+                    if(s.acad?.end?.sub) Object.values(s.acad.end.sub).forEach(v=>{ if(v.uasa){ eU+=parseFloat(v.uasa); eC++; }});
+                    
+                    let avgMid = mC>0 ? mU/mC : null;
+                    let avgEnd = eC>0 ? eU/eC : null;
+                    
+                    if(avgMid !== null && avgEnd !== null) {
+                        let diff = avgEnd - avgMid;
+                        if(diff > 0) {
+                            improved.push({ name: s.name, cls: s.className, mid: avgMid.toFixed(1), end: avgEnd.toFixed(1), diff: diff });
+                        }
+                    }
+
+                    // Calc Overall (End Year Academic prioritize, else Mid)
+                    let scAcd = 0;
+                    if(s.acad?.end && Object.keys(s.acad.end.sub||{}).some(k => s.acad.end.sub[k].uasa || s.acad.end.sub[k].pbd)) {
+                        scAcd = this.calcAcadScores(s.acad.end) * 0.5;
+                    } else if(s.acad?.mid) {
+                        scAcd = this.calcAcadScores(s.acad.mid) * 0.5;
+                    }
+                    
+                    let scKok = this.calcKoko(s.koko) * 0.3;
+                    let scHem = this.calcHem(s.hem);
+                    let tot = scAcd + scKok + scHem;
+
+                    if(tot > 0) overall.push({ name: s.name, cls: s.className, acad: scAcd.toFixed(1), koko: scKok.toFixed(1), hem: scHem.toFixed(1), total: tot.toFixed(1) });
+                });
+
+                // Render Improved
+                improved.sort((a,b) => b.diff - a.diff);
+                const tbImp = document.getElementById('dash-improved-tbody');
+                if(improved.length === 0) tbImp.innerHTML = '<tr><td colspan="4" class="py-4 text-center opacity-70">Belum ada data perbandingan UASA yang lengkap.</td></tr>';
+                else tbImp.innerHTML = improved.slice(0,5).map(i => `
+                    <tr class="border-b border-green-400/30 font-semibold text-green-50">
+                        <td class="py-2">${i.name} <span class="text-[10px] bg-green-900/50 px-1 rounded ml-1">${i.cls}</span></td>
+                        <td class="py-2 text-center text-green-200">${i.mid}%</td>
+                        <td class="py-2 text-center text-white">${i.end}%</td>
+                        <td class="py-2 text-right text-amber-300 font-bold">+${i.diff.toFixed(1)}% <i class="fa-solid fa-caret-up"></i></td>
+                    </tr>`).join('');
+
+                // Render Overall
+                overall.sort((a,b) => parseFloat(b.total) - parseFloat(a.total));
+                const tbAll = document.getElementById('dashboard-tbody');
+                if(overall.length === 0) tbAll.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 italic">Tiada data murid dinilai.</td></tr>';
+                else tbAll.innerHTML = overall.map((o, idx) => `
+                    <tr class="hover:bg-blue-50 transition border-b border-gray-100 ${idx<3?'bg-yellow-50/50':''}">
+                        <td class="px-6 py-3 whitespace-nowrap font-bold text-gray-700">#${idx+1}</td>
+                        <td class="px-6 py-3 whitespace-nowrap">
+                            <div class="font-bold text-sm text-gray-800">${o.name}</div>
+                            <div class="text-[10px] text-gray-500 bg-gray-100 px-2 rounded-full inline-block border mt-0.5">${o.cls}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center font-semibold text-blue-700">${o.acad}</td>
+                        <td class="px-4 py-3 text-center font-semibold text-green-600">${o.koko}</td>
+                        <td class="px-4 py-3 text-center font-semibold text-purple-600">${o.hem}</td>
+                        <td class="px-6 py-3 text-center font-black text-lg text-corp-gold bg-blue-50/50">${o.total}</td>
+                    </tr>`).join('');
+            }
+        };
+
+        // Bootstrap App
+        document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
