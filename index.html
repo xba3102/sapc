@@ -343,8 +343,8 @@
                         <button onclick="app.toggleBulkHeader()" id="btn-toggle-bulk" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Sembunyikan/Papar Menu Pilihan">
                             <i class="fa-solid fa-chevron-up" id="bulk-toggle-icon"></i> <span id="bulk-toggle-text">Tutup Menu</span>
                         </button>
-                        <button onclick="app.saveBulkMarks()" class="bg-corp-gold text-corp-dark hover:bg-yellow-500 px-5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center gap-2">
-                            <i class="fa-solid fa-save"></i> Simpan Pukal
+                        <button onclick="app.saveBulkMarks()" id="btn-save-bulk" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-xs font-bold shadow transition-all duration-300 flex items-center gap-2">
+                            <i class="fa-solid fa-save"></i> Simpan
                         </button>
                     </div>
                 </div>
@@ -871,6 +871,12 @@
 
             // --- NAVIGATION ---
             switchMainTab(tab) {
+                // Auto-simpan senyap jika pengguna meninggalkan tab markah pukal
+                const pukalView = document.getElementById('view-pukal');
+                if (pukalView && !pukalView.classList.contains('hidden') && tab !== 'pukal') {
+                    this.saveBulkMarksSilent();
+                }
+
                 ['dashboard', 'pendaftaran', 'pukal', 'tetapan'].forEach(t => {
                     const btn = document.getElementById('btn-tab-' + t);
                     const view = document.getElementById('view-' + t);
@@ -958,7 +964,7 @@
                         <td class="p-3 text-center font-bold text-gray-500 text-xs">${idx+1}</td>
                         <td class="p-3 font-semibold text-gray-800">${s.name}</td>
                         <td class="p-2 text-center">
-                            <select class="bulk-pbd border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue" onkeydown="app.handleBulkKeydown(event, this, 'pbd')">
+                            <select class="bulk-pbd border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue" onchange="app.autoSaveBulkRow(this)" onkeydown="app.handleBulkKeydown(event, this, 'pbd')">
                                 <option value="">- Pilih PBD -</option>
                                 <option value="1" ${pbd=='1'?'selected':''}>1</option>
                                 <option value="2" ${pbd=='2'?'selected':''}>2</option>
@@ -969,7 +975,7 @@
                             </select>
                         </td>
                         <td class="p-2 text-center">
-                            <input type="text" class="bulk-uasa border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue" placeholder="%" value="${uasa}" onkeydown="app.handleBulkKeydown(event, this, 'uasa')">
+                            <input type="text" class="bulk-uasa border rounded p-1.5 text-xs text-center w-28 bg-white focus:ring-1 focus:ring-corp-blue" placeholder="%" value="${uasa}" onchange="app.autoSaveBulkRow(this)" onkeydown="app.handleBulkKeydown(event, this, 'uasa')">
                         </td>
                     </tr>`;
                 }).join('');
@@ -993,29 +999,35 @@
                 }
             },
 
-            toggleBulkHeader() {
-                const pane = document.querySelector('#view-pukal .grid-cols-1');
-                const txt = document.getElementById('bulk-toggle-text');
-                const icon = document.getElementById('bulk-toggle-icon');
-                if(pane.classList.contains('hidden')) {
-                    pane.classList.remove('hidden');
-                    txt.innerText = 'Tutup Menu';
-                    icon.className = 'fa-solid fa-chevron-up';
-                } else {
-                    pane.classList.add('hidden');
-                    txt.innerText = 'Buka Menu';
-                    icon.className = 'fa-solid fa-chevron-down';
+            // Fungsi autosave peringkat baris (dipanggil setiap kali guru ubah markah secara real-time)
+            autoSaveBulkRow(element) {
+                const tr = element.closest('tr');
+                const id = tr.getAttribute('data-id');
+                const term = document.getElementById('pukal-term').value;
+                const sub = document.getElementById('pukal-subject').value;
+                
+                if(!id || !term || !sub) return;
+                const s = this.state.students.find(x => x.id === id);
+                if(s) {
+                    if(!s.acad) s.acad = { mid:{sub:{}}, end:{sub:{}} };
+                    if(!s.acad[term]) s.acad[term] = { sub:{} };
+                    if(!s.acad[term].sub) s.acad[term].sub = {};
+                    
+                    s.acad[term].sub[sub] = {
+                        pbd: tr.querySelector('.bulk-pbd').value,
+                        uasa: tr.querySelector('.bulk-uasa').value
+                    };
+                    this.saveState(); // Simpan secara automatik ke local storage
                 }
             },
 
-            saveBulkMarks() {
+            // Auto simpan keseluruhan sebelum tukar tab
+            saveBulkMarksSilent() {
                 const term = document.getElementById('pukal-term').value;
                 const sub = document.getElementById('pukal-subject').value;
                 const rows = document.querySelectorAll('#bulk-tbody tr');
 
-                if(rows.length === 0 || rows[0].innerText.includes('Sila pilih')) {
-                    return this.showToast('Ralat', 'Tiada senarai murid untuk disimpan.', true);
-                }
+                if(rows.length === 0 || rows[0].innerText.includes('Sila pilih')) return;
 
                 rows.forEach(tr => {
                     const id = tr.getAttribute('data-id');
@@ -1032,9 +1044,34 @@
                         };
                     }
                 });
-
                 this.saveState();
-                this.showToast('Berjaya', 'Semua markah subjek berjaya disimpan!');
+            },
+
+            saveBulkMarks() {
+                this.saveBulkMarksSilent(); // Pastikan semua data terkini disahkan
+                
+                // Animasi Butang (Maklum Balas Visual)
+                const btn = document.getElementById('btn-save-bulk');
+                if (btn) {
+                    const originalHtml = btn.innerHTML;
+                    
+                    // Tukar rupa butang kepada keadaan berjaya dengan animasi
+                    btn.innerHTML = '<i class="fa-solid fa-check-circle text-lg animate-bounce"></i> Tersimpan!';
+                    btn.classList.add('bg-emerald-500', 'scale-105', 'ring-4', 'ring-green-200');
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    
+                    // Kembalikan kepada bentuk asal selepas 2 saat
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.classList.remove('bg-emerald-500', 'scale-105', 'ring-4', 'ring-green-200');
+                        btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    }, 2000);
+                }
+
+                // Notifikasi Toast
+                // (Nota Developer: Apabila bersedia untuk integrasi Firebase Cloud kelak, 
+                // kod 'online push' boleh diletakkan di dalam fungsi ini)
+                this.showToast('Berjaya', 'Semua markah subjek selamat disimpan!');
             },
 
             // --- MASTER DATA SETTINGS ---
