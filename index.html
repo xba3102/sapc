@@ -54,35 +54,35 @@
         <!-- Print Area (Hidden in normal view) -->
         <div id="printArea" class="print-only w-full h-full bg-white relative"></div>
 
-        <!-- Sidebar (Dark Mode Professional) -->
-        <aside class="w-64 bg-slate-900 text-white flex flex-col shadow-2xl z-10 transition-all duration-300">
-            <div class="p-6 flex items-center gap-3 border-b border-slate-800">
-                <div class="bg-blue-600 text-white w-10 h-10 rounded-lg flex items-center justify-center text-xl shadow-lg">
+        <!-- Sidebar (Reverted to Light Theme & Blue Buttons) -->
+        <aside class="w-64 bg-white text-slate-800 border-r border-slate-200 flex flex-col shadow-xl z-10 transition-all duration-300">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+                <div class="bg-gradient-to-br from-blue-500 to-blue-700 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-lg">
                     <i class="fas fa-award"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide text-slate-100">SPAK</h1>
-                    <p class="text-xs text-slate-400 font-medium tracking-wider">SK BIKANG</p>
+                    <h1 class="font-bold text-xl leading-tight tracking-wide text-slate-800">SPAK</h1>
+                    <p class="text-xs text-blue-600 font-bold tracking-wider uppercase">SK BIKANG</p>
                 </div>
             </div>
             
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <button id="nav-dashboard" onclick="navigate('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-                    <i class="fas fa-chart-line w-5 text-center"></i> Dashboard
+                <button id="nav-dashboard" onclick="navigate('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700">
+                    <i class="fas fa-chart-pie w-5 text-center text-lg text-indigo-500"></i> Dashboard
                 </button>
-                <button id="nav-murid" onclick="navigate('murid')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-                    <i class="fas fa-users-rectangle w-5 text-center"></i> Murid & Kelas
+                <button id="nav-murid" onclick="navigate('murid')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700">
+                    <i class="fas fa-chalkboard-user w-5 text-center text-lg text-blue-500"></i> Murid & Kelas
                 </button>
-                <button id="nav-markah" onclick="navigate('markah')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-                    <i class="fas fa-file-signature w-5 text-center"></i> Markah & Pelaporan
+                <button id="nav-markah" onclick="navigate('markah')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700">
+                    <i class="fas fa-file-signature w-5 text-center text-lg text-emerald-500"></i> Markah & Pelaporan
                 </button>
-                <button id="nav-tetapan" onclick="navigate('tetapan')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white mt-8 border border-slate-700">
-                    <i class="fas fa-sliders-h w-5 text-center"></i> Tetapan Sistem
+                <button id="nav-tetapan" onclick="navigate('tetapan')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 mt-8 border border-slate-200">
+                    <i class="fas fa-sliders-h w-5 text-center text-lg text-slate-500"></i> Tetapan Sistem
                 </button>
             </nav>
 
-            <div class="p-4 border-t border-slate-800 text-xs text-center text-slate-500">
-                <button id="btnLogKeluar" class="w-full mb-3 bg-red-900/40 hover:bg-red-800 hover:text-white text-red-400 py-2 rounded-lg font-medium transition btn-pop text-sm border border-red-900/50">
+            <div class="p-4 border-t border-slate-100 text-xs text-center text-slate-500 bg-slate-50">
+                <button id="btnLogKeluar" class="w-full mb-3 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 py-2 rounded-lg font-bold transition btn-pop text-sm border border-red-200 hover:border-red-600">
                     <i class="fas fa-sign-out-alt mr-1"></i> Log Keluar
                 </button>
                 <p>&copy; 2026 SPAK Enterprise</p>
@@ -319,8 +319,16 @@
         window.currentView = view;
         document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('aside nav button').forEach(el => {
-            el.classList.remove('bg-slate-800', 'text-white', 'shadow-inner');
-            el.classList.add('text-slate-300');
+            el.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+            el.classList.add('text-slate-600', 'hover:bg-blue-50', 'hover:text-blue-700');
+            // Hilangkan warna ikon jika butang menjadi biru (supaya ikon jadi putih)
+            const icon = el.querySelector('i');
+            if(icon) {
+                if(el.id === 'nav-dashboard') icon.classList.add('text-indigo-500');
+                if(el.id === 'nav-murid') icon.classList.add('text-blue-500');
+                if(el.id === 'nav-markah') icon.classList.add('text-emerald-500');
+                if(el.id === 'nav-tetapan') icon.classList.add('text-slate-500');
+            }
         });
         
         const section = document.getElementById(`view-${view}`);
@@ -328,8 +336,13 @@
         
         const activeBtn = document.getElementById(`nav-${view}`);
         if(activeBtn) {
-            activeBtn.classList.remove('text-slate-300');
-            activeBtn.classList.add('bg-slate-800', 'text-white', 'shadow-inner');
+            activeBtn.classList.remove('text-slate-600', 'hover:bg-blue-50', 'hover:text-blue-700');
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+            // Tukar ikon menjadi putih bila butang aktif
+            const activeIcon = activeBtn.querySelector('i');
+            if(activeIcon) {
+                activeIcon.classList.remove('text-indigo-500', 'text-blue-500', 'text-emerald-500', 'text-slate-500');
+            }
         }
 
         const titles = { 'dashboard': 'Dashboard & Prestasi', 'murid': 'Pengurusan Murid dan Kelas', 'markah': 'Kemasukan Markah dan Pelaporan', 'tetapan': 'Tetapan Sistem Cloud' };
@@ -435,8 +448,20 @@
     document.getElementById('btnGoogleLogin').addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
-        try { await signInWithPopup(auth, provider); } 
-        catch (error) { window.showLoginError('Log masuk dibatalkan atau ralat berlaku.'); }
+        try { 
+            await signInWithPopup(auth, provider); 
+        } catch (error) { 
+            console.error("Login error detail:", error);
+            let msg = 'Log masuk dibatalkan atau ralat berlaku.';
+            if(error.code === 'auth/popup-closed-by-user') {
+                msg = 'Tetingkap log masuk ditutup sebelum selesai.';
+            } else if (error.code === 'auth/unauthorized-domain') {
+                msg = 'Domain belum dibenarkan. Sila tambah domain web ini di Firebase Console (Authentication > Settings > Authorized domains).';
+            } else {
+                msg = `Ralat Sistem: ${error.message}`;
+            }
+            window.showLoginError(msg); 
+        }
     });
 
     document.getElementById('btnLogKeluar').addEventListener('click', () => signOut(auth));
@@ -545,7 +570,13 @@
         
         const tbody = document.getElementById('dash-ranking-body');
         tbody.innerHTML = '';
-        if(rankingData.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">Tiada rekod ujian ditemui bagi tapisan ini.</td></tr>';
+        
+        // PANDUAN: Jika sistem kosong (tiada kelas), tunjuk panduan mesra pengguna dan bukannya skrin putih sahaja
+        if(window.db.classes.length === 0) {
+            return tbody.innerHTML = `<tr><td colspan="5" class="p-16 text-center text-slate-500 bg-white border-b-2 border-slate-100"><i class="fas fa-folder-open text-6xl text-blue-200 mb-4 block"></i><span class="font-bold text-2xl text-slate-700">Sistem Masih Kosong</span><br><p class="mt-2 text-slate-500">Sila klik tab <b>Murid & Kelas</b> di sebelah kiri untuk mula menambah kelas dan senarai murid.</p></td></tr>`;
+        }
+
+        if(rankingData.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 bg-white">Tiada rekod ujian ditemui bagi tapisan ini.</td></tr>';
 
         rankingData.slice(0, 100).forEach((data, index) => {
             const tr = document.createElement('tr');
