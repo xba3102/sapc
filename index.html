@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPAK - Sistem Pengurusan Anugerah SK Bikang</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        corp: { blue: '#1e3a8a', dark: '#172554', gold: '#fbbf24', light: '#f3f4f6' }
+                    }
+                }
+            }
+        }
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -28,9 +40,27 @@
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         .btn-pop:active { transform: scale(0.95); transition: transform 0.1s; }
+        
+        /* Tema Warna Korporat Lama & Cetakan */
+        .sidebar-active { background-color: #172554 !important; border-right: 4px solid #fbbf24 !important; color: #fbbf24 !important; }
+        
+        @media print {
+            .print-tokoh-only header, .print-tokoh-only .view-section > div:not(.tokoh-container) { display: none !important; }
+            .print-tokoh-only .tokoh-container { box-shadow: none !important; border: none !important; margin: 0 !important; width: 100% !important; }
+            .print-tokoh-only .tokoh-header-btn { display: none !important; }
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800 bg-slate-50">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 bg-white border-l-4 border-corp-gold shadow-xl px-6 py-4 rounded-md z-[100] transform transition-all duration-300 translate-x-[150%] opacity-0 flex items-center gap-3">
+        <i id="toast-icon" class="fa-solid fa-check-circle text-corp-gold text-xl"></i>
+        <div class="flex flex-col">
+            <span id="toast-title" class="font-bold text-sm text-gray-800">Berjaya</span>
+            <span id="toast-message" class="text-xs text-gray-600">Tindakan selesai.</span>
+        </div>
+    </div>
 
     <!-- Skrin Log Masuk -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center fade-in">
@@ -54,35 +84,33 @@
         <!-- Ruangan Cetakan (Tersembunyi) -->
         <div id="printArea" class="print-only w-full h-full bg-white relative"></div>
 
-        <!-- BAR SISI KANAN (Sidebar Tabs) -->
-        <aside class="w-64 bg-slate-900 text-white border-l border-slate-800 flex flex-col shadow-2xl z-10 transition-all duration-300 shrink-0">
-            <div class="p-6 flex items-center gap-3 border-b border-slate-800">
-                <div class="bg-gradient-to-br from-blue-500 to-blue-700 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-lg shrink-0">
-                    <i class="fas fa-award"></i>
+        <!-- BAR SISI KANAN (Sidebar Tabs) - Tema Korporat -->
+        <aside class="w-64 bg-corp-blue text-white flex flex-col shadow-2xl z-20 shrink-0">
+            <div class="p-6 flex flex-col items-center border-b border-blue-800">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-3 shadow-lg border-2 border-corp-gold">
+                    <i class="fa-solid fa-award text-3xl text-corp-gold"></i>
                 </div>
-                <div class="text-left">
-                    <h1 class="font-bold text-xl leading-tight tracking-wide text-white">SPAK</h1>
-                    <p class="text-xs text-blue-400 font-bold tracking-wider uppercase">SK BIKANG</p>
-                </div>
+                <h1 class="text-xl font-extrabold tracking-tight text-center">SPAK <span class="text-corp-gold">SK Bikang</span></h1>
+                <p class="text-[10px] text-blue-200 mt-1 uppercase tracking-widest text-center">Sistem Pengurusan Anugerah</p>
             </div>
             
-            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <button id="nav-dashboard" onclick="navigate('dashboard')" class="w-full flex items-center justify-start text-left gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-                    <i class="fas fa-chart-pie w-5 text-center text-lg text-indigo-400"></i> Dashboard
+            <nav class="flex-1 py-6 space-y-2 px-3 overflow-y-auto">
+                <button id="nav-dashboard" onclick="navigate('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition sidebar-active">
+                    <i class="fas fa-chart-line w-5"></i> Dashboard
                 </button>
-                <button id="nav-murid" onclick="navigate('murid')" class="w-full flex items-center justify-start text-left gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-                    <i class="fas fa-chalkboard-user w-5 text-center text-lg text-blue-400"></i> Murid & Kelas
+                <button id="nav-murid" onclick="navigate('murid')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
+                    <i class="fas fa-chalkboard-user w-5"></i> Murid & Kelas
                 </button>
-                <button id="nav-markah" onclick="navigate('markah')" class="w-full flex items-center justify-start text-left gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
-                    <i class="fas fa-file-signature w-5 text-center text-lg text-emerald-400"></i> Markah & Pelaporan
+                <button id="nav-markah" onclick="navigate('markah')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition">
+                    <i class="fas fa-file-signature w-5"></i> Markah & Pelaporan
                 </button>
-                <button id="nav-tetapan" onclick="navigate('tetapan')" class="w-full flex items-center justify-start text-left gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white mt-8 border border-slate-700">
-                    <i class="fas fa-sliders-h w-5 text-center text-lg text-slate-400"></i> Tetapan Sistem
+                <button id="nav-tetapan" onclick="navigate('tetapan')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-blue-100 hover:bg-blue-800 hover:text-white transition mt-8">
+                    <i class="fas fa-cogs w-5"></i> Tetapan Sistem
                 </button>
             </nav>
 
-            <div class="p-4 border-t border-slate-800 text-xs text-center text-slate-400 bg-slate-900">
-                <button id="btnLogKeluar" class="w-full mb-3 bg-slate-800 hover:bg-red-600 hover:text-white text-red-400 py-2 rounded-lg font-bold transition btn-pop text-sm border border-slate-700 hover:border-red-600">
+            <div class="p-4 border-t border-blue-800 text-xs text-center text-blue-300 bg-corp-dark">
+                <button id="btnLogKeluar" class="w-full mb-3 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold transition btn-pop text-sm shadow">
                     <i class="fas fa-sign-out-alt mr-1"></i> Log Keluar
                 </button>
                 <p>&copy; 2026 SPAK Enterprise</p>
@@ -132,13 +160,44 @@
                         </div>
                     </div>
 
+                    <!-- Peningkatan Terbaik (Most Improved) -->
+                    <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl shadow-sm overflow-hidden flex flex-col text-white relative mb-8">
+                        <div class="absolute right-0 top-0 opacity-10"><i class="fa-solid fa-arrow-trend-up text-9xl"></i></div>
+                        <div class="px-6 py-4 border-b border-emerald-400/50 z-10 relative">
+                            <h3 class="font-bold text-lg"><i class="fa-solid fa-rocket text-amber-300 mr-2"></i> Anugerah Peningkatan Terbaik (UASA)</h3>
+                            <p class="text-xs text-emerald-100">Peningkatan Peratus UASA Pertengahan Penggal (PPT) vs Akhir Tahun (PAT)</p>
+                        </div>
+                        <div class="p-4 z-10 relative flex-1">
+                            <div class="bg-white/10 rounded-xl backdrop-blur-sm p-4 h-full overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="text-left text-emerald-100 border-b border-emerald-400/50">
+                                            <th class="pb-2 font-semibold">Nama Murid</th>
+                                            <th class="pb-2 font-semibold text-center">Tengahan (PPT)</th>
+                                            <th class="pb-2 font-semibold text-center">Akhir (PAT)</th>
+                                            <th class="pb-2 font-semibold text-right">Peningkatan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dash-improved-tbody">
+                                        <!-- JS Rendered -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Ranking Section -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 class="font-bold text-lg text-slate-800"><i class="fas fa-trophy text-amber-500 mr-2"></i> Kedudukan Murid (Ranking)</h3>
-                            <select id="dashClassFilter" onchange="renderDashboard()" class="border border-slate-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm">
-                                <option value="">Semua Kelas</option>
-                            </select>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden tokoh-container">
+                        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-corp-dark text-white">
+                            <h3 class="font-bold text-lg tracking-wide uppercase"><i class="fas fa-trophy text-corp-gold mr-2"></i> Senarai Top Tokoh Murid</h3>
+                            <div class="flex gap-2">
+                                <select id="dashClassFilter" onchange="renderDashboard()" class="text-slate-800 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm tokoh-header-btn">
+                                    <option value="">Semua Kelas</option>
+                                </select>
+                                <button onclick="cetakTokoh()" class="tokoh-header-btn bg-corp-gold hover:bg-yellow-500 text-corp-dark px-3 py-2 rounded-lg font-bold shadow-sm transition btn-pop text-sm">
+                                    <i class="fas fa-print"></i> Cetak Jadual
+                                </button>
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
@@ -194,22 +253,33 @@
                             <label class="flex items-center gap-2 text-xs font-semibold text-indigo-900 cursor-pointer">
                                 <input type="checkbox" id="selectAllStudents" onchange="toggleAllStudents()" class="rounded text-indigo-600 border-indigo-300 focus:ring-indigo-500"> Pilih Semua (Untuk Pindah Kelas)
                             </label>
-                            <button onclick="bulkTransferStudents()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg shadow-sm font-medium transition btn-pop">
-                                <i class="fas fa-exchange-alt mr-1"></i> Pindah Kelas Berkelompok
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="openBulkAddStudentModal()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg shadow-sm font-medium transition btn-pop">
+                                    <i class="fas fa-file-excel mr-1"></i> Import Murid Pukal
+                                </button>
+                                <button onclick="bulkTransferStudents()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg shadow-sm font-medium transition btn-pop">
+                                    <i class="fas fa-exchange-alt mr-1"></i> Pindah Kelas Berkelompok
+                                </button>
+                            </div>
                         </div>
 
                         <div class="overflow-x-auto overflow-y-auto flex-1 h-full relative">
                             <table class="w-full text-sm text-left relative">
-                                            <th class="p-3 w-24">Jantina</th>
-                                            <th class="p-3 w-28 text-center">Tindakan</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="student-list-body" class="divide-y divide-slate-100">
-                                        <tr><td colspan="5" class="p-8 text-center text-slate-400">Sila pilih kelas untuk papar murid.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                                <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-bold tracking-wider sticky top-0 shadow-sm z-10">
+                                    <tr>
+                                        <th class="p-3 w-12 text-center"><i class="fas fa-check"></i></th>
+                                        <th class="p-3 w-12 text-center">Bil</th>
+                                        <th class="p-3 min-w-[200px]">Nama Murid</th>
+                                        <th class="p-3 w-32">No. KP</th>
+                                        <th class="p-3 w-40">ID Delima</th>
+                                        <th class="p-3 w-24 text-center">Jantina</th>
+                                        <th class="p-3 w-28 text-center">Tindakan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="student-list-body" class="divide-y divide-slate-100">
+                                    <tr><td colspan="7" class="p-8 text-center text-slate-400">Sila pilih kelas untuk papar murid.</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -314,23 +384,29 @@
     // -------------------------------------------------------------
     window.currentView = 'dashboard';
     
+    window.showToast = function(title, msg, isError = false) {
+        const toast = document.getElementById('toast');
+        const tIcon = document.getElementById('toast-icon');
+        document.getElementById('toast-title').innerText = title;
+        document.getElementById('toast-message').innerText = msg;
+        
+        tIcon.className = isError ? 'fa-solid fa-triangle-exclamation text-red-500 text-xl' : 'fa-solid fa-check-circle text-corp-gold text-xl';
+        toast.classList.replace(isError ? 'border-corp-gold' : 'border-red-500', isError ? 'border-red-500' : 'border-corp-gold');
+        
+        toast.classList.remove('opacity-0', 'translate-x-[150%]');
+        setTimeout(() => toast.classList.add('opacity-0', 'translate-x-[150%]'), 3000);
+    }
+
     window.navigate = function(view) {
         window.currentView = view;
         
         // Sembunyikan semua tab views
         document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
         
-        // Reset warna butang sidebar (tema gelap)
+        // Reset warna butang sidebar (tema korporat)
         document.querySelectorAll('aside nav button').forEach(el => {
-            el.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
-            el.classList.add('text-slate-300', 'hover:bg-slate-800', 'hover:text-white');
-            const icon = el.querySelector('i');
-            if(icon) {
-                if(el.id === 'nav-dashboard') icon.classList.add('text-indigo-400');
-                if(el.id === 'nav-murid') icon.classList.add('text-blue-400');
-                if(el.id === 'nav-markah') icon.classList.add('text-emerald-400');
-                if(el.id === 'nav-tetapan') icon.classList.add('text-slate-400');
-            }
+            el.classList.remove('sidebar-active');
+            el.classList.add('text-blue-100', 'hover:bg-blue-800', 'hover:text-white');
         });
         
         // Papar tab view yang dipilih
@@ -340,10 +416,8 @@
         // Aktifkan warna butang sidebar yang dipilih
         const activeBtn = document.getElementById(`nav-${view}`);
         if(activeBtn) {
-            activeBtn.classList.remove('text-slate-300', 'hover:bg-slate-800', 'hover:text-white');
-            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
-            const activeIcon = activeBtn.querySelector('i');
-            if(activeIcon) activeIcon.classList.remove('text-indigo-400', 'text-blue-400', 'text-emerald-400', 'text-slate-400');
+            activeBtn.classList.remove('text-blue-100', 'hover:bg-blue-800', 'hover:text-white');
+            activeBtn.classList.add('sidebar-active');
         }
 
         // Kemaskini Tajuk Atas
@@ -520,8 +594,8 @@
             filter.innerHTML += `<option value="${c.id}" ${currentFilter===c.id?'selected':''}>${c.name}</option>`;
         });
 
-        const term = 'PPT';
         let rankingData = [];
+        let improvedData = [];
         let studentsToProcess = window.db.students;
         if(filter.value) studentsToProcess = window.db.students.filter(s => s.classId === filter.value);
 
@@ -532,25 +606,72 @@
             if(!c) return;
             const subjects = window.getTahap(c.name) === 1 ? subjekTahap1 : subjekTahap2;
             
-            let totalMark = 0, validSubjects = 0, passedAll = true;
+            let pptTotal = 0, pptValid = 0;
+            let patTotal = 0, patValid = 0;
+            let passedAllMain = true;
+
             subjects.forEach(sub => {
-                const markStr = window.db.marks[`${term}_UASA_${sub}_${student.id}`];
-                if(markStr !== undefined && markStr !== '') {
-                    let m = parseInt(markStr);
-                    if(isNaN(m)) m = 0;
-                    totalMark += m; validSubjects++;
-                    if(m < 40) passedAll = false;
-                    totalValidMarks++;
-                    if(m >= 40) totalPassMarks++;
-                } else passedAll = false;
+                const markPptStr = window.db.marks[`PPT_UASA_${sub}_${student.id}`];
+                const markPatStr = window.db.marks[`PAT_UASA_${sub}_${student.id}`];
+                
+                if(markPptStr !== undefined && markPptStr !== '') {
+                    let m = parseInt(markPptStr);
+                    if(!isNaN(m)) { pptTotal += m; pptValid++; }
+                }
+                
+                if(markPatStr !== undefined && markPatStr !== '') {
+                    let m = parseInt(markPatStr);
+                    if(!isNaN(m)) {
+                        patTotal += m; patValid++;
+                        if(m < 40) passedAllMain = false;
+                        totalValidMarks++;
+                        if(m >= 40) totalPassMarks++;
+                    } else passedAllMain = false;
+                } else passedAllMain = false;
             });
 
-            if(validSubjects > 0) {
-                rankingData.push({ student, className: c.name, classId: c.id, totalMark, avg: (totalMark / validSubjects).toFixed(2), passedAll });
+            // Logik Peningkatan Terbaik
+            if (pptValid > 0 && patValid > 0) {
+                let pptAvg = pptTotal / pptValid;
+                let patAvg = patTotal / patValid;
+                let diff = patAvg - pptAvg;
+                if (diff > 0) improvedData.push({ student, className: c.name, mid: pptAvg.toFixed(1), end: patAvg.toFixed(1), diff: diff });
+            }
+
+            // Logik Ranking (Guna PAT, jika kosong guna PPT)
+            if(patValid > 0) {
+                rankingData.push({ student, className: c.name, classId: c.id, totalMark: patTotal, avg: (patTotal / patValid).toFixed(2), passedAll: passedAllMain });
+            } else if (pptValid > 0) {
+                let passedAllPpt = true;
+                subjects.forEach(sub => {
+                    let m = parseInt(window.db.marks[`PPT_UASA_${sub}_${student.id}`]);
+                    if(isNaN(m) || m < 40) passedAllPpt = false;
+                    if(!isNaN(m)) { totalValidMarks++; if(m >= 40) totalPassMarks++; }
+                });
+                rankingData.push({ student, className: c.name, classId: c.id, totalMark: pptTotal, avg: (pptTotal / pptValid).toFixed(2), passedAll: passedAllPpt });
             }
         });
 
         document.getElementById('dash-pass-rate').innerText = totalValidMarks > 0 ? Math.round((totalPassMarks / totalValidMarks) * 100) + '%' : '0%';
+        
+        // Render Jadual Peningkatan Terbaik
+        improvedData.sort((a, b) => b.diff - a.diff);
+        const tbImp = document.getElementById('dash-improved-tbody');
+        tbImp.innerHTML = '';
+        if (improvedData.length === 0) {
+            tbImp.innerHTML = '<tr><td colspan="4" class="py-4 text-center opacity-70">Tiada rekod ujian perbandingan yang mencukupi.</td></tr>';
+        } else {
+            improvedData.slice(0, 5).forEach(i => {
+                tbImp.innerHTML += `
+                    <tr class="border-b border-emerald-400/30 font-semibold text-emerald-50 hover:bg-white/5 transition">
+                        <td class="py-2">${i.student.name} <span class="text-[10px] bg-emerald-900/50 px-2 py-0.5 rounded ml-1">${i.className}</span></td>
+                        <td class="py-2 text-center text-emerald-200">${i.mid}%</td>
+                        <td class="py-2 text-center text-white">${i.end}%</td>
+                        <td class="py-2 text-right text-amber-300 font-bold">+${i.diff.toFixed(1)}% <i class="fa-solid fa-caret-up"></i></td>
+                    </tr>`;
+            });
+        }
+
         rankingData.sort((a, b) => b.totalMark - a.totalMark);
         
         const tbody = document.getElementById('dash-ranking-body');
@@ -606,6 +727,17 @@
         });
         html += '</div>';
         Swal.fire({ title: 'Pecahan Demografi Murid', html: window.db.classes.length===0?'Tiada data.':html, width: 500, confirmButtonText: 'Tutup' });
+    }
+
+    window.cetakTokoh = function() {
+        const tbody = document.getElementById('dash-ranking-body');
+        if (tbody.innerHTML.includes('Tiada data') || tbody.innerHTML.includes('Sistem Masih Kosong')) {
+            window.showToast('Ralat', 'Tiada data tokoh untuk dicetak.', true);
+            return;
+        }
+        document.body.classList.add('print-tokoh-only');
+        window.print();
+        setTimeout(() => { document.body.classList.remove('print-tokoh-only'); }, 500);
     }
 
     // Modal Pencapaian & Sijil
@@ -780,10 +912,10 @@
         tbody.innerHTML = '';
         document.getElementById('selectAllStudents').checked = false;
 
-        if(!classId) return tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">Sila pilih kelas.</td></tr>';
+        if(!classId) return tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400">Sila pilih kelas.</td></tr>';
 
         const sts = window.db.students.filter(s => s.classId === classId).sort((a,b) => a.name.localeCompare(b.name));
-        if(sts.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 bg-slate-50">Tiada murid direkodkan dalam kelas ini.</td></tr>';
+        if(sts.length === 0) return tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 bg-slate-50">Tiada murid direkodkan dalam kelas ini.</td></tr>';
 
         sts.forEach((s, index) => {
             const tr = document.createElement('tr');
@@ -791,8 +923,10 @@
             tr.innerHTML = `
                 <td class="p-3 text-center"><input type="checkbox" class="student-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500" value="${s.id}"></td>
                 <td class="p-3 text-center text-slate-400 font-medium">${index + 1}</td>
-                <td class="p-3 font-semibold text-slate-700">${s.name}</td>
-                <td class="p-3 text-slate-600"><span class="px-2 py-1 bg-slate-100 rounded-md text-xs font-bold ${s.gender==='L'?'text-blue-600':'text-pink-600'}">${s.gender}</span></td>
+                <td class="p-3 font-semibold text-slate-700 uppercase whitespace-nowrap">${s.name}</td>
+                <td class="p-3 text-slate-500 font-mono text-xs">${s.noKp || '-'}</td>
+                <td class="p-3 text-blue-600 font-mono text-xs">${s.idDelima || '-'}</td>
+                <td class="p-3 text-center"><span class="px-2 py-1 bg-slate-100 rounded-md text-xs font-bold ${s.gender==='L'?'text-blue-600':'text-pink-600'}">${s.gender}</span></td>
                 <td class="p-3 text-center space-x-2 flex justify-center">
                     <button onclick="editStudent('${s.id}')" class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition" title="Edit"><i class="fas fa-edit"></i></button>
                     <button onclick="deleteStudent('${s.id}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition" title="Padam"><i class="fas fa-trash-alt"></i></button>
@@ -811,6 +945,8 @@
             html: `
                 <div class="space-y-4 mt-2">
                     <input id="swal-sname" class="swal2-input !w-[85%] !mx-auto uppercase" placeholder="Nama Penuh (Cth: ALI BIN ABU)">
+                    <input id="swal-skp" class="swal2-input !w-[85%] !mx-auto" placeholder="No. Kad Pengenalan">
+                    <input id="swal-sdelima" class="swal2-input !w-[85%] !mx-auto" placeholder="ID Delima (Cth: m-123456@moe-dl.edu.my)">
                     <select id="swal-sgender" class="swal2-input !w-[85%] !mx-auto text-center">
                         <option value="L">Lelaki (L)</option>
                         <option value="P">Perempuan (P)</option>
@@ -820,12 +956,14 @@
             confirmButtonText: 'Simpan ke Cloud', showCancelButton: true, confirmButtonColor: '#3b82f6',
             preConfirm: () => {
                 const name = document.getElementById('swal-sname').value.trim().toUpperCase();
+                const noKp = document.getElementById('swal-skp').value.trim();
+                const idDelima = document.getElementById('swal-sdelima').value.trim();
                 const gender = document.getElementById('swal-sgender').value;
                 if(!name) return Swal.showValidationMessage('Sila masukkan nama penuh murid.');
-                return {name, gender};
+                return {name, noKp, idDelima, gender};
             }
         }).then(async res => {
-            if(res.isConfirmed) await addDoc(studentsRef, { classId, name: res.value.name, gender: res.value.gender });
+            if(res.isConfirmed) await addDoc(studentsRef, { classId, name: res.value.name, noKp: res.value.noKp, idDelima: res.value.idDelima, gender: res.value.gender });
         });
     }
 
@@ -835,7 +973,9 @@
             title: 'Kemaskini Profil Murid',
             html: `
                 <div class="space-y-4 mt-2">
-                    <input id="swal-sname" class="swal2-input !w-[85%] !mx-auto uppercase" value="${s.name}">
+                    <input id="swal-sname" class="swal2-input !w-[85%] !mx-auto uppercase" value="${s.name}" placeholder="Nama Penuh">
+                    <input id="swal-skp" class="swal2-input !w-[85%] !mx-auto" value="${s.noKp || ''}" placeholder="No. Kad Pengenalan">
+                    <input id="swal-sdelima" class="swal2-input !w-[85%] !mx-auto" value="${s.idDelima || ''}" placeholder="ID Delima">
                     <select id="swal-sgender" class="swal2-input !w-[85%] !mx-auto text-center">
                         <option value="L" ${s.gender==='L'?'selected':''}>Lelaki (L)</option>
                         <option value="P" ${s.gender==='P'?'selected':''}>Perempuan (P)</option>
@@ -845,8 +985,10 @@
             confirmButtonText: 'Kemaskini', showCancelButton: true, confirmButtonColor: '#3b82f6',
             preConfirm: async () => {
                 const name = document.getElementById('swal-sname').value.trim().toUpperCase();
+                const noKp = document.getElementById('swal-skp').value.trim();
+                const idDelima = document.getElementById('swal-sdelima').value.trim();
                 const gender = document.getElementById('swal-sgender').value;
-                await updateDoc(doc(studentsRef, id), { name, gender });
+                await updateDoc(doc(studentsRef, id), { name, noKp, idDelima, gender });
             }
         });
     }
@@ -859,6 +1001,41 @@
     window.toggleAllStudents = function() {
         const state = document.getElementById('selectAllStudents').checked;
         document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = state);
+    }
+
+    window.openBulkAddStudentModal = function() {
+        const classId = document.getElementById('studentClassSelect').value;
+        if(!classId) return Swal.fire('Perhatian', 'Sila pilih kelas dahulu.', 'warning');
+        
+        Swal.fire({
+            title: 'Import Murid (Paste Excel)',
+            html: `
+                <div class="text-left text-sm text-slate-600 mb-3">Copy jadual dari Excel (Nama, Jantina, No KP, ID Delima) dan Paste di bawah:</div>
+                <textarea id="excelPasteStudents" class="w-full h-48 border border-slate-300 rounded-lg p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none" placeholder="ALI BIN ABU\tL\t121212-12-1212\tm-123@moe-dl.edu.my\nSITI AMINAH\tP\t111111-11-1111\tm-456@moe-dl.edu.my"></textarea>
+            `,
+            showCancelButton: true, confirmButtonText: '<i class="fas fa-cloud-upload-alt mr-1"></i> Simpan ke Cloud', confirmButtonColor: '#10b981'
+        }).then(async res => { 
+            if(res.isConfirmed) {
+                const raw = document.getElementById('excelPasteStudents').value;
+                const lines = raw.split('\n');
+                let count = 0;
+                Swal.fire({title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                
+                for(let line of lines) {
+                    const parts = line.split(/\t/);
+                    if(parts.length >= 1 && parts[0].trim() !== '') {
+                        const name = parts[0].trim().toUpperCase();
+                        const gender = (parts[1] && parts[1].trim().toUpperCase() === 'P') ? 'P' : 'L';
+                        const noKp = parts[2] ? parts[2].trim() : '';
+                        const idDelima = parts[3] ? parts[3].trim() : '';
+                        
+                        await addDoc(studentsRef, { classId, name, gender, noKp, idDelima });
+                        count++;
+                    }
+                }
+                Swal.fire('Selesai', count + ' orang murid berjaya diimport.', 'success');
+            } 
+        });
     }
 
     window.bulkTransferStudents = function() {
@@ -877,7 +1054,7 @@
                 Swal.fire({title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
                 const dest = document.getElementById('transferDest').value;
                 for(let cb of checks) await updateDoc(doc(studentsRef, cb.value), { classId: dest });
-                Swal.fire('Selesai!', `Murid berjaya dipindahkan.`, 'success');
+                window.showToast('Pindah Kelas', 'Murid berjaya dipindahkan.');
             }
         });
     }
