@@ -657,12 +657,12 @@
                 headers.forEach(h => {
                     // Buang semua aksara khas dan jarak, tukar ke huruf kecil
                     const hl = h.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    if (/(nama|name|murid)/.test(hl) && !map.name) map.name = h;
-                    else if (/(nokp|nokadpengenalan|nomykad|ic|kp|kadpengenalan|mykad|mykid)/.test(hl) && !map.ic) map.ic = h;
-                    else if (/(delima|emel|moe|moeis)/.test(hl) && !map.delima) map.delima = h;
-                    else if (/(jantina|gender|sex|j)/.test(hl) && !map.gender) map.gender = h;
-                    else if (/(kodkelas|namakelas|kelas|class|tingkatan)/.test(hl) && !map.class) map.class = h;
-                    else if (/(kodtahun|tahun|thn|year|^t$)/.test(hl) && !map.year) map.year = h;
+                    if (/(nama|name|^murid$)/.test(hl) && !map.name) map.name = h;
+                    else if (/(nokp|nokadpengenalan|nomykad|ic|^kp$|kadpengenalan|mykad|mykid|^moeisid$|^moeis$)/.test(hl) && !map.ic) map.ic = h;
+                    else if (/(delima|emel|moe|^iddelima$)/.test(hl) && !map.delima) map.delima = h;
+                    else if (/(jantina|gender|sex|^j$)/.test(hl) && !map.gender) map.gender = h;
+                    else if (/(^kelas$|namakelas|class|tingkatan)/.test(hl) && !map.class) map.class = h;
+                    else if (/(kodkelas|kodtahun|tahun|thn|year|^t$)/.test(hl) && !map.year) map.year = h;
                 });
 
                 if (!map.name) {
@@ -676,7 +676,7 @@
 
                 Swal.fire({
                     title: 'Mengimport Data...',
-                    html: 'Sila tunggu sebentar. Jangan tutup tetingkap ini.',
+                    html: 'Sila tunggu sebentar. Sistem sedang memadankan profil murid...',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
@@ -692,13 +692,17 @@
                     
                     let targetClassId = defaultClassId;
                     
-                    // Algoritma Pintar: Gabungkan Tahun & Kelas jika dipisahkan dalam CSV
+                    // Algoritma Pintar (Format DELIMA): 
+                    // kod kelas = D1 (Tahun), kelas = ARIF (Nama)
                     let sYearStr = map.year ? (row[map.year] || '').trim() : '';
                     let sClassStr = map.class ? (row[map.class] || '').trim() : '';
                     let sClassName = '';
                     
+                    // Bersihkan awalan "D" atau "T" (Cth: "D1" -> "1", "T2" -> "2")
+                    sYearStr = sYearStr.replace(/^[DdTt]/i, ''); 
+                    
                     if (sYearStr && sClassStr) {
-                        // Jika Tahun = "1", Kelas = "ARIF" -> Jadi "1 ARIF"
+                        // Gabungkan Tahun + Nama Kelas
                         if (sClassStr.includes(sYearStr)) sClassName = sClassStr.toUpperCase();
                         else sClassName = (`${sYearStr} ${sClassStr}`).toUpperCase();
                     } else if (sClassStr) {
@@ -717,13 +721,16 @@
                                 const docRef = await addDoc(classesRef, { name: sClassName });
                                 targetClassId = docRef.id;
                                 window.db.classes.push({id: targetClassId, name: sClassName});
+                                // Segarkan dropdown (UI) di latar belakang
+                                window.updateClassSelects();
+                                window.renderClasses();
                             } catch(err) { console.error(err); }
                         }
                     }
 
                     if (!targetClassId) {
                         Swal.close();
-                        alert("Sila pilih kelas dari dropdown (Murid & Kelas) terlebih dahulu, ATAU pastikan fail CSV anda mempunyai lajur bernama 'Kelas'.");
+                        alert("Sila pilih kelas dari dropdown (Murid & Kelas) terlebih dahulu, ATAU pastikan fail CSV anda mempunyai sekurang-kurangnya lajur bernama 'Kelas'.");
                         e.target.value = '';
                         return;
                     }
