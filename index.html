@@ -530,7 +530,56 @@
     window.openAddStudentModal = function() { alert('Sistem sedang memuatkan pangkalan awan... Sila cuba sebentar lagi.'); }
     window.deleteStudent = async function(id) { alert('Sistem sedang memuatkan pangkalan awan... Sila cuba sebentar lagi.'); }
     window.liveSave = async function(el) { console.warn("Menunggu sambungan cloud Firebase..."); }
-    window.triggerSimpan = function() { window.showToast('Berjaya', 'Data disimpan.'); }
+    window.triggerSimpan = function() { window.showToast('Berjaya', 'Data disimpan ke Cloud.'); }
+    
+    // Fungsi Butang Baru Dihidupkan
+    window.showClassesModal = function() { window.switchTab('murid'); }
+    window.showStudentsModal = function() { window.switchTab('murid'); }
+    window.generateAPCReport = function() { window.cetakTokoh(); }
+    window.cetakTokoh = function() {
+        document.body.classList.add('print-tokoh-only');
+        window.print();
+        setTimeout(() => document.body.classList.remove('print-tokoh-only'), 500);
+    }
+    window.toggleAllStudents = function() {
+        const isChecked = document.getElementById('selectAllStudents').checked;
+        document.querySelectorAll('.student-checkbox').forEach(chk => chk.checked = isChecked);
+    }
+    window.openPasteExcelModal = function() {
+        const classSel = document.getElementById('markahClassSelect');
+        const termSel = document.getElementById('markahTermSelect');
+        const subSel = document.getElementById('markahSubjectSelect');
+        
+        if(!classSel || !classSel.value || !subSel || !subSel.value) {
+            return window.showToast('Ralat', 'Sila pilih kelas dan mata pelajaran dahulu.', true);
+        }
+
+        Swal.fire({
+            title: 'Tampal Markah (Excel)',
+            html: '<p class="text-xs text-slate-500 mb-2">Sila <i>copy</i> lajur markah dari Excel dan <i>paste</i> di bawah (mengikut urutan senarai nama):</p><textarea id="pasteExcelData" class="w-full h-40 border rounded p-2 text-sm outline-none focus:border-blue-500" placeholder="Contoh:\n80\n75\n90..."></textarea>',
+            confirmButtonText: 'Tampal Markah',
+            showCancelButton: true
+        }).then(res => {
+            if(res.isConfirmed) {
+                const data = document.getElementById('pasteExcelData').value.trim().split('\n');
+                const rows = document.querySelectorAll('#marks-list-body tr');
+                
+                let successCount = 0;
+                rows.forEach((row, i) => {
+                    if(data[i] !== undefined && data[i].trim() !== '') {
+                        const input = row.querySelector('input[type="text"]');
+                        if(input) {
+                            input.value = data[i].trim();
+                            window.liveSave(input); 
+                            successCount++;
+                        }
+                    }
+                });
+                window.showToast('Berjaya', `${successCount} markah telah ditampal.`);
+            }
+        });
+    }
+
     window.backupData = function() { 
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.db));
         const anchor = document.createElement('a');
@@ -619,28 +668,88 @@
         const nameInput = document.getElementById('newClassName');
         if(!nameInput) return;
         const name = nameInput.value.trim().toUpperCase();
-        if(name) { await addDoc(classesRef, { name }); nameInput.value = ''; }
+        if(!name) { window.showToast('Ralat', 'Sila masukkan nama kelas.', true); return; }
+        
+        try {
+            await addDoc(classesRef, { name }); 
+            nameInput.value = '';
+            window.showToast('Berjaya', 'Kelas baharu berjaya ditambah.');
+        } catch (e) {
+            console.error(e);
+            window.showToast('Ralat', 'Gagal menambah kelas. Sila semak sambungan Internet.', true);
+        }
     }
     
     window.deleteClass = async function(id) {
-        if(confirm('Padam kelas dan murid di dalamnya?')) {
-            for(let s of window.db.students.filter(x => x.classId === id)) await deleteDoc(doc(studentsRef, s.id));
-            await deleteDoc(doc(classesRef, id));
+        if(confirm('Padam kelas dan semua rekod murid di dalamnya?')) {
+            try {
+                for(let s of window.db.students.filter(x => x.classId === id)) await deleteDoc(doc(studentsRef, s.id));
+                await deleteDoc(doc(classesRef, id));
+                window.showToast('Berjaya', 'Kelas berjaya dipadam.');
+            } catch (e) { window.showToast('Ralat', 'Gagal memadam kelas.', true); }
         }
     }
 
     window.openAddStudentModal = function() {
         const sel = document.getElementById('studentClassSelect');
-        if(!sel || !sel.value) return alert('Pilih kelas dahulu');
+        if(!sel || !sel.value) return window.showToast('Ralat', 'Pilih kelas di ruangan atas terlebih dahulu.', true);
         Swal.fire({
             title: 'Tambah Murid',
-            html: '<input id="sname" class="swal2-input uppercase" placeholder="Nama Penuh">',
+            html: '<input id="sname" class="swal2-input uppercase" placeholder="Nama Penuh Murid">',
             confirmButtonText: 'Simpan',
+            showCancelButton: true,
             preConfirm: () => document.getElementById('sname').value.trim().toUpperCase()
-        }).then(async res => { if(res.value) await addDoc(studentsRef, { classId: sel.value, name: res.value, gender: 'L' }); });
+        }).then(async res => { 
+            if(res.isConfirmed && res.value) {
+                try {
+                    await addDoc(studentsRef, { classId: sel.value, name: res.value, gender: 'L' }); 
+                    window.showToast('Berjaya', 'Murid ditambah.');
+                } catch(e) { window.showToast('Ralat', 'Gagal menambah murid.', true); }
+            }
+        });
     }
 
-    window.deleteStudent = async function(id) { if(confirm('Padam murid?')) await deleteDoc(doc(studentsRef, id)); }
+    window.deleteStudent = async function(id) { 
+        if(confirm('Pasti ingin padam rekod murid ini?')) {
+            try {
+                await deleteDoc(doc(studentsRef, id));
+                window.showToast('Berjaya', 'Murid dipadam.');
+            } catch(e) { window.showToast('Ralat', 'Gagal memadam murid.', true); }
+        } 
+    }
+
+    window.bulkTransferStudents = async function() {
+        const chks = document.querySelectorAll('.student-checkbox:checked');
+        if(chks.length === 0) return window.showToast('Ralat', 'Sila tanda (tick) sekurang-kurangnya seorang murid.', true);
+        
+        let classOptions = window.db.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        
+        Swal.fire({
+            title: 'Pindah Kelas (Pukal)',
+            html: `Pilih kelas destinasi baharu:<br><select id="newClassSelectSwal" class="w-full border p-2 mt-4 rounded outline-none focus:border-blue-500">${classOptions}</select>`,
+            showCancelButton: true,
+            confirmButtonText: 'Pindah'
+        }).then(async res => {
+            if(res.isConfirmed) {
+                const newClassId = document.getElementById('newClassSelectSwal').value;
+                if(!newClassId) return;
+                
+                try {
+                    Swal.fire({ title: 'Memindah Murid...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+                    for(let chk of chks) {
+                        const studentId = chk.value;
+                        await setDoc(doc(studentsRef, studentId), { classId: newClassId }, { merge: true });
+                    }
+                    Swal.close();
+                    window.showToast('Berjaya', `${chks.length} murid berjaya dipindahkan.`);
+                    document.getElementById('selectAllStudents').checked = false; // Reset checkbox
+                } catch (e) {
+                    Swal.close();
+                    window.showToast('Ralat', 'Gagal memindahkan murid.', true);
+                }
+            }
+        });
+    }
 
     window.handleBulkImport = async function(e) {
         const file = e.target.files[0];
@@ -791,7 +900,11 @@
         const val = el.value.toUpperCase();
         document.getElementById('autoSaveIndicator').classList.remove('hidden');
         document.getElementById('autoSaveIndicator').classList.add('flex');
-        await setDoc(doc(marksRef, key), { value: val });
+        try {
+            await setDoc(doc(marksRef, key), { value: val });
+        } catch(e) {
+            console.error("Gagal simpan markah:", e);
+        }
         setTimeout(() => { document.getElementById('autoSaveIndicator').classList.remove('flex'); document.getElementById('autoSaveIndicator').classList.add('hidden'); }, 1500);
     }
     
