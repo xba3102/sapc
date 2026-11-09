@@ -662,7 +662,7 @@
                     else if (/(delima|emel|moe|^iddelima$)/.test(hl) && !map.delima) map.delima = h;
                     else if (/(jantina|gender|sex|^j$)/.test(hl) && !map.gender) map.gender = h;
                     else if (/(^kelas$|namakelas|class|tingkatan)/.test(hl) && !map.class) map.class = h;
-                    else if (/(kodkelas|kodtahun|tahun|thn|year|^t$)/.test(hl) && !map.year) map.year = h;
+                    else if (/(kodkelas|kodtahun|tahun|thn|year|^t$|^d$|darjah)/.test(hl) && !map.year) map.year = h;
                 });
 
                 if (!map.name) {
@@ -692,23 +692,27 @@
                     
                     let targetClassId = defaultClassId;
                     
-                    // Algoritma Pintar (Format DELIMA): 
-                    // kod kelas = D1 (Tahun), kelas = ARIF (Nama)
                     let sYearStr = map.year ? (row[map.year] || '').trim() : '';
                     let sClassStr = map.class ? (row[map.class] || '').trim() : '';
                     let sClassName = '';
                     
-                    // Bersihkan awalan "D" atau "T" (Cth: "D1" -> "1", "T2" -> "2")
-                    sYearStr = sYearStr.replace(/^[DdTt]/i, ''); 
+                    // Bersihkan awalan D/T dan cari nombor (Cth: "D1" -> "1", "T2" -> "2")
+                    let yearMatch = sYearStr.match(/^[DdTt]?\s*([1-6])/i);
+                    if (yearMatch) sYearStr = yearMatch[1]; 
                     
                     if (sYearStr && sClassStr) {
                         // Gabungkan Tahun + Nama Kelas
-                        if (sClassStr.includes(sYearStr)) sClassName = sClassStr.toUpperCase();
+                        if (sClassStr.toUpperCase().includes(sYearStr)) sClassName = sClassStr.toUpperCase();
                         else sClassName = (`${sYearStr} ${sClassStr}`).toUpperCase();
                     } else if (sClassStr) {
                         sClassName = sClassStr.toUpperCase();
                     } else if (sYearStr) {
                         sClassName = (`TAHUN ${sYearStr}`).toUpperCase();
+                    }
+
+                    // Jika kelas masih kosong, cipta 'KELAS IMPORT' supaya pendaftaran tak gagal
+                    if (!sClassName && !targetClassId) {
+                        sClassName = "KELAS IMPORT"; 
                     }
                     
                     // Cipta kelas baru secara automatik jika tak wujud dalam sistem
@@ -728,12 +732,7 @@
                         }
                     }
 
-                    if (!targetClassId) {
-                        Swal.close();
-                        alert("Sila pilih kelas dari dropdown (Murid & Kelas) terlebih dahulu, ATAU pastikan fail CSV anda mempunyai sekurang-kurangnya lajur bernama 'Kelas'.");
-                        e.target.value = '';
-                        return;
-                    }
+                    if (!targetClassId) continue;
 
                     try {
                         await addDoc(studentsRef, {
