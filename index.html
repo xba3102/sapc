@@ -20,6 +20,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -230,7 +231,7 @@
                                 <input type="checkbox" id="selectAllStudents" onchange="window.toggleAllStudents()" class="rounded text-indigo-600"> Pilih Semua
                             </label>
                             <div class="flex gap-2">
-                                <input type="file" id="bulkImportFile" accept=".csv" class="hidden" onchange="window.handleBulkImport(event)">
+                                <input type="file" id="bulkImportFile" accept=".csv, .xlsx, .xls" class="hidden" onchange="window.handleBulkImport(event)">
                                 <button onclick="document.getElementById('bulkImportFile').click()" class="text-xs bg-emerald-600 text-white px-3 py-1 rounded-lg font-medium"><i class="fas fa-file-excel mr-1"></i> Import Pukal</button>
                                 <button onclick="window.bulkTransferStudents()" class="text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg font-medium"><i class="fas fa-exchange-alt mr-1"></i> Pindah Kelas</button>
                             </div>
@@ -645,114 +646,144 @@
         const file = e.target.files[0];
         if (!file) return;
         
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: async (results) => {
-                const data = results.data;
-                const headers = results.meta.fields;
-                
-                // Pemetaan Pintar (Smart Mapping) Lajur menggunakan Regex (Berbantu AI)
-                const map = { name: null, ic: null, delima: null, gender: null, class: null, year: null };
-                headers.forEach(h => {
-                    // Buang semua aksara khas dan jarak, tukar ke huruf kecil
-                    const hl = h.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    if (/(nama|name|^murid$)/.test(hl) && !map.name) map.name = h;
-                    else if (/(nokp|nokadpengenalan|nomykad|ic|^kp$|kadpengenalan|mykad|mykid|^moeisid$|^moeis$)/.test(hl) && !map.ic) map.ic = h;
-                    else if (/(delima|emel|moe|^iddelima$)/.test(hl) && !map.delima) map.delima = h;
-                    else if (/(jantina|gender|sex|^j$)/.test(hl) && !map.gender) map.gender = h;
-                    else if (/(^kelas$|namakelas|class|tingkatan)/.test(hl) && !map.class) map.class = h;
-                    else if (/(kodkelas|kodtahun|tahun|thn|year|^t$|^d$|darjah)/.test(hl) && !map.year) map.year = h;
-                });
+        const isExcel = file.name.match(/\.(xlsx|xls)$/i);
 
-                if (!map.name) {
-                    alert('Gagal menjumpai lajur Nama dalam fail CSV. Sila pastikan ada pengepala (header) lajur yang mengandungi perkataan "Nama" atau "Name".');
-                    e.target.value = '';
-                    return;
-                }
-
-                let addedCount = 0;
-                let defaultClassId = document.getElementById('studentClassSelect').value;
-
-                Swal.fire({
-                    title: 'Mengimport Data...',
-                    html: 'Sila tunggu sebentar. Sistem sedang memadankan profil murid...',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-
-                for (let row of data) {
-                    const sName = (row[map.name] || '').trim().toUpperCase();
-                    if (!sName) continue;
-                    
-                    const sIc = map.ic ? (row[map.ic] || '').trim() : '';
-                    const sDelima = map.delima ? (row[map.delima] || '').trim() : '';
-                    const rawGender = map.gender ? (row[map.gender] || '').trim().toUpperCase() : 'L';
-                    const sGender = rawGender.startsWith('P') ? 'P' : 'L';
-                    
-                    let targetClassId = defaultClassId;
-                    
-                    let sYearStr = map.year ? (row[map.year] || '').trim() : '';
-                    let sClassStr = map.class ? (row[map.class] || '').trim() : '';
-                    let sClassName = '';
-                    
-                    // Bersihkan awalan D/T dan cari nombor (Cth: "D1" -> "1", "T2" -> "2")
-                    let yearMatch = sYearStr.match(/^[DdTt]?\s*([1-6])/i);
-                    if (yearMatch) sYearStr = yearMatch[1]; 
-                    
-                    if (sYearStr && sClassStr) {
-                        // Gabungkan Tahun + Nama Kelas
-                        if (sClassStr.toUpperCase().includes(sYearStr)) sClassName = sClassStr.toUpperCase();
-                        else sClassName = (`${sYearStr} ${sClassStr}`).toUpperCase();
-                    } else if (sClassStr) {
-                        sClassName = sClassStr.toUpperCase();
-                    } else if (sYearStr) {
-                        sClassName = (`TAHUN ${sYearStr}`).toUpperCase();
-                    }
-
-                    // Jika kelas masih kosong, cipta 'KELAS IMPORT' supaya pendaftaran tak gagal
-                    if (!sClassName && !targetClassId) {
-                        sClassName = "KELAS IMPORT"; 
-                    }
-                    
-                    // Cipta kelas baru secara automatik jika tak wujud dalam sistem
-                    if (sClassName) {
-                        let foundCls = window.db.classes.find(c => c.name === sClassName);
-                        if (foundCls) {
-                            targetClassId = foundCls.id;
-                        } else {
-                            try {
-                                const docRef = await addDoc(classesRef, { name: sClassName });
-                                targetClassId = docRef.id;
-                                window.db.classes.push({id: targetClassId, name: sClassName});
-                                // Segarkan dropdown (UI) di latar belakang
-                                window.updateClassSelects();
-                                window.renderClasses();
-                            } catch(err) { console.error(err); }
-                        }
-                    }
-
-                    if (!targetClassId) continue;
-
-                    try {
-                        await addDoc(studentsRef, {
-                            classId: targetClassId,
-                            name: sName,
-                            noKp: sIc,
-                            idDelima: sDelima,
-                            gender: sGender
-                        });
-                        addedCount++;
-                    } catch(err) {
-                        console.error("Ralat memasukkan murid:", err);
-                    }
-                }
-
-                e.target.value = ''; // Reset input
-                Swal.close();
-                window.showToast('Berjaya', `${addedCount} rekod murid berjaya diimport!`);
-            }
+        Swal.fire({
+            title: 'Membaca Fail...',
+            html: 'Sila tunggu sebentar...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
         });
+
+        // Sub-fungsi logik pemetaan dan import data
+        const processImportData = async (data, headers) => {
+            const map = { name: null, ic: null, delima: null, gender: null, class: null, year: null };
+            headers.forEach(h => {
+                const hl = String(h).toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (/(nama|name|^murid$)/.test(hl) && !map.name) map.name = h;
+                else if (/(nokp|nokadpengenalan|nomykad|ic|^kp$|kadpengenalan|mykad|mykid|^moeisid$|^moeis$)/.test(hl) && !map.ic) map.ic = h;
+                else if (/(delima|emel|moe|^iddelima$)/.test(hl) && !map.delima) map.delima = h;
+                else if (/(jantina|gender|sex|^j$)/.test(hl) && !map.gender) map.gender = h;
+                else if (/(^kelas$|namakelas|class|tingkatan)/.test(hl) && !map.class) map.class = h;
+                else if (/(kodkelas|kodtahun|tahun|thn|year|^t$|^d$|darjah)/.test(hl) && !map.year) map.year = h;
+            });
+
+            if (!map.name) {
+                Swal.fire('Ralat', 'Gagal menjumpai lajur Nama dalam fail. Sila pastikan ada pengepala (header) lajur "Nama".', 'error');
+                e.target.value = '';
+                return;
+            }
+
+            let addedCount = 0;
+            let defaultClassId = document.getElementById('studentClassSelect').value;
+
+            Swal.fire({
+                title: 'Mengimport Data...',
+                html: 'Sila tunggu sebentar. Sistem sedang memadankan profil murid...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            for (let row of data) {
+                const sName = (row[map.name] || '').toString().trim().toUpperCase();
+                if (!sName) continue;
+                
+                const sIc = map.ic ? (row[map.ic] || '').toString().trim() : '';
+                const sDelima = map.delima ? (row[map.delima] || '').toString().trim() : '';
+                const rawGender = map.gender ? (row[map.gender] || '').toString().trim().toUpperCase() : 'L';
+                const sGender = rawGender.startsWith('P') ? 'P' : 'L';
+                
+                let targetClassId = defaultClassId;
+                
+                let sYearStr = map.year ? (row[map.year] || '').toString().trim() : '';
+                let sClassStr = map.class ? (row[map.class] || '').toString().trim() : '';
+                let sClassName = '';
+                
+                let yearMatch = sYearStr.match(/^[DdTt]?\s*([1-6])/i);
+                if (yearMatch) sYearStr = yearMatch[1]; 
+                
+                if (sYearStr && sClassStr) {
+                    if (sClassStr.toUpperCase().includes(sYearStr)) sClassName = sClassStr.toUpperCase();
+                    else sClassName = (`${sYearStr} ${sClassStr}`).toUpperCase();
+                } else if (sClassStr) {
+                    sClassName = sClassStr.toUpperCase();
+                } else if (sYearStr) {
+                    sClassName = (`TAHUN ${sYearStr}`).toUpperCase();
+                }
+
+                if (!sClassName && !targetClassId) {
+                    sClassName = "KELAS IMPORT"; 
+                }
+                
+                if (sClassName) {
+                    let foundCls = window.db.classes.find(c => c.name === sClassName);
+                    if (foundCls) {
+                        targetClassId = foundCls.id;
+                    } else {
+                        try {
+                            const docRef = await addDoc(classesRef, { name: sClassName });
+                            targetClassId = docRef.id;
+                            window.db.classes.push({id: targetClassId, name: sClassName});
+                            window.updateClassSelects();
+                            window.renderClasses();
+                        } catch(err) { console.error(err); }
+                    }
+                }
+
+                if (!targetClassId) continue;
+
+                try {
+                    await addDoc(studentsRef, {
+                        classId: targetClassId,
+                        name: sName,
+                        noKp: sIc,
+                        idDelima: sDelima,
+                        gender: sGender
+                    });
+                    addedCount++;
+                } catch(err) { console.error("Ralat memasukkan murid:", err); }
+            }
+
+            e.target.value = ''; 
+            Swal.close();
+            window.showToast('Berjaya', `${addedCount} rekod murid berjaya diimport!`);
+        };
+
+        if (isExcel) {
+            // Logik Bacaan Khas untuk Fail Excel (.xlsx / .xls)
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const arrayData = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(arrayData, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    
+                    if (json.length === 0) throw new Error("Fail Excel kosong atau format tidak disokong.");
+                    const headers = Object.keys(json[0]);
+                    
+                    await processImportData(json, headers);
+                } catch (err) {
+                    Swal.fire('Ralat Excel', err.message, 'error');
+                    e.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            // Logik Bacaan Asal untuk CSV
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: async (results) => {
+                    await processImportData(results.data, results.meta.fields);
+                },
+                error: (err) => {
+                    Swal.fire('Ralat CSV', err.message, 'error');
+                    e.target.value = '';
+                }
+            });
+        }
     }
 
     window.liveSave = async function(el) {
