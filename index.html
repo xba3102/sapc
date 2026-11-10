@@ -25,6 +25,22 @@
 </head>
 <body class="flex h-screen overflow-hidden text-gray-800">
 
+    <!-- LOGIN OVERLAY -->
+    <div id="login-overlay" class="fixed inset-0 bg-corporate z-50 flex flex-col items-center justify-center text-white transition-opacity duration-300">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl text-center max-w-md w-full">
+            <div class="bg-blue-100 text-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-award text-4xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">SPAK SK Bikang</h1>
+            <p class="text-gray-500 mb-8 text-sm">Sistem Pengurusan Anugerah & Markah<br>Hanya untuk kegunaan warga KPM (ID DELIMA)</p>
+            
+            <button onclick="window.loginWithGoogle()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow font-bold transition flex items-center justify-center mb-4">
+                <i class="fab fa-google mr-3"></i> Log Masuk ID DELIMA
+            </button>
+            <p class="text-xs text-red-500 font-medium">* Akses akan ditolak bagi e-mel peribadi.</p>
+        </div>
+    </div>
+
     <aside class="w-64 bg-corporate text-white flex flex-col shadow-xl z-20">
         <div class="p-6 border-b border-blue-800">
             <h1 class="text-2xl font-bold tracking-wider"><i class="fas fa-award mr-2"></i>SPAK</h1>
@@ -56,6 +72,13 @@
                 <span class="text-sm font-medium px-3 py-1 rounded-full bg-gray-100" id="dbStatus">
                     <i class="fas fa-spinner fa-spin text-blue-500 mr-1"></i>Menyambung...
                 </span>
+                <!-- USER PROFILE & LOGOUT -->
+                <div id="userProfile" class="hidden items-center border-l pl-4 ml-2 border-gray-300">
+                    <span id="userEmailTxt" class="text-sm font-bold text-gray-700 mr-3"></span>
+                    <button onclick="window.logout()" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-medium transition">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Keluar
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -236,7 +259,7 @@
     <!-- FIREBASE & LOGIK APLIKASI (MODULE SCRIPT) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, writeBatch, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // KONFIGURASI FIREBASE KUSTOM ANDA
@@ -254,6 +277,7 @@
         let app, db, auth, currentUser;
         window.appData = { students: [], classes: [] };
         let myCharts = {};
+        const googleProvider = new GoogleAuthProvider();
 
         // Mulakan sambungan Firebase menggunakan konfigurasi anda
         try {
@@ -508,6 +532,65 @@
 
         window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
 
+        // --- AUTENTIKASI (LOGIN & LOGOUT) ---
+        window.loginWithGoogle = async function() {
+            try {
+                window.showToast("Membuka log masuk Google...", "info");
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                
+                // Semak domain e-mel
+                if (user.email && (user.email.endsWith('@moe-dl.edu.my') || user.email.endsWith('@moe.edu.my'))) {
+                    window.showToast("Log masuk berjaya!", "success");
+                    document.getElementById('login-overlay').classList.add('hidden');
+                } else {
+                    await signOut(auth);
+                    window.showToast("Akses Ditolak: Sila gunakan e-mel @moe-dl.edu.my (DELIMA)", "error");
+                    document.getElementById('login-overlay').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Login Error:", error);
+                window.showToast("Ralat Log Masuk: " + error.message, "error");
+            }
+        }
+
+        window.logout = async function() {
+            await signOut(auth);
+            window.location.reload();
+        }
+
+        // --- FUNGSI MULA SELEPAS LOG MASUK BERJAYA ---
+        function startDataSync() {
+            document.getElementById('dbStatus').innerHTML = '<i class="fas fa-sync fa-spin text-blue-500 mr-1"></i>Membaca Data...';
+            document.getElementById('userProfile').classList.add('flex');
+            document.getElementById('userProfile').classList.remove('hidden');
+            
+            // Tentukan Peranan Admin
+            let roleBadge = '';
+            if (currentUser.email === 'sekolah-7608@moe-dl.edu.my') {
+                roleBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs ml-2 border border-red-200">Admin</span>';
+            }
+            document.getElementById('userEmailTxt').innerHTML = currentUser.email + roleBadge;
+            
+            const studentsRef = collection(db, 'students');
+            onSnapshot(studentsRef, (snapshot) => {
+                window.appData.students = [];
+                let classSet = new Set();
+                snapshot.forEach((doc) => {
+                    let data = doc.data(); data.id = doc.id;
+                    window.appData.students.push(data);
+                    if(data.className) classSet.add(data.className);
+                });
+                window.appData.classes = Array.from(classSet).sort();
+                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-cloud text-green-500 mr-1"></i>Awan Disegerak';
+                window.updateClassDropdowns(); window.renderStudents(); window.renderDashboard();
+            }, (error) => {
+                console.error("Firebase Snapshot Error:", error);
+                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>Akses Ditolak';
+                window.showToast("Akses ditolak: Semak kebenaran (Rules) Firebase anda.", "error");
+            });
+        }
+
         window.printSelectedReports = function(examType) {
             const selectedIds = Array.from(document.querySelectorAll('.stu-check:checked')).map(cb => cb.value);
             if (selectedIds.length === 0) return window.showToast("Pilih murid dahulu.", "error");
@@ -536,7 +619,7 @@
         }
 
         // --- SISTEM PERMULAAN (BOOTSTRAP) ---
-        window.onload = async function() {
+        window.onload = function() {
             window.navigate('dashboard');
             
             if (!isFirebaseActive) {
@@ -544,38 +627,27 @@
                 return;
             }
 
-            document.getElementById('dbStatus').innerHTML = '<i class="fas fa-spinner fa-spin text-blue-500 mr-1"></i>Menyambung...';
-            try {
-                // Log masuk secara awan tanpa nama (Anonymous) untuk ujian / persediaan awal
-                await signInAnonymously(auth);
-                currentUser = auth.currentUser;
-                
-                if (currentUser) {
-                    document.getElementById('dbStatus').innerHTML = '<i class="fas fa-sync fa-spin text-blue-500 mr-1"></i>Membaca Data...';
-                    
-                    const studentsRef = collection(db, 'students');
-                    onSnapshot(studentsRef, (snapshot) => {
-                        window.appData.students = [];
-                        let classSet = new Set();
-                        snapshot.forEach((doc) => {
-                            let data = doc.data(); data.id = doc.id;
-                            window.appData.students.push(data);
-                            if(data.className) classSet.add(data.className);
-                        });
-                        window.appData.classes = Array.from(classSet).sort();
-                        document.getElementById('dbStatus').innerHTML = '<i class="fas fa-cloud text-green-500 mr-1"></i>Awan Disegerak';
-                        window.updateClassDropdowns(); window.renderStudents(); window.renderDashboard();
-                    }, (error) => {
-                        console.error("Firebase Error:", error);
-                        document.getElementById('dbStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>Ralat Akses (Permission)';
-                        window.showToast("Akses ditolak. Sila periksa Rules Firestore anda.", "error");
-                    });
+            // Dengar perubahan status sesi (Google Auth State)
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    if (user.email && (user.email.endsWith('@moe-dl.edu.my') || user.email.endsWith('@moe.edu.my'))) {
+                        currentUser = user;
+                        document.getElementById('login-overlay').classList.add('hidden');
+                        startDataSync();
+                    } else {
+                        // Terlog masuk e-mel salah (cache), paksa log keluar
+                        signOut(auth);
+                        document.getElementById('login-overlay').classList.remove('hidden');
+                        document.getElementById('dbStatus').innerHTML = '<i class="fas fa-lock text-red-500 mr-1"></i>Sesi Ditolak';
+                    }
+                } else {
+                    // Paparkan Skrin Log Masuk
+                    document.getElementById('login-overlay').classList.remove('hidden');
+                    document.getElementById('dbStatus').innerHTML = '<i class="fas fa-user-lock text-gray-500 mr-1"></i>Menunggu Log Masuk';
+                    document.getElementById('userProfile').classList.add('hidden');
+                    document.getElementById('userProfile').classList.remove('flex');
                 }
-            } catch (error) {
-                console.error("Auth Error:", error);
-                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-times text-red-500 mr-1"></i>Gagal Berhubung';
-                window.showToast("Gagal menyambung ke projek anda.", "error");
-            }
+            });
         };
     </script>
 </body>
