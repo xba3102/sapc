@@ -53,7 +53,9 @@
         <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center sticky top-0 z-30">
             <h2 id="pageTitle" class="text-xl font-bold text-gray-700">Dashboard</h2>
             <div class="flex items-center space-x-4">
-                <span class="text-sm text-gray-500" id="dbStatus"><i class="fas fa-sync fa-spin text-blue-500 mr-1"></i>Menyambung Firebase...</span>
+                <span class="text-sm font-medium px-3 py-1 rounded-full bg-gray-100" id="dbStatus">
+                    <i class="fas fa-spinner fa-spin text-blue-500 mr-1"></i>Menyambung...
+                </span>
             </div>
         </header>
 
@@ -143,7 +145,7 @@
                 </div>
                 <div class="flex space-x-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                     <button onclick="document.getElementById('importFile').click()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded shadow-sm text-sm transition whitespace-nowrap">
-                        <i class="fas fa-file-excel mr-1"></i> Import
+                        <i class="fas fa-file-excel mr-1"></i> Import Pukal
                     </button>
                     <input type="file" id="importFile" class="hidden" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="window.handleBulkImport(event)">
                     
@@ -171,7 +173,7 @@
                             </tr>
                         </thead>
                         <tbody class="text-sm text-gray-700 divide-y divide-gray-100" id="studentsTbody">
-                            <tr><td colspan="7" class="p-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Memuatkan data dari awan...</td></tr>
+                            <tr><td colspan="7" class="p-8 text-center text-gray-400">Tiada rekod buat masa ini. Sila import data.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -187,7 +189,7 @@
                         <option value="">Semua Kelas</option>
                     </select>
                 </div>
-                <button onclick="window.showToast('Modul markah dlm proses integrasi awan', 'info')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow-sm text-sm transition">
+                <button onclick="window.showToast('Gunakan Excel Sheet untuk maklumat pukal', 'info')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow-sm text-sm transition">
                     <i class="fas fa-paste mr-2"></i> Tampal Excel
                 </button>
             </div>
@@ -199,8 +201,8 @@
         <!-- VIEW: TETAPAN -->
         <div id="view-settings" class="p-8 space-y-6 hidden">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 max-w-2xl">
-                <h3 class="text-lg font-bold text-gray-700 border-b pb-2 mb-4">Pengurusan Pangkalan Data (Cloud)</h3>
-                <p class="text-sm text-gray-600 mb-4">Data sedang diselaraskan secara langsung dengan Firebase Firestore.</p>
+                <h3 class="text-lg font-bold text-gray-700 border-b pb-2 mb-4">Pengurusan Pangkalan Data</h3>
+                <p class="text-sm text-gray-600 mb-4">Sistem sedang menggunakan konfigurasi awan rasmi (Firebase). Jika ralat berlaku, semak "Firebase Rules" anda.</p>
             </div>
         </div>
     </main>
@@ -235,25 +237,33 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, writeBatch, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, writeBatch, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Konfigurasi Dinamik Persekitaran Platform
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'spak-sk-bikang-app';
-        let firebaseConfig;
-        try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        } catch (e) {
-            console.error("Config parse error");
-        }
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        let currentUser = null;
-
-        // State Tempatan (Sinkronisasi dengan awan)
+        // KONFIGURASI FIREBASE KUSTOM ANDA
+        const firebaseConfig = {
+          apiKey: "AIzaSyCfx8lW-HL6X3on42f-njGj30-4yvf9LGQ",
+          authDomain: "sisapc-24131.firebaseapp.com",
+          projectId: "sisapc-24131",
+          storageBucket: "sisapc-24131.firebasestorage.app",
+          messagingSenderId: "941546164781",
+          appId: "1:941546164781:web:5b31501e540db1e3155ea4"
+        };
+        
+        // Pembolehubah Global
+        let isFirebaseActive = false;
+        let app, db, auth, currentUser;
         window.appData = { students: [], classes: [] };
         let myCharts = {};
+
+        // Mulakan sambungan Firebase menggunakan konfigurasi anda
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            isFirebaseActive = true;
+        } catch (error) {
+            console.error("Firebase init failed:", error);
+        }
 
         // --- FUNGSI TOAST ---
         window.showToast = function(message, type = 'success') {
@@ -263,40 +273,8 @@
             toast.className = `${bg} text-white px-6 py-3 rounded-lg shadow-lg flex items-center transform transition-all duration-300 translate-y-10 opacity-0`;
             toast.innerHTML = `<i class="fas ${icon} mr-3"></i> ${message}`;
             document.getElementById('toast-container').appendChild(toast);
-            setTimeout(() => { toast.classList.remove('translate-y-10', 'opacity-0'); }, 10);
+            setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
             setTimeout(() => { toast.classList.add('opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
-        }
-
-        // --- HUBUNGAN KE FIREBASE (LISTENER REAL-TIME) ---
-        function syncFromFirebase() {
-            if (!currentUser) return;
-            
-            // Patuh kepada laluan koleksi berstruktur (Rule 1)
-            const studentsRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
-            
-            onSnapshot(studentsRef, (snapshot) => {
-                window.appData.students = [];
-                let classSet = new Set();
-                
-                snapshot.forEach((doc) => {
-                    let data = doc.data();
-                    data.id = doc.id;
-                    window.appData.students.push(data);
-                    if(data.className) classSet.add(data.className);
-                });
-                
-                window.appData.students.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-                window.appData.classes = Array.from(classSet).sort();
-                
-                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-cloud text-green-500 mr-1"></i>Awan Disegerak';
-                window.updateClassDropdowns();
-                window.renderStudents();
-                window.renderDashboard();
-            }, (error) => {
-                console.error("Firebase Error:", error);
-                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>Ralat Akses';
-                window.showToast("Ralat membaca data awan. Cuba muat semula.", "error");
-            });
         }
 
         // --- NAVIGASI ---
@@ -307,10 +285,8 @@
             });
             document.getElementById(`view-${viewId}`).classList.remove('hidden');
             document.getElementById(`btn-${viewId}`).classList.add('tab-active');
-            
             const titles = { 'dashboard': 'Dashboard & Analitik', 'students': 'Pengurusan Murid & Kelas', 'marks': 'Kemasukan Markah', 'settings': 'Tetapan Sistem' };
             document.getElementById('pageTitle').innerText = titles[viewId];
-
             if (viewId === 'dashboard') window.renderDashboard();
             if (viewId === 'students') window.renderStudents();
         }
@@ -342,11 +318,11 @@
             return 'L';
         }
 
-        // --- IMPORT KE FIREBASE (BATCH WRITE) ---
+        // --- PENGENDALIAN IMPORT FAIL KEPADA DATA ---
         window.handleBulkImport = function(event) {
             const file = event.target.files[0];
             if (!file) return;
-            window.showToast("Membaca fail...", "info");
+            window.showToast("Membaca fail menggunakan AI...", "info");
             const reader = new FileReader();
             reader.onload = function(e) {
                 let parsedData = [];
@@ -368,15 +344,8 @@
         }
 
         async function processAndUploadData(rows) {
-            if (!currentUser) {
-                window.showToast("Ralat: Tiada sesi yang sah untuk muat naik.", "error");
-                return;
-            }
-            window.showToast("Memuat naik data ke awan...", "info");
-            const batch = writeBatch(db);
+            let tempLocalStudents = [];
             let count = 0;
-
-            const studentsRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
 
             rows.forEach(row => {
                 let cleanRow = {};
@@ -401,8 +370,8 @@
                 let gred = row['Gred'] || cleanRow['gred'] || "";
 
                 if (name) {
-                    const docRef = doc(studentsRef); 
-                    batch.set(docRef, {
+                    tempLocalStudents.push({
+                        id: 'STU' + Date.now() + Math.floor(Math.random()*1000), 
                         name: String(name).toUpperCase(),
                         ic: ic,
                         gender: gender.toUpperCase().charAt(0),
@@ -414,16 +383,33 @@
                 }
             });
 
+            if (!isFirebaseActive) {
+                window.showToast("Sistem tidak berhubung dengan awan (Ralat Konfigurasi).", "error");
+                return;
+            }
+
+            if (!currentUser) { window.showToast("Sesi awan tidak sah. Sila tunggu sistem berhubung.", "error"); return; }
+            window.showToast("Memuat naik data ke awan...", "info");
+            const batch = writeBatch(db);
+            
+            // Menyimpan pada laluan khas Firebase (Koleksi 'students')
+            const studentsRef = collection(db, 'students');
+
+            tempLocalStudents.forEach(stu => {
+                const docRef = doc(studentsRef); 
+                batch.set(docRef, { name: stu.name, ic: stu.ic, gender: stu.gender, className: stu.className, tp: stu.tp, gred: stu.gred });
+            });
+
             try {
                 await batch.commit();
-                window.showToast(`${count} murid berjaya dimuat naik ke Firebase!`, "success");
+                window.showToast(`${count} murid berjaya ke awan!`, "success");
             } catch(e) {
-                console.error(e);
-                window.showToast("Gagal muat naik: " + e.message, "error");
+                console.error("Batch Write Error:", e);
+                window.showToast("Gagal muat naik awan. Semak Rules: " + e.message, "error");
             }
         }
 
-        // --- RENDER DOM UTAMA ---
+        // --- PAPARAN DOM ---
         window.updateClassDropdowns = function() {
             let optionsHTML = '<option value="">Semua Kelas</option>';
             window.appData.classes.forEach(c => optionsHTML += `<option value="${c}">${c}</option>`);
@@ -436,6 +422,8 @@
             tbody.innerHTML = '';
             
             let filtered = window.appData.students;
+            filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
             const fClass = document.getElementById('filterClassStu') ? document.getElementById('filterClassStu').value : "";
             const fTP = document.getElementById('filterTP') ? document.getElementById('filterTP').value : "";
             const fGred = document.getElementById('filterGred') ? document.getElementById('filterGred').value : "";
@@ -445,7 +433,7 @@
             if (fGred) filtered = filtered.filter(s => s.gred === fGred);
             
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Tiada data murid.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Tiada data murid padan dengan pilihan.</td></tr>';
                 return;
             }
 
@@ -481,7 +469,6 @@
             const ctxPBD = document.getElementById('chartPBD');
             if (ctxPBD) {
                 if(myCharts.pbd) myCharts.pbd.destroy();
-                // Kira TP dari data sebenar
                 let tpCounts = [0,0,0,0,0,0];
                 window.appData.students.forEach(s => {
                     if(s.tp === 'TP1') tpCounts[0]++; else if(s.tp === 'TP2') tpCounts[1]++;
@@ -500,9 +487,7 @@
             }
         }
 
-        window.toggleSelectAll = function(source) {
-            document.querySelectorAll('.stu-check').forEach(cb => cb.checked = source.checked);
-        }
+        window.toggleSelectAll = function(source) { document.querySelectorAll('.stu-check').forEach(cb => cb.checked = source.checked); }
 
         window.showClassAnalytics = function() {
             const tbody = document.getElementById('classAnalyticsTbody');
@@ -523,7 +508,6 @@
 
         window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
 
-        // --- FUNGSI CETAK ---
         window.printSelectedReports = function(examType) {
             const selectedIds = Array.from(document.querySelectorAll('.stu-check:checked')).map(cb => cb.value);
             if (selectedIds.length === 0) return window.showToast("Pilih murid dahulu.", "error");
@@ -542,7 +526,6 @@
                             <tr><th>Mata Pelajaran</th><th>Markah</th><th>Gred</th><th>TP</th></tr>
                             <tr><td>Bahasa Melayu</td><td align="center">85</td><td align="center">A</td><td align="center">${student.tp || '-'}</td></tr>
                             <tr><td>Matematik</td><td align="center">70</td><td align="center">B</td><td align="center">${student.tp || '-'}</td></tr>
-                            <!-- Tambah subjek lain mengikut keperluan -->
                         </table>
                         <br><br>
                         <p>Tandatangan Guru Kelas: ___________________</p>
@@ -552,27 +535,46 @@
             printWindow.document.open(); printWindow.document.write(printHTML); printWindow.document.close();
         }
 
-        // Mula sistem, Autentikasi secara senyap & hubungkan ke awan
+        // --- SISTEM PERMULAAN (BOOTSTRAP) ---
         window.onload = async function() {
             window.navigate('dashboard');
-            document.getElementById('dbStatus').innerHTML = '<i class="fas fa-spinner fa-spin text-blue-500 mr-1"></i>Mengesahkan Sistem...';
             
+            if (!isFirebaseActive) {
+                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-server text-yellow-500 mr-1"></i>Ralat Konfigurasi';
+                return;
+            }
+
+            document.getElementById('dbStatus').innerHTML = '<i class="fas fa-spinner fa-spin text-blue-500 mr-1"></i>Menyambung...';
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // Log masuk secara awan tanpa nama (Anonymous) untuk ujian / persediaan awal
+                await signInAnonymously(auth);
                 currentUser = auth.currentUser;
                 
                 if (currentUser) {
-                    document.getElementById('dbStatus').innerHTML = '<i class="fas fa-sync fa-spin text-blue-500 mr-1"></i>Membaca Data Awan...';
-                    syncFromFirebase();
+                    document.getElementById('dbStatus').innerHTML = '<i class="fas fa-sync fa-spin text-blue-500 mr-1"></i>Membaca Data...';
+                    
+                    const studentsRef = collection(db, 'students');
+                    onSnapshot(studentsRef, (snapshot) => {
+                        window.appData.students = [];
+                        let classSet = new Set();
+                        snapshot.forEach((doc) => {
+                            let data = doc.data(); data.id = doc.id;
+                            window.appData.students.push(data);
+                            if(data.className) classSet.add(data.className);
+                        });
+                        window.appData.classes = Array.from(classSet).sort();
+                        document.getElementById('dbStatus').innerHTML = '<i class="fas fa-cloud text-green-500 mr-1"></i>Awan Disegerak';
+                        window.updateClassDropdowns(); window.renderStudents(); window.renderDashboard();
+                    }, (error) => {
+                        console.error("Firebase Error:", error);
+                        document.getElementById('dbStatus').innerHTML = '<i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>Ralat Akses (Permission)';
+                        window.showToast("Akses ditolak. Sila periksa Rules Firestore anda.", "error");
+                    });
                 }
             } catch (error) {
                 console.error("Auth Error:", error);
-                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-times text-red-500 mr-1"></i>Auth Gagal';
-                window.showToast("Gagal menyambung ke pelayan utama.", "error");
+                document.getElementById('dbStatus').innerHTML = '<i class="fas fa-times text-red-500 mr-1"></i>Gagal Berhubung';
+                window.showToast("Gagal menyambung ke projek anda.", "error");
             }
         };
     </script>
