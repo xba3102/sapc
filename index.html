@@ -619,10 +619,9 @@
     let auth = getAuth(app);
     let dbFs = getFirestore(app);
 
-    const rootDoc = doc(dbFs, 'artifacts', 'public_spak_sk_bikang');
-    const classesRef = collection(rootDoc, 'classes');
-    const studentsRef = collection(rootDoc, 'students');
-    const marksRef = collection(rootDoc, 'marks');
+    const classesRef = collection(dbFs, 'classes');
+    const studentsRef = collection(dbFs, 'students');
+    const marksRef = collection(dbFs, 'marks');
 
     onAuthStateChanged(auth, (user) => {
         if (user && user.email) {
@@ -676,7 +675,7 @@
             window.showToast('Berjaya', 'Kelas baharu berjaya ditambah.');
         } catch (e) {
             console.error(e);
-            window.showToast('Ralat', 'Gagal menambah kelas. Sila semak sambungan Internet.', true);
+            window.showToast('Ralat', 'Gagal: ' + e.message, true);
         }
     }
     
@@ -686,7 +685,7 @@
                 for(let s of window.db.students.filter(x => x.classId === id)) await deleteDoc(doc(studentsRef, s.id));
                 await deleteDoc(doc(classesRef, id));
                 window.showToast('Berjaya', 'Kelas berjaya dipadam.');
-            } catch (e) { window.showToast('Ralat', 'Gagal memadam kelas.', true); }
+            } catch (e) { window.showToast('Ralat', 'Gagal: ' + e.message, true); }
         }
     }
 
@@ -704,7 +703,7 @@
                 try {
                     await addDoc(studentsRef, { classId: sel.value, name: res.value, gender: 'L' }); 
                     window.showToast('Berjaya', 'Murid ditambah.');
-                } catch(e) { window.showToast('Ralat', 'Gagal menambah murid.', true); }
+                } catch(e) { window.showToast('Ralat', 'Gagal: ' + e.message, true); }
             }
         });
     }
@@ -714,7 +713,7 @@
             try {
                 await deleteDoc(doc(studentsRef, id));
                 window.showToast('Berjaya', 'Murid dipadam.');
-            } catch(e) { window.showToast('Ralat', 'Gagal memadam murid.', true); }
+            } catch(e) { window.showToast('Ralat', 'Gagal: ' + e.message, true); }
         } 
     }
 
@@ -745,7 +744,7 @@
                     document.getElementById('selectAllStudents').checked = false; // Reset checkbox
                 } catch (e) {
                     Swal.close();
-                    window.showToast('Ralat', 'Gagal memindahkan murid.', true);
+                    window.showToast('Ralat', 'Gagal: ' + e.message, true);
                 }
             }
         });
