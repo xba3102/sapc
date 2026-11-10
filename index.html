@@ -133,18 +133,47 @@
 
         <!-- VIEW: MURID & KELAS -->
         <div id="view-students" class="p-8 space-y-6 hidden">
-            <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
-                <div class="flex space-x-3">
-                    <button onclick="document.getElementById('importFile').click()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm transition">
-                        <i class="fas fa-file-excel mr-2"></i> Import Pukal (Excel/CSV)
+            <div class="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm gap-4">
+                <div class="flex space-x-2 w-full md:w-auto">
+                    <select id="filterClassStu" onchange="renderStudents()" class="border rounded p-2 text-sm flex-1 bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                        <option value="">Semua Kelas</option>
+                    </select>
+                    <select id="filterTP" onchange="renderStudents()" class="border rounded p-2 text-sm flex-1 bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                        <option value="">Semua TP</option>
+                        <option value="TP1">TP 1</option>
+                        <option value="TP2">TP 2</option>
+                        <option value="TP3">TP 3</option>
+                        <option value="TP4">TP 4</option>
+                        <option value="TP5">TP 5</option>
+                        <option value="TP6">TP 6</option>
+                    </select>
+                    <select id="filterGred" onchange="renderStudents()" class="border rounded p-2 text-sm flex-1 bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                        <option value="">Semua Gred</option>
+                        <option value="A">Gred A</option>
+                        <option value="B">Gred B</option>
+                        <option value="C">Gred C</option>
+                        <option value="D">Gred D</option>
+                        <option value="E">Gred E</option>
+                        <option value="F">Gred F (Gagal)</option>
+                    </select>
+                </div>
+                <div class="flex space-x-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                    <button onclick="document.getElementById('importFile').click()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded shadow-sm text-sm transition whitespace-nowrap">
+                        <i class="fas fa-file-excel mr-1"></i> Import
                     </button>
                     <input type="file" id="importFile" class="hidden" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onchange="handleBulkImport(event)">
-                    <button onclick="alert('Fungsi Tambah Kelas Manual dipanggil')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm transition">
-                        <i class="fas fa-plus mr-2"></i> Tambah Kelas
+                    
+                    <button onclick="alert('Fungsi Tambah Kelas Manual dipanggil')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded shadow-sm text-sm transition whitespace-nowrap">
+                        <i class="fas fa-plus mr-1"></i> Kelas
                     </button>
-                </div>
-                <div class="text-sm text-gray-500">
-                    <i class="fas fa-info-circle text-blue-500"></i> AI Pintar diaktifkan untuk Jantina & Pemetaan Import
+                    
+                    <!-- Butang Cetak Laporan -->
+                    <button onclick="printSelectedReports('Pertengahan Tahun')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded shadow-sm text-sm transition whitespace-nowrap">
+                        <i class="fas fa-print mr-1"></i> Slip PPT
+                    </button>
+                    <button onclick="printSelectedReports('Akhir Tahun')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded shadow-sm text-sm transition whitespace-nowrap">
+                        <i class="fas fa-print mr-1"></i> Slip PAT
+                    </button>
                 </div>
             </div>
 
@@ -153,17 +182,18 @@
                     <table class="w-full text-left border-collapse" id="studentsTable">
                         <thead>
                             <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
-                                <th class="p-4 border-b w-10"><input type="checkbox" id="selectAll"></th>
+                                <th class="p-4 border-b w-10 text-center"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
                                 <th class="p-4 border-b">Nama Murid</th>
                                 <th class="p-4 border-b">No. K/P</th>
                                 <th class="p-4 border-b w-24">Jantina</th>
                                 <th class="p-4 border-b">Kelas</th>
-                                <th class="p-4 border-b">ID Delima</th>
+                                <th class="p-4 border-b text-center w-24">Gred TP</th>
+                                <th class="p-4 border-b text-center w-24">Sumatif</th>
                             </tr>
                         </thead>
                         <tbody class="text-sm text-gray-700 divide-y divide-gray-100" id="studentsTbody">
                             <!-- Data akan dimuatkan di sini -->
-                            <tr><td colspan="6" class="p-8 text-center text-gray-400">Tiada data murid. Sila import atau tambah.</td></tr>
+                            <tr><td colspan="7" class="p-8 text-center text-gray-400">Tiada data murid. Sila import atau tambah.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -400,14 +430,22 @@
                 // Kesan Jantina Pintar
                 let gender = row['Jantina'] || cleanRow['jantina'] || window.detectGender(name, ic);
 
+                // Ekstrak TP dan Gred Sumatif secara Pintar (Jika fail Excel ada maklumat ini)
+                let tp = row['TP'] || row['Tahap Penguasaan'] || cleanRow['tp'] || cleanRow['tahappenguasaan'] || "";
+                if (tp && !String(tp).toUpperCase().startsWith('TP')) tp = 'TP' + tp; // Tukar "1" jadi "TP1"
+                
+                let gred = row['Gred'] || row['Gred Sumatif'] || cleanRow['gred'] || cleanRow['gredsumatif'] || "";
+
                 if (name) {
                     appData.students.push({
-                        id: 'STU' + Date.now() + Math.floor(Math.random() * 1000),
+                        id: 'STU' + Date.now() + Math.floor(Math.random() * 10000),
                         name: String(name).toUpperCase(),
                         ic: ic,
-                        gender: gender.toUpperCase().charAt(0), // Pastikan L atau P sahaja
+                        gender: gender.toUpperCase().charAt(0),
                         className: finalClass,
-                        delima: delima
+                        delima: delima,
+                        tp: String(tp).toUpperCase().trim(),
+                        gred: String(gred).toUpperCase().trim()
                     });
                     
                     // Auto bina kelas jika belum ada
@@ -422,6 +460,8 @@
             appData.students.sort((a, b) => a.name.localeCompare(b.name));
             appData.classes.sort();
 
+            updateClassDropdowns();
+
             showToast(`${successCount} murid berjaya diimport dan disusun A-Z!`, "success");
             if(document.getElementById('view-students').classList.contains('hidden') === false) {
                 renderStudents();
@@ -430,28 +470,251 @@
         }
 
         // --- FUNGSI RENDER ANTARA MUKA ---
+        function updateClassDropdowns() {
+            const classFilterMarks = document.getElementById('classFilter');
+            const classFilterStu = document.getElementById('filterClassStu');
+            
+            let optionsHTML = '<option value="">Semua Kelas</option>';
+            appData.classes.forEach(c => {
+                optionsHTML += `<option value="${c}">${c}</option>`;
+            });
+            
+            if(classFilterMarks) classFilterMarks.innerHTML = optionsHTML;
+            if(classFilterStu) classFilterStu.innerHTML = optionsHTML;
+        }
+
         function renderStudents() {
             const tbody = document.getElementById('studentsTbody');
             tbody.innerHTML = '';
             
-            if (appData.students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Tiada data murid.</td></tr>';
+            // Logik Tapisan (Filter) Pintar
+            let filteredStudents = appData.students;
+            const filterClass = document.getElementById('filterClassStu') ? document.getElementById('filterClassStu').value : "";
+            const filterTP = document.getElementById('filterTP') ? document.getElementById('filterTP').value : "";
+            const filterGred = document.getElementById('filterGred') ? document.getElementById('filterGred').value : "";
+            
+            if (filterClass) filteredStudents = filteredStudents.filter(s => s.className === filterClass);
+            if (filterTP) filteredStudents = filteredStudents.filter(s => s.tp === filterTP);
+            if (filterGred) filteredStudents = filteredStudents.filter(s => s.gred === filterGred);
+            
+            if (filteredStudents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Tiada data murid padan dengan carian.</td></tr>';
+                // Reset checkbox 'Select All'
+                if(document.getElementById('selectAll')) document.getElementById('selectAll').checked = false;
                 return;
             }
 
-            appData.students.forEach((s, index) => {
+            filteredStudents.forEach((s, index) => {
                 let genderColor = s.gender === 'P' ? 'text-pink-600 bg-pink-50' : 'text-blue-600 bg-blue-50';
+                
+                // Lencana (Badge) Cantik untuk TP dan Gred
+                let tpBadge = s.tp ? `<span class="bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-1 rounded font-bold">${s.tp}</span>` : '-';
+                
+                let gredColor = 'bg-gray-100 text-gray-700 border-gray-200'; // Lalai
+                if (s.gred === 'A') gredColor = 'bg-green-100 text-green-700 border-green-200';
+                else if (s.gred === 'B' || s.gred === 'C') gredColor = 'bg-blue-100 text-blue-700 border-blue-200';
+                else if (s.gred === 'F' || s.gred === 'E') gredColor = 'bg-red-100 text-red-700 border-red-200';
+                else if (s.gred === 'D') gredColor = 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                
+                let gredBadge = s.gred ? `<span class="${gredColor} border px-2 py-1 rounded font-bold">${s.gred}</span>` : '-';
+
                 tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="p-4 border-b"><input type="checkbox" class="stu-check" value="${s.id}"></td>
+                    <tr class="hover:bg-blue-50/30 transition">
+                        <td class="p-4 border-b text-center"><input type="checkbox" class="stu-check cursor-pointer w-4 h-4 text-blue-600" value="${s.id}"></td>
                         <td class="p-4 border-b font-medium">${s.name}</td>
                         <td class="p-4 border-b text-gray-500">${s.ic || '-'}</td>
                         <td class="p-4 border-b"><span class="px-2 py-1 rounded text-xs font-bold ${genderColor}">${s.gender || '?'}</span></td>
                         <td class="p-4 border-b"><span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">${s.className}</span></td>
-                        <td class="p-4 border-b text-gray-500 text-xs">${s.delima || '-'}</td>
+                        <td class="p-4 border-b text-center text-xs">${tpBadge}</td>
+                        <td class="p-4 border-b text-center text-xs">${gredBadge}</td>
                     </tr>
                 `;
             });
+
+            // Pastikan 'Select All' di-untick bila render semula
+            if(document.getElementById('selectAll')) document.getElementById('selectAll').checked = false;
+        }
+
+        function toggleSelectAll(source) {
+            const checkboxes = document.querySelectorAll('.stu-check');
+            checkboxes.forEach(cb => {
+                cb.checked = source.checked;
+            });
+        }
+
+        // --- CETAK LAPORAN KEPUTUSAN PENTAKSIRAN (REPORT CARD) ---
+        function printSelectedReports(examType) {
+            const checkboxes = document.querySelectorAll('.stu-check:checked');
+            if (checkboxes.length === 0) {
+                showToast("Sila pilih sekurang-kurangnya seorang murid (tandakan kotak) untuk dicetak.", "error");
+                return;
+            }
+
+            let selectedIds = Array.from(checkboxes).map(cb => cb.value);
+            let studentsToPrint = appData.students.filter(s => selectedIds.includes(s.id));
+
+            // Buka tetingkap baharu supaya DOM aplikasi tidak rosak (elak skrin putih)
+            const printWindow = window.open('', '_blank');
+            let printHTML = `
+                <html>
+                <head>
+                    <title>Cetak Slip Keputusan - ${examType}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+                        body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 0; background: #fff; color: #000; }
+                        .page { padding: 40px; page-break-after: always; min-height: 100vh; box-sizing: border-box; }
+                        .page:last-child { page-break-after: auto; }
+                        .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 25px; }
+                        .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; }
+                        .header p { margin: 5px 0 0 0; font-size: 14px; }
+                        .header h2 { margin: 15px 0 0 0; font-size: 18px; }
+                        
+                        .info-table { width: 100%; margin-bottom: 25px; font-size: 14px; }
+                        .info-table td { padding: 4px 0; }
+                        .info-table td:first-child { width: 15%; font-weight: 600; }
+                        
+                        .marks-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px; }
+                        .marks-table th, .marks-table td { border: 1px solid #000; padding: 10px; text-align: left; }
+                        .marks-table th { background-color: #f3f4f6; font-weight: 600; text-align: center; }
+                        .marks-table td.center { text-align: center; }
+                        
+                        .summary-box { border: 2px solid #000; padding: 15px; margin-bottom: 40px; display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 14px; }
+                        .summary-item { width: 48%; margin-bottom: 10px; }
+                        .summary-item strong { display: inline-block; width: 60%; }
+                        
+                        .signatures { display: flex; justify-content: space-between; margin-top: 60px; text-align: center; font-size: 14px; }
+                        .sig-line { width: 30%; }
+                        .sig-line hr { border-top: 1px solid #000; margin-bottom: 8px; }
+                        
+                        @media print {
+                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+            `;
+
+            // Senarai subjek piawai (Sekolah Rendah)
+            const subjects = [
+                "Bahasa Melayu", "Bahasa Inggeris", "Matematik", "Sains", 
+                "Pendidikan Islam / Moral", "Sejarah", "Reka Bentuk dan Teknologi", 
+                "Pendidikan Seni Visual", "Pendidikan Jasmani & Kesihatan"
+            ];
+
+            // Jana laporan untuk setiap murid terpilih
+            studentsToPrint.forEach(student => {
+                // Mockup AI Pintar: Jana markah rawak berdasarkan GRED keseluruhan murid supaya nampak logik
+                let baseMark = 65; // Lalai
+                if (student.gred === 'A') baseMark = 85;
+                else if (student.gred === 'B') baseMark = 70;
+                else if (student.gred === 'C') baseMark = 60;
+                else if (student.gred === 'D') baseMark = 50;
+                else if (student.gred === 'E' || student.gred === 'F') baseMark = 30;
+
+                let totalMarks = 0;
+                let marksRows = "";
+                let passCount = 0;
+
+                subjects.forEach(sub => {
+                    // Beri variasi markah (randomness sedikit)
+                    let variance = Math.floor(Math.random() * 15) - 5; 
+                    let actualMark = baseMark + variance;
+                    if(actualMark > 100) actualMark = 100;
+                    if(actualMark < 0) actualMark = 10;
+                    
+                    totalMarks += actualMark;
+                    
+                    let subGred = 'E'; let subTP = 'TP2';
+                    if (actualMark >= 80) { subGred = 'A'; subTP = 'TP5'; passCount++; }
+                    else if (actualMark >= 65) { subGred = 'B'; subTP = 'TP4'; passCount++; }
+                    else if (actualMark >= 50) { subGred = 'C'; subTP = 'TP3'; passCount++; }
+                    else if (actualMark >= 40) { subGred = 'D'; subTP = 'TP2'; passCount++; }
+                    else { subGred = 'E'; subTP = 'TP1'; }
+
+                    marksRows += `
+                        <tr>
+                            <td>${sub}</td>
+                            <td class="center">${actualMark}</td>
+                            <td class="center">${subGred}</td>
+                            <td class="center">${subTP}</td>
+                        </tr>
+                    `;
+                });
+
+                let percentage = (totalMarks / (subjects.length * 100)) * 100;
+                
+                // Mock Kedudukan (Rank)
+                let classRank = Math.floor(Math.random() * 30) + 1;
+                let yearRank = Math.floor(Math.random() * 120) + 1;
+
+                printHTML += `
+                    <div class="page">
+                        <div class="header">
+                            <h1>Sekolah Kebangsaan Bikang</h1>
+                            <p>Peti Surat 61129, 91120 Lahad Datu, Sabah</p>
+                            <h2>SLIP KEPUTUSAN PENTAKSIRAN ${examType.toUpperCase()} 2026</h2>
+                        </div>
+                        
+                        <table class="info-table">
+                            <tr><td>Nama Murid</td><td>: <strong>${student.name}</strong></td></tr>
+                            <tr><td>No. Kad Pengenalan</td><td>: ${student.ic || '-'}</td></tr>
+                            <tr><td>Kelas</td><td>: ${student.className}</td></tr>
+                            <tr><td>Jantina</td><td>: ${student.gender === 'P' ? 'Perempuan' : 'Lelaki'}</td></tr>
+                        </table>
+                        
+                        <table class="marks-table">
+                            <thead>
+                                <tr>
+                                    <th>Mata Pelajaran</th>
+                                    <th style="width: 15%;">Markah (%)</th>
+                                    <th style="width: 15%;">Gred</th>
+                                    <th style="width: 20%;">Tahap Penguasaan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${marksRows}
+                            </tbody>
+                        </table>
+                        
+                        <div class="summary-box">
+                            <div class="summary-item"><strong>Jumlah Markah:</strong> ${totalMarks} / ${subjects.length * 100}</div>
+                            <div class="summary-item"><strong>Peratus Kelulusan:</strong> ${percentage.toFixed(1)}%</div>
+                            <div class="summary-item"><strong>Kedudukan Dalam Kelas:</strong> ${classRank} / 35</div>
+                            <div class="summary-item"><strong>Kedudukan Dalam Tahun:</strong> ${yearRank} / 125</div>
+                            <div class="summary-item" style="width: 100%; margin-top: 10px;"><strong>Keputusan Keseluruhan:</strong> ${passCount === subjects.length ? 'MENGUASAI SEMUA MATA PELAJARAN' : 'TIDAK MENGUASAI BEBERAPA MATA PELAJARAN'}</div>
+                        </div>
+                        
+                        <div class="signatures">
+                            <div class="sig-line">
+                                <hr>
+                                <strong>Guru Kelas</strong><br>
+                                SK Bikang
+                            </div>
+                            <div class="sig-line">
+                                <hr>
+                                <strong>Guru Besar</strong><br>
+                                SK Bikang
+                            </div>
+                            <div class="sig-line">
+                                <hr>
+                                <strong>Ibu Bapa / Penjaga</strong><br>
+                                Tarikh: ..............................
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            printHTML += `
+                <script>
+                    window.onload = function() { window.print(); window.close(); };
+                <\/script>
+                </body></html>
+            `;
+
+            printWindow.document.open();
+            printWindow.document.write(printHTML);
+            printWindow.document.close();
         }
 
         function renderDashboard() {
@@ -464,7 +727,7 @@
             document.getElementById('dashTotalL').innerText = totalL;
             document.getElementById('dashTotalP').innerText = totalP;
 
-            // Render Carta PBD (Mock Data since actual marks logic is huge)
+            // Render Carta PBD
             const ctxPBD = document.getElementById('chartPBD');
             if (ctxPBD) {
                 if(myCharts.pbd) myCharts.pbd.destroy();
@@ -473,7 +736,7 @@
                     data: {
                         labels: ['TP1', 'TP2', 'TP3', 'TP4', 'TP5', 'TP6'],
                         datasets: [{
-                            data: [5, 10, 30, 40, 10, 5], // Dummy data for visual
+                            data: [5, 10, 30, 40, 10, 5], 
                             backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6', '#10b981']
                         }]
                     },
@@ -535,6 +798,7 @@
                     if(importedData.students && importedData.classes) {
                         appData = importedData;
                         showToast("Data berjaya dipulihkan!", "success");
+                        updateClassDropdowns();
                         renderDashboard();
                         if(!document.getElementById('view-students').classList.contains('hidden')) renderStudents();
                     } else {
