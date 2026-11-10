@@ -128,8 +128,21 @@
                 
                 <!-- 1. DASHBOARD -->
                 <div id="view-dashboard" class="view-section fade-in">
+                    
+                    <!-- Alert Markah Kosong (NEW) -->
+                    <div id="dash-alert-missing" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex items-center justify-between transition-all">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-exclamation-triangle text-amber-500 text-xl"></i>
+                            <div>
+                                <h4 class="font-bold text-amber-800 text-sm">Amaran Markah & PBD Belum Lengkap</h4>
+                                <p class="text-xs text-amber-700 font-medium" id="dash-missing-text">Terdapat rekod yang belum diisi.</p>
+                            </div>
+                        </div>
+                        <button onclick="window.switchTab('markah')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold transition">Isi Markah</button>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer" onclick="showClassesModal()">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer" onclick="window.showClassAnalyticsModal()">
                             <div><p class="text-sm text-slate-500 font-semibold uppercase tracking-wider mb-1">Total Kelas</p><p class="text-3xl font-bold text-slate-800" id="dash-total-classes">0</p></div>
                             <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl"><i class="fas fa-chalkboard"></i></div>
                         </div>
@@ -145,6 +158,61 @@
                             <i class="fas fa-trophy absolute -right-2 -bottom-2 text-6xl text-white/20"></i>
                             <p class="text-sm text-amber-100 font-medium mb-1">Laporan Rasmi</p>
                             <p class="text-xl font-bold"><i class="fas fa-print mr-1"></i> Cetak Tokoh APC</p>
+                        </div>
+                    </div>
+
+                    <!-- Analitik Ekstra Grid (NEW) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <!-- PBD Sekolah -->
+                        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-chart-bar text-blue-500"></i> Ringkasan PBD Keseluruhan Sekolah</h3>
+                            <div class="flex h-12 rounded-lg overflow-hidden bg-slate-100 w-full mb-3 shadow-inner" id="dash-pbd-bar"></div>
+                            <div class="grid grid-cols-6 gap-2 text-center" id="dash-pbd-labels"></div>
+                        </div>
+
+                        <!-- Pencapaian Jantina -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-center">
+                            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-venus-mars text-purple-500"></i> Purata Markah Jantina</h3>
+                            <div class="space-y-5 mt-2">
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold mb-1.5"><span class="text-blue-700"><i class="fas fa-male mr-1"></i> Lelaki</span><span id="dash-gender-l-avg" class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">0%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-3 shadow-inner"><div class="bg-blue-500 h-3 rounded-full transition-all duration-700" id="dash-gender-l-bar" style="width: 0%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold mb-1.5"><span class="text-pink-700"><i class="fas fa-female mr-1"></i> Perempuan</span><span id="dash-gender-p-avg" class="bg-pink-50 text-pink-700 px-2 py-0.5 rounded">0%</span></div>
+                                    <div class="w-full bg-slate-100 rounded-full h-3 shadow-inner"><div class="bg-pink-500 h-3 rounded-full transition-all duration-700" id="dash-gender-p-bar" style="width: 0%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <!-- Subjek Terbaik & Kritikal -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                            <h3 class="font-bold text-slate-800 mb-5 flex items-center gap-2"><i class="fas fa-book text-indigo-500"></i> Prestasi Mata Pelajaran</h3>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="text-[11px] font-bold text-emerald-600 uppercase mb-3 bg-emerald-50 p-2 rounded"><i class="fas fa-arrow-up mr-1"></i> Top 3 Cemerlang</h4>
+                                    <ul class="space-y-3" id="dash-top-subjects"></ul>
+                                </div>
+                                <div>
+                                    <h4 class="text-[11px] font-bold text-red-600 uppercase mb-3 bg-red-50 p-2 rounded"><i class="fas fa-arrow-down mr-1"></i> Top 3 Kritikal</h4>
+                                    <ul class="space-y-3" id="dash-bottom-subjects"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Murid Berisiko -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-0 flex flex-col overflow-hidden">
+                            <div class="p-5 border-b bg-red-50 text-red-900">
+                                <h3 class="font-bold flex items-center gap-2"><i class="fas fa-life-ring text-red-500"></i> Analisis Murid Berisiko (Intervensi)</h3>
+                                <p class="text-xs text-red-600/80 mt-1">Gagal lebih 2 subjek UASA atau berada di TP1/TP2.</p>
+                            </div>
+                            <div class="p-0 flex-1 overflow-y-auto h-[230px]">
+                                <table class="w-full text-sm text-left">
+                                    <tbody id="dash-risk-students" class="divide-y divide-slate-100"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
@@ -332,12 +400,6 @@
     </div>
 
 <script>
-    // ---------------------------------------------------
-    // BAHAGIAN 1: LOGIK ANTARAMUKA (UI) & PEMAPARAN (RENDER)
-    // ---------------------------------------------------
-    // BAHAGIAN 1: LOGIK ANTARAMUKA (UI) & PEMAPARAN (RENDER)
-    // *Dipisahkan supaya klik Tab sentiasa pantas & tak sangkut*
-    // ---------------------------------------------------
     window.currentView = 'dashboard';
     window.db = { classes: [], students: [], marks: {} };
 
@@ -401,20 +463,163 @@
         let rankingData = [];
         let studentsToProcess = filter.value ? window.db.students.filter(s => s.classId === filter.value) : window.db.students;
 
+        let missingMarksCount = 0;
+        let tpTotal = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
+        let atRisk = [];
+        let subjectAggr = {};
+        let genderAggr = { L: { sum: 0, count: 0 }, P: { sum: 0, count: 0 } };
+        let passCountDash = 0;
+        let evaluatedDash = 0;
+
         studentsToProcess.forEach(student => {
             const c = window.db.classes.find(cls => cls.id === student.classId);
             if(!c) return;
             const subjekTahap1 = ["BM", "BI", "MATEMATIK", "SAINS", "PEND. ISLAM", "PEND. MORAL", "B. ARAB", "PJPK", "PSV", "MUZIK"];
             const subjekTahap2 = ["BM", "BI", "MATEMATIK", "SAINS", "PEND. ISLAM", "PEND. MORAL", "B. ARAB", "PJPK", "PSV", "MUZIK", "SEJARAH", "RBT"];
             const subjects = window.getTahap(c.name) === 1 ? subjekTahap1 : subjekTahap2;
+            
             let total = 0, valid = 0, passedAll = true;
+            let failCount = 0, lowestTP = 6, hasAnyTP = false;
 
             subjects.forEach(sub => {
-                let m = parseInt(window.db.marks[`PAT_UASA_${sub}_${student.id}`]) || parseInt(window.db.marks[`PPT_UASA_${sub}_${student.id}`]);
-                if(!isNaN(m)) { total += m; valid++; if(m < 40) passedAll = false; }
+                let mPPT = parseInt(window.db.marks[`PPT_UASA_${sub}_${student.id}`]);
+                let mPAT = parseInt(window.db.marks[`PAT_UASA_${sub}_${student.id}`]);
+                
+                let mRanking = !isNaN(mPAT) ? mPAT : (!isNaN(mPPT) ? mPPT : NaN);
+                if(!isNaN(mRanking)) { 
+                    total += mRanking; valid++; 
+                    if(mRanking < 40) passedAll = false; 
+                }
+
+                let m = !isNaN(mPAT) ? mPAT : (!isNaN(mPPT) ? mPPT : null);
+                let pbd = window.db.marks[`PAT_PBD_${sub}_${student.id}`] || window.db.marks[`PPT_PBD_${sub}_${student.id}`];
+
+                if(m !== null) {
+                    if(!subjectAggr[sub]) subjectAggr[sub] = {sum:0, count:0};
+                    subjectAggr[sub].sum += m; subjectAggr[sub].count++;
+                    if(m < 40) failCount++;
+                } else {
+                    missingMarksCount++; 
+                }
+
+                if(pbd && tpTotal[pbd] !== undefined) {
+                    tpTotal[pbd]++;
+                    let tpNum = parseInt(pbd.replace('TP', ''));
+                    if(tpNum < lowestTP) lowestTP = tpNum;
+                    hasAnyTP = true;
+                } else {
+                    missingMarksCount++; 
+                }
             });
-            if(valid > 0) rankingData.push({ student, className: c.name, totalMark: total, avg: (total/valid).toFixed(2), passedAll });
+
+            if(valid > 0) {
+                rankingData.push({ student, className: c.name, totalMark: total, avg: (total/valid).toFixed(2), passedAll });
+                evaluatedDash++;
+                if(passedAll) passCountDash++;
+
+                let sGender = student.gender || 'L';
+                genderAggr[sGender].sum += (total / valid);
+                genderAggr[sGender].count++;
+            }
+
+            if (failCount >= 3 || (hasAnyTP && lowestTP <= 2)) {
+                atRisk.push({ name: student.name, className: c.name, failCount, lowestTP: hasAnyTP ? lowestTP : '-' });
+            }
         });
+
+        let dashPassRate = evaluatedDash > 0 ? ((passCountDash / evaluatedDash) * 100).toFixed(1) : 0;
+        const elPassRate = document.getElementById('dash-pass-rate');
+        if(elPassRate) elPassRate.innerText = dashPassRate + '%';
+
+        const alertEl = document.getElementById('dash-alert-missing');
+        if (alertEl) {
+            if (missingMarksCount > 0 && window.db.students.length > 0 && !filter.value) {
+                alertEl.classList.remove('hidden');
+                document.getElementById('dash-missing-text').innerText = `Terdapat ${missingMarksCount} rekod (Markah/PBD) murid sekolah ini yang belum dilengkapkan oleh guru.`;
+            } else {
+                alertEl.classList.add('hidden');
+            }
+        }
+
+        const totalPbdCount = tpTotal.TP1 + tpTotal.TP2 + tpTotal.TP3 + tpTotal.TP4 + tpTotal.TP5 + tpTotal.TP6;
+        const pbdColors = ['bg-red-500', 'bg-orange-400', 'bg-amber-400', 'bg-emerald-400', 'bg-blue-400', 'bg-purple-500'];
+        const tpKeys = ['TP1', 'TP2', 'TP3', 'TP4', 'TP5', 'TP6'];
+
+        let pbdBarHTML = ''; let pbdLabelsHTML = '';
+        tpKeys.forEach((tp, idx) => {
+            let pct = totalPbdCount > 0 ? (tpTotal[tp] / totalPbdCount) * 100 : 0;
+            if(pct > 0) {
+                pbdBarHTML += `<div class="${pbdColors[idx]} h-full flex items-center justify-center text-[10px] text-white font-bold" style="width: ${pct}%" title="${tp}: ${tpTotal[tp]}"></div>`;
+            }
+            pbdLabelsHTML += `<div class="bg-slate-50 border p-2 rounded-lg">
+                <div class="text-[10px] text-slate-500 font-bold mb-1">${tp}</div>
+                <div class="font-black text-slate-700">${tpTotal[tp]}</div>
+            </div>`;
+        });
+        if(totalPbdCount === 0) pbdBarHTML = '<div class="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500 font-semibold shadow-inner">Belum ada data rekod PBD.</div>';
+
+        const pbdBarEl = document.getElementById('dash-pbd-bar');
+        const pbdLblEl = document.getElementById('dash-pbd-labels');
+        if(pbdBarEl) pbdBarEl.innerHTML = pbdBarHTML;
+        if(pbdLblEl) pbdLblEl.innerHTML = pbdLabelsHTML;
+
+        const avgL = genderAggr.L.count > 0 ? (genderAggr.L.sum / genderAggr.L.count).toFixed(1) : 0;
+        const avgP = genderAggr.P.count > 0 ? (genderAggr.P.sum / genderAggr.P.count).toFixed(1) : 0;
+        const lBar = document.getElementById('dash-gender-l-bar');
+        const pBar = document.getElementById('dash-gender-p-bar');
+        if (lBar) { lBar.style.width = avgL + '%'; document.getElementById('dash-gender-l-avg').innerText = avgL + '%'; }
+        if (pBar) { pBar.style.width = avgP + '%'; document.getElementById('dash-gender-p-avg').innerText = avgP + '%'; }
+
+        let subjectList = [];
+        for(let sub in subjectAggr) {
+            if(subjectAggr[sub].count > 0) {
+                subjectList.push({ name: sub, avg: (subjectAggr[sub].sum / subjectAggr[sub].count) });
+            }
+        }
+        subjectList.sort((a,b) => b.avg - a.avg);
+
+        const topSubEl = document.getElementById('dash-top-subjects');
+        const botSubEl = document.getElementById('dash-bottom-subjects');
+        if (topSubEl && botSubEl) {
+            topSubEl.innerHTML = ''; botSubEl.innerHTML = '';
+            if (subjectList.length === 0) {
+                topSubEl.innerHTML = '<li class="text-xs text-slate-400">Tiada rekod data.</li>';
+                botSubEl.innerHTML = '<li class="text-xs text-slate-400">Tiada rekod data.</li>';
+            } else {
+                let top3 = subjectList.slice(0, 3);
+                let bot3 = [...subjectList].reverse().slice(0, 3);
+
+                top3.forEach(s => {
+                    topSubEl.innerHTML += `<li class="flex justify-between items-center text-sm"><span class="font-semibold text-slate-700">${s.name}</span> <span class="text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded text-[11px]">${s.avg.toFixed(1)}%</span></li>`;
+                });
+                bot3.forEach(s => {
+                    botSubEl.innerHTML += `<li class="flex justify-between items-center text-sm"><span class="font-semibold text-slate-700">${s.name}</span> <span class="text-red-700 font-bold bg-red-100 px-2 py-0.5 rounded text-[11px]">${s.avg.toFixed(1)}%</span></li>`;
+                });
+            }
+        }
+
+        atRisk.sort((a,b) => b.failCount - a.failCount); 
+        const riskEl = document.getElementById('dash-risk-students');
+        if (riskEl) {
+            riskEl.innerHTML = '';
+            if (atRisk.length === 0) {
+                riskEl.innerHTML = '<tr><td class="p-8 text-center text-slate-400"><i class="fas fa-check-circle text-emerald-400 text-4xl mb-3 block opacity-50"></i>Syabas! Semua murid melepasi tahap minimum.</td></tr>';
+            } else {
+                atRisk.slice(0, 10).forEach(r => {
+                    riskEl.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                        <td class="py-2.5 px-5">
+                            <p class="font-bold text-slate-700 text-[12px] uppercase">${r.name}</p>
+                            <p class="text-[10px] text-slate-500 font-medium mt-0.5">${r.className}</p>
+                        </td>
+                        <td class="py-2.5 px-5 text-right w-[140px]">
+                            ${r.failCount > 0 ? `<span class="inline-block px-2 py-1 bg-red-100 text-red-700 rounded text-[10px] font-bold mb-1 w-full text-center">${r.failCount} Subjek Gagal</span><br>` : ''}
+                            <span class="inline-block px-2 py-1 bg-amber-100 text-amber-800 rounded text-[10px] font-bold w-full text-center">Min: TP${r.lowestTP}</span>
+                        </td>
+                    </tr>`;
+                });
+            }
+        }
 
         rankingData.sort((a,b) => b.totalMark - a.totalMark);
         const tbody = document.getElementById('dash-ranking-body');
@@ -524,7 +729,6 @@
         });
     }
 
-    // Fungsi Pengganti / Stubs (Digunakan sebelum Firebase bersedia)
     window.addClass = async function() { alert('Sistem sedang memuatkan pangkalan awan... Sila cuba sebentar lagi.'); }
     window.deleteClass = async function(id) { alert('Sistem sedang memuatkan pangkalan awan... Sila cuba sebentar lagi.'); }
     window.openAddStudentModal = function() { alert('Sistem sedang memuatkan pangkalan awan... Sila cuba sebentar lagi.'); }
@@ -532,8 +736,86 @@
     window.liveSave = async function(el) { console.warn("Menunggu sambungan cloud Firebase..."); }
     window.triggerSimpan = function() { window.showToast('Berjaya', 'Data disimpan ke Cloud.'); }
     
-    // Fungsi Butang Baru Dihidupkan
     window.showClassesModal = function() { window.switchTab('murid'); }
+    window.showClassAnalyticsModal = function() {
+        let htmlContent = '<div class="space-y-4 max-h-[60vh] overflow-y-auto text-left px-1">';
+        if (window.db.classes.length === 0) {
+            htmlContent += '<p class="text-center text-slate-500 my-8">Tiada data kelas didaftarkan.</p>';
+        }
+
+        window.db.classes.forEach(c => {
+            let studentsInClass = window.db.students.filter(s => s.classId === c.id);
+            let total = studentsInClass.length;
+            let countL = studentsInClass.filter(s => s.gender === 'L' || !s.gender).length;
+            let countP = studentsInClass.filter(s => s.gender === 'P').length;
+
+            let passCount = 0;
+            let evaluatedStudents = 0;
+            let tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
+
+            const subjekTahap1 = ["BM", "BI", "MATEMATIK", "SAINS", "PEND. ISLAM", "PEND. MORAL", "B. ARAB", "PJPK", "PSV", "MUZIK"];
+            const subjekTahap2 = ["BM", "BI", "MATEMATIK", "SAINS", "PEND. ISLAM", "PEND. MORAL", "B. ARAB", "PJPK", "PSV", "MUZIK", "SEJARAH", "RBT"];
+            const subjects = window.getTahap(c.name) === 1 ? subjekTahap1 : subjekTahap2;
+
+            studentsInClass.forEach(s => {
+                let valid = 0, passedAll = true;
+                subjects.forEach(sub => {
+                    let m = parseInt(window.db.marks[`PAT_UASA_${sub}_${s.id}`]) || parseInt(window.db.marks[`PPT_UASA_${sub}_${s.id}`]);
+                    if (!isNaN(m)) {
+                        valid++;
+                        if (m < 40) passedAll = false;
+                    }
+                    
+                    let pbd = window.db.marks[`PAT_PBD_${sub}_${s.id}`] || window.db.marks[`PPT_PBD_${sub}_${s.id}`];
+                    if (pbd && tpCounts[pbd] !== undefined) {
+                        tpCounts[pbd]++;
+                    }
+                });
+                
+                if (valid > 0) {
+                    evaluatedStudents++;
+                    if (passedAll) passCount++;
+                }
+            });
+
+            let passRate = evaluatedStudents > 0 ? ((passCount / evaluatedStudents) * 100).toFixed(1) : 0;
+
+            htmlContent += `
+            <div class="border border-slate-200 rounded-xl p-5 bg-white shadow-sm hover:shadow transition">
+                <h4 class="font-extrabold text-lg text-slate-800 border-b pb-3 mb-4 flex justify-between items-center">
+                    <span><i class="fas fa-chalkboard text-blue-500 mr-2"></i>${c.name}</span>
+                    <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-bold">${total} Murid</span>
+                </h4>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-blue-50 text-blue-700 p-2.5 rounded-lg text-center text-sm font-bold border border-blue-100 flex items-center justify-center gap-2"><i class="fas fa-male text-lg"></i> Lelaki: ${countL}</div>
+                    <div class="bg-pink-50 text-pink-700 p-2.5 rounded-lg text-center text-sm font-bold border border-pink-100 flex items-center justify-center gap-2"><i class="fas fa-female text-lg"></i> Perempuan: ${countP}</div>
+                </div>
+                <div class="mb-4 bg-slate-50 border p-3 rounded-lg flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Kadar Lulus Keseluruhan (UASA)</span>
+                    <span class="font-black text-lg ${passRate >= 50 ? 'text-emerald-600' : 'text-red-500'}">${passRate}%</span>
+                </div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Pecahan Bilangan Tahap Penguasaan (PBD) Subjek</div>
+                <div class="grid grid-cols-6 gap-2 text-center">
+                    <div class="bg-slate-100 border p-1.5 rounded-lg"><div class="text-[10px] text-slate-500 font-semibold mb-1">TP1</div><div class="font-bold text-slate-700">${tpCounts.TP1}</div></div>
+                    <div class="bg-slate-100 border p-1.5 rounded-lg"><div class="text-[10px] text-slate-500 font-semibold mb-1">TP2</div><div class="font-bold text-slate-700">${tpCounts.TP2}</div></div>
+                    <div class="bg-slate-100 border p-1.5 rounded-lg"><div class="text-[10px] text-slate-500 font-semibold mb-1">TP3</div><div class="font-bold text-slate-700">${tpCounts.TP3}</div></div>
+                    <div class="bg-amber-50 border border-amber-100 p-1.5 rounded-lg shadow-sm"><div class="text-[10px] text-amber-600 font-bold mb-1">TP4</div><div class="font-bold text-amber-700">${tpCounts.TP4}</div></div>
+                    <div class="bg-emerald-50 border border-emerald-100 p-1.5 rounded-lg shadow-sm"><div class="text-[10px] text-emerald-600 font-bold mb-1">TP5</div><div class="font-bold text-emerald-700">${tpCounts.TP5}</div></div>
+                    <div class="bg-blue-50 border border-blue-100 p-1.5 rounded-lg shadow-sm"><div class="text-[10px] text-blue-600 font-bold mb-1">TP6</div><div class="font-bold text-blue-700">${tpCounts.TP6}</div></div>
+                </div>
+            </div>`;
+        });
+        htmlContent += '</div>';
+
+        Swal.fire({
+            title: '<h3 class="text-xl font-bold text-slate-800 border-b pb-3 mt-2"><i class="fas fa-chart-pie text-corp-blue mr-2"></i>Analisis Terperinci Kelas</h3>',
+            html: htmlContent,
+            width: '650px',
+            showCloseButton: true,
+            showConfirmButton: false,
+            customClass: { popup: 'rounded-2xl' }
+        });
+    }
     window.showStudentsModal = function() { window.switchTab('murid'); }
     window.generateAPCReport = function() { window.cetakTokoh(); }
     window.cetakTokoh = function() {
@@ -592,16 +874,12 @@
     }
     window.clearAllData = async function() { alert('Sistem sedang memuatkan pangkalan awan... Sila cuba sebentar lagi.'); }
 
-    // Mulakan paparan
     document.addEventListener("DOMContentLoaded", () => {
         window.switchTab('dashboard');
     });
 </script>
 
 <script type="module">
-    // ---------------------------------------------------
-    // BAHAGIAN 2: LOGIK FIREBASE & CLOUD DATABASE
-    // ---------------------------------------------------
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -650,7 +928,8 @@
         }, (error) => { console.warn("Classes sync:", error.message); });
 
         onSnapshot(studentsRef, (snap) => {
-            window.db.students = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // PERUBAHAN UTAMA: Memastikan senarai murid diisih (sort) A-Z secara automatik di peringkat pangkalan data sistem
+            window.db.students = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => (a.name || '').localeCompare(b.name || ''));
             window.refreshCurrentView();
         }, (error) => { console.warn("Students sync:", error.message); });
 
@@ -662,7 +941,6 @@
         }, (error) => { console.warn("Marks sync:", error.message); });
     }
 
-    // Suntikan Sambungan Database ke Antaramuka Pengguna (UI)
     window.addClass = async function() {
         const nameInput = document.getElementById('newClassName');
         if(!nameInput) return;
@@ -741,7 +1019,7 @@
                     }
                     Swal.close();
                     window.showToast('Berjaya', `${chks.length} murid berjaya dipindahkan.`);
-                    document.getElementById('selectAllStudents').checked = false; // Reset checkbox
+                    document.getElementById('selectAllStudents').checked = false;
                 } catch (e) {
                     Swal.close();
                     window.showToast('Ralat', 'Gagal: ' + e.message, true);
@@ -763,7 +1041,6 @@
             didOpen: () => { Swal.showLoading(); }
         });
 
-        // Sub-fungsi logik pemetaan dan import data
         const processImportData = async (data, headers) => {
             const map = { name: null, ic: null, delima: null, gender: null, class: null, year: null };
             headers.forEach(h => {
@@ -858,7 +1135,6 @@
         };
 
         if (isExcel) {
-            // Logik Bacaan Khas untuk Fail Excel (.xlsx / .xls)
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
@@ -879,7 +1155,6 @@
             };
             reader.readAsArrayBuffer(file);
         } else {
-            // Logik Bacaan Asal untuk CSV
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
