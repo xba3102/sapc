@@ -94,24 +94,137 @@
             <!-- TAB: DASHBOARD -->
             <div id="dashboard" class="tab-content active space-y-6">
                 <h2 class="text-2xl font-bold text-gray-800">Ringkasan Sistem</h2>
+                
+                <!-- Kotak Info Ringkas -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md transition">
                         <p class="text-gray-500 text-sm font-medium">Total Kelas</p>
                         <p class="text-3xl font-bold text-gray-800" id="dashTotalClasses">0</p>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500 hover:shadow-md transition">
                         <p class="text-gray-500 text-sm font-medium">Total Murid</p>
                         <p class="text-3xl font-bold text-gray-800" id="dashTotalStudents">0</p>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500">
-                        <p class="text-gray-500 text-sm font-medium">Pencapaian MTM</p>
-                        <p class="text-3xl font-bold text-gray-800">85%</p>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500 hover:shadow-md transition">
+                        <p class="text-gray-500 text-sm font-medium">Purata Keseluruhan Lulus</p>
+                        <p class="text-3xl font-bold text-gray-800" id="dashOverallMTM">-</p>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500">
-                        <p class="text-gray-500 text-sm font-medium">Status Awan</p>
-                        <p class="text-xl font-bold text-green-600 mt-1">Aktif</p>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-teal-500 hover:shadow-md transition">
+                        <p class="text-gray-500 text-sm font-medium">Status Rangkaian</p>
+                        <p class="text-xl font-bold text-green-600 mt-1">Aktif & Stabil</p>
                     </div>
                 </div>
+
+                <!-- Penapis Peperiksaan Dashboard -->
+                <div class="flex justify-end mt-4">
+                    <select id="dashExamFilter" class="border border-gray-300 p-2 rounded shadow-sm focus:ring-blue-500 font-medium bg-white" onchange="window.updateDashboardAnalytics()">
+                        <option value="PPT">Berdasarkan: Pertengahan Tahun (PPT)</option>
+                        <option value="PAT" selected>Berdasarkan: Akhir Tahun (PAT) / UASA</option>
+                    </select>
+                </div>
+
+                <!-- Analisis Kelas (Jadual) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="flex flex-col md:flex-row justify-between items-center p-4 border-b bg-gray-50 gap-4">
+                        <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-chart-pie mr-2 text-blue-500"></i>Analitik Pencapaian & PBD (Mengikut Kelas)</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-blue-50 text-blue-800 border-b">
+                                <tr>
+                                    <th class="px-4 py-3">Nama Kelas</th>
+                                    <th class="px-4 py-3 text-center border-r border-blue-100 bg-blue-100">Peratus Lulus (Sumatif)</th>
+                                    <th class="px-4 py-3 text-center text-red-600">TP 1</th>
+                                    <th class="px-4 py-3 text-center text-orange-600">TP 2</th>
+                                    <th class="px-4 py-3 text-center text-yellow-600">TP 3</th>
+                                    <th class="px-4 py-3 text-center text-green-600">TP 4</th>
+                                    <th class="px-4 py-3 text-center text-teal-600">TP 5</th>
+                                    <th class="px-4 py-3 text-center text-blue-600">TP 6</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashAnalyticsBody">
+                                <tr><td colspan="8" class="text-center py-10 text-gray-400">Memuatkan data analitik...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Modul Calon Tokoh Murid -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-6 p-6">
+                    <h3 class="font-bold text-gray-800 text-lg mb-4 flex items-center">
+                        <span class="bg-yellow-100 text-yellow-600 p-2 rounded-lg mr-3 shadow-sm"><i class="fas fa-trophy"></i></span>
+                        Calon Tokoh Murid (Purata Markah Tertinggi)
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Tahap 1 -->
+                        <div class="border border-blue-200 rounded-xl p-5 bg-gradient-to-br from-blue-50 to-white shadow-sm">
+                            <h4 class="font-extrabold text-blue-800 border-b-2 border-blue-200 pb-2 mb-4 uppercase tracking-wider text-sm">Tahap 1 (Tahun 1, 2, 3)</h4>
+                            <div class="space-y-4">
+                                <!-- Lelaki T1 -->
+                                <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-blue-100 hover:shadow-md transition">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xl mr-3 shadow-inner">L</div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm uppercase" id="tokoh-t1-l-name">MEMUATKAN...</p>
+                                            <p class="text-xs font-medium text-gray-500" id="tokoh-t1-l-class">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right bg-green-50 px-3 py-1 rounded-lg border border-green-200">
+                                        <p class="font-black text-xl text-green-600" id="tokoh-t1-l-marks">-</p>
+                                    </div>
+                                </div>
+                                <!-- Perempuan T1 -->
+                                <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-pink-100 hover:shadow-md transition">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-xl mr-3 shadow-inner">P</div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm uppercase" id="tokoh-t1-p-name">MEMUATKAN...</p>
+                                            <p class="text-xs font-medium text-gray-500" id="tokoh-t1-p-class">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right bg-green-50 px-3 py-1 rounded-lg border border-green-200">
+                                        <p class="font-black text-xl text-green-600" id="tokoh-t1-p-marks">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tahap 2 -->
+                        <div class="border border-purple-200 rounded-xl p-5 bg-gradient-to-br from-purple-50 to-white shadow-sm">
+                            <h4 class="font-extrabold text-purple-800 border-b-2 border-purple-200 pb-2 mb-4 uppercase tracking-wider text-sm">Tahap 2 (Tahun 4, 5, 6)</h4>
+                            <div class="space-y-4">
+                                <!-- Lelaki T2 -->
+                                <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-blue-100 hover:shadow-md transition">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xl mr-3 shadow-inner">L</div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm uppercase" id="tokoh-t2-l-name">MEMUATKAN...</p>
+                                            <p class="text-xs font-medium text-gray-500" id="tokoh-t2-l-class">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right bg-green-50 px-3 py-1 rounded-lg border border-green-200">
+                                        <p class="font-black text-xl text-green-600" id="tokoh-t2-l-marks">-</p>
+                                    </div>
+                                </div>
+                                <!-- Perempuan T2 -->
+                                <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-pink-100 hover:shadow-md transition">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-xl mr-3 shadow-inner">P</div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm uppercase" id="tokoh-t2-p-name">MEMUATKAN...</p>
+                                            <p class="text-xs font-medium text-gray-500" id="tokoh-t2-p-class">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right bg-green-50 px-3 py-1 rounded-lg border border-green-200">
+                                        <p class="font-black text-xl text-green-600" id="tokoh-t2-p-marks">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- TAB: MURID & KELAS -->
@@ -182,7 +295,6 @@
                             <option value="_KEHADIRAN" class="font-bold text-blue-600">📋 Kehadiran, Sahsiah & Ulasan</option>
                         </select>
                     </div>
-                    <!-- Butang Simpan Pukal dikekalkan sebagai keselamatan tambahan -->
                     <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
                         <i class="fas fa-save mr-2"></i>Simpan Pukal
                     </button>
@@ -368,6 +480,7 @@
                         document.getElementById('markFilterClass').innerHTML = markClassOpts;
                         
                         if(document.getElementById('students').classList.contains('active')) window.renderStudents();
+                        if(document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
                     });
 
                     onSnapshot(collection(db, 'students'), (snapshot) => {
@@ -376,23 +489,22 @@
                         window.appData.students.sort((a, b) => a.name.localeCompare(b.name));
                         document.getElementById('dashTotalStudents').innerText = window.appData.students.length;
                         
-                        // Render students tab if active
                         if(document.getElementById('students').classList.contains('active')) window.renderStudents();
                         
                         // ONLY reload marks table if we are NOT currently typing/autosaving to prevent UI cursor loss
                         if(document.getElementById('marks').classList.contains('active') && !window.isAutoSaving) {
                             window.loadMarksTable();
                         }
+                        
+                        if(document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
                     });
                 
                 } else {
-                    // Jika login berjaya tetapi bukan guna emel KPM
                     document.getElementById('loginOverlay').classList.remove('hidden');
                     document.getElementById('loginError').classList.remove('hidden');
                     signOut(auth);
                 }
             } else {
-                // Skrin asal jika tiada sesiapa log masuk
                 document.getElementById('loginOverlay').classList.remove('hidden');
                 document.getElementById('loginError').classList.add('hidden');
             }
@@ -408,6 +520,7 @@
             });
             if(tabId === 'students') window.renderStudents();
             if(tabId === 'marks') window.loadMarksTable();
+            if(tabId === 'dashboard') window.updateDashboardAnalytics();
         };
 
         window.showToast = function(msg) {
@@ -429,6 +542,121 @@
                 text.innerText = "Awan Disegerak ✅";
                 setTimeout(() => text.classList.replace('text-green-600', 'text-gray-600'), 2000);
             }
+        };
+
+        // --- ANALITIK DASHBOARD & TOKOH MURID ---
+        window.updateDashboardAnalytics = function() {
+            const exam = document.getElementById('dashExamFilter').value;
+            const tbody = document.getElementById('dashAnalyticsBody');
+            
+            let totalStudentsPassed = 0; // Murid yang capai markah rata-rata >= 40 (MTM)
+            let totalStudentsWithMarks = 0; // Murid yang ada sebarang markah dimasukkan
+            
+            let html = '';
+
+            // Objek untuk simpan senarai calon Tokoh Murid
+            let calonTokoh = { T1L: [], T1P: [], T2L: [], T2P: [] };
+            const subjs = ['BM', 'BI', 'MT', 'SN', 'PI', 'SJ'];
+            
+            window.appData.classes.forEach(c => {
+                let studentsInClass = window.appData.students.filter(s => s.classId === c.id);
+                
+                let classPassedCount = 0;
+                let classHasDataCount = 0;
+                let tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
+                
+                // Tentukan Tahap Kelas (Tahap 1 atau Tahap 2)
+                let namaKelas = c.name.trim();
+                let tahapKelas = /^[123]/.test(namaKelas) ? 1 : (/^[456]/.test(namaKelas) ? 2 : 0);
+
+                studentsInClass.forEach(s => {
+                    let totalMarks = 0;
+                    let validCount = 0;
+                    
+                    subjs.forEach(sub => {
+                        let sc = (s.scores && s.scores[exam] && s.scores[exam][sub]) || {};
+                        
+                        // Kira peratus lulus dan taburan TP
+                        if (typeof sc.mark === 'number') {
+                            totalMarks += sc.mark;
+                            validCount++;
+                        }
+                        if (sc.tp && tpCounts[sc.tp] !== undefined) {
+                            tpCounts[sc.tp]++;
+                        }
+                    });
+                    
+                    if (validCount > 0) {
+                        classHasDataCount++;
+                        totalStudentsWithMarks++;
+                        
+                        let percentage = (totalMarks / (validCount * 100)) * 100;
+                        if (percentage >= 40) {
+                            classPassedCount++;
+                            totalStudentsPassed++;
+                        }
+
+                        // Penilaian Tokoh Murid (Jika ada ambil sekurang-kurangnya 1 subjek)
+                        if (tahapKelas > 0) {
+                            let purata = totalMarks / validCount; // purata subjek yang diambil
+                            let jantina = s.gender === 'P' ? 'P' : 'L';
+                            let kategori = `T${tahapKelas}${jantina}`; // Cth: T1L, T2P
+                            
+                            calonTokoh[kategori].push({
+                                name: s.name,
+                                className: namaKelas,
+                                average: purata
+                            });
+                        }
+                    }
+                });
+                
+                let passRate = classHasDataCount > 0 ? Math.round((classPassedCount / classHasDataCount) * 100) : 0;
+                let passColor = passRate >= 50 ? 'text-green-600' : 'text-red-600';
+                
+                html += `<tr class="border-b hover:bg-gray-50 transition">
+                    <td class="px-4 py-2 font-bold text-gray-700">${c.name}</td>
+                    <td class="px-4 py-2 text-center font-bold border-r border-blue-100 bg-blue-50/50 ${passColor}">${classHasDataCount > 0 ? passRate + '%' : '-'}</td>
+                    <td class="px-4 py-2 text-center text-red-600 font-medium">${tpCounts.TP1}</td>
+                    <td class="px-4 py-2 text-center text-orange-600 font-medium">${tpCounts.TP2}</td>
+                    <td class="px-4 py-2 text-center text-yellow-600 font-medium">${tpCounts.TP3}</td>
+                    <td class="px-4 py-2 text-center text-green-600 font-medium">${tpCounts.TP4}</td>
+                    <td class="px-4 py-2 text-center text-teal-600 font-medium">${tpCounts.TP5}</td>
+                    <td class="px-4 py-2 text-center text-blue-600 font-medium">${tpCounts.TP6}</td>
+                </tr>`;
+            });
+            
+            if(window.appData.classes.length === 0) {
+                html = `<tr><td colspan="8" class="text-center py-10 text-gray-400">Sila masukkan kelas terlebih dahulu.</td></tr>`;
+            }
+            
+            tbody.innerHTML = html;
+
+            // Kemaskini Kad Analitik Keseluruhan di Atas
+            let overallMTM = totalStudentsWithMarks > 0 ? Math.round((totalStudentsPassed / totalStudentsWithMarks) * 100) : 0;
+            document.getElementById('dashOverallMTM').innerText = totalStudentsWithMarks > 0 ? overallMTM + '%' : '-';
+
+            // --- KEMASKINI UI TOKOH MURID ---
+            const updateTokohUI = (kategori, nameId, classId, marksId) => {
+                // Susun calon dari purata tertinggi ke terendah
+                let sortedList = calonTokoh[kategori].sort((a, b) => b.average - a.average);
+                
+                if (sortedList.length > 0) {
+                    let pemenang = sortedList[0];
+                    document.getElementById(nameId).innerText = pemenang.name;
+                    document.getElementById(classId).innerText = `KELAS: ${pemenang.className}`;
+                    document.getElementById(marksId).innerText = pemenang.average.toFixed(1) + '%';
+                } else {
+                    document.getElementById(nameId).innerText = 'TIADA CALON';
+                    document.getElementById(classId).innerText = '-';
+                    document.getElementById(marksId).innerText = '-';
+                }
+            };
+
+            updateTokohUI('T1L', 'tokoh-t1-l-name', 'tokoh-t1-l-class', 'tokoh-t1-l-marks');
+            updateTokohUI('T1P', 'tokoh-t1-p-name', 'tokoh-t1-p-class', 'tokoh-t1-p-marks');
+            updateTokohUI('T2L', 'tokoh-t2-l-name', 'tokoh-t2-l-class', 'tokoh-t2-l-marks');
+            updateTokohUI('T2P', 'tokoh-t2-p-name', 'tokoh-t2-p-class', 'tokoh-t2-p-marks');
         };
 
         // --- PENGURUSAN DATA (TETAPAN) ---
@@ -576,7 +804,7 @@
         };
 
         window.autoSaveRow = async function(inputElement) {
-            window.isAutoSaving = true; // Elakkan table refresh ketika pengguna sedang menaip
+            window.isAutoSaving = true;
             window.showSyncStatus(true);
             
             const row = inputElement.closest('tr');
@@ -600,6 +828,11 @@
                     }}}}, { merge: true });
                 }
                 window.showSyncStatus(false);
+                
+                // Segarkan Dashboard secara senyap jika ada data markah yang berubah
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    window.updateDashboardAnalytics();
+                }
             } catch (e) { 
                 console.error("Gagal Auto-Simpan", e); 
                 document.getElementById('syncStatus').innerText = "Ralat Simpan ❌";
