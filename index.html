@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPAK SK Bikang</title>
-    <!-- Pustaka UI & Ikon (Wajib untuk UI) -->
+    <!-- Pustaka UI & Ikon -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Pustaka Analitik & Fail -->
@@ -16,7 +16,6 @@
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        /* Modal Overlay */
         .modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -96,7 +95,6 @@
             <!-- TAB: DASHBOARD -->
             <div id="dashboard" class="tab-content active space-y-6">
                 <h2 class="text-2xl font-bold text-gray-800">Ringkasan Sistem</h2>
-                <!-- Kad Info -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div onclick="window.openClassSummaryModal()" class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md cursor-pointer transition">
                         <p class="text-gray-500 text-sm font-medium">Total Kelas <i class="fas fa-info-circle text-blue-300 ml-1"></i></p>
@@ -107,27 +105,24 @@
                         <p class="text-3xl font-bold text-gray-800" id="dashTotalStudents">0</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500">
-                        <p class="text-gray-500 text-sm font-medium">Pencapaian MTM (UASA)</p>
+                        <p class="text-gray-500 text-sm font-medium">Pencapaian MTM</p>
                         <p class="text-3xl font-bold text-gray-800">85%</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500">
-                        <p class="text-gray-500 text-sm font-medium">Amaran Data Kosong</p>
+                        <p class="text-gray-500 text-sm font-medium">Amaran Data</p>
                         <p class="text-xl font-bold text-red-600 mt-1">Sila Kemaskini</p>
                     </div>
                 </div>
 
-                <!-- CARTA ANALITIK -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <!-- Carta Jantina -->
                     <div class="bg-white p-6 rounded-xl shadow-sm">
-                        <h3 class="font-bold text-gray-700 mb-4">Taburan Murid (Lelaki vs Perempuan)</h3>
+                        <h3 class="font-bold text-gray-700 mb-4">Taburan Murid</h3>
                         <div class="relative h-64 w-full flex justify-center">
                             <canvas id="genderChart"></canvas>
                         </div>
                     </div>
-                    <!-- Carta PBD -->
                     <div class="bg-white p-6 rounded-xl shadow-sm">
-                        <h3 class="font-bold text-gray-700 mb-4">Statistik Tahap Penguasaan (Purata)</h3>
+                        <h3 class="font-bold text-gray-700 mb-4">Statistik Tahap Penguasaan</h3>
                         <div class="relative h-64 w-full flex justify-center">
                             <canvas id="pbdChart"></canvas>
                         </div>
@@ -150,7 +145,7 @@
                             <i class="fas fa-file-excel mr-1"></i> Import Pukal
                             <input type="file" id="bulkImportFile" accept=".csv, .xlsx, .xls" class="hidden" onchange="window.handleBulkImport(event)">
                         </label>
-                        <button onclick="window.autoFixGender()" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-bold transition shadow-sm text-sm" title="AI Pengecam Jantina">
+                        <button onclick="window.autoFixGender()" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-bold transition shadow-sm text-sm">
                             🪄 Auto-Betul Jantina
                         </button>
                         <button onclick="window.printReport('PPT')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm text-sm">
@@ -162,14 +157,12 @@
                     </div>
                 </div>
 
-                <!-- Penapis (Filter) -->
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-4">
                     <select id="filterClass" class="border p-2 rounded flex-1" onchange="window.renderStudents()">
                         <option value="">Semua Kelas</option>
                     </select>
                 </div>
 
-                <!-- Jadual Murid -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-50 text-gray-600 border-b">
@@ -182,9 +175,7 @@
                                 <th class="px-4 py-3 text-center w-24">Tindakan</th>
                             </tr>
                         </thead>
-                        <tbody id="studentsTableBody">
-                            <!-- Data akan dijana oleh JS -->
-                        </tbody>
+                        <tbody id="studentsTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -207,6 +198,8 @@
                             <option value="SN">Sains</option>
                             <option value="PI">Pendidikan Islam / Moral</option>
                             <option value="SJ">Sejarah</option>
+                            <!-- Ruangan Baharu untuk Kehadiran dan Sahsiah -->
+                            <option value="_KEHADIRAN" class="font-bold text-blue-600">📋 Kehadiran, Sahsiah & Ulasan</option>
                         </select>
                     </div>
                     <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
@@ -214,10 +207,10 @@
                     </button>
                 </div>
 
-                <!-- Jadual Kemasukan Markah -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-blue-50 text-blue-800 border-b">
+                        <thead id="marksTableHead" class="bg-blue-50 text-blue-800 border-b">
+                            <!-- Dijana Dinamik oleh JS berdasarkan Pilihan Subjek -->
                             <tr>
                                 <th class="px-4 py-3 text-center w-12">Bil</th>
                                 <th class="px-4 py-3">Nama Murid</th>
@@ -241,11 +234,10 @@
                     <p class="text-gray-600">Domain Rasmi KPM: <span class="font-mono bg-gray-100 px-2 py-1 rounded text-sm text-green-600">@moe-dl.edu.my</span></p>
                 </div>
             </div>
-
         </div>
     </main>
 
-    <!-- MODAL: KEMASKINI MURID (Manual Edit) -->
+    <!-- MODAL EDIT MURID -->
     <div id="modalEditStudent" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center">
         <div class="bg-white p-6 rounded-xl shadow-xl w-96">
             <h3 class="text-lg font-bold mb-4">Kemaskini Profil Murid</h3>
@@ -257,36 +249,11 @@
                     <option value="L">Lelaki (L)</option>
                     <option value="P">Perempuan (P)</option>
                 </select>
-                <select id="editStudentClass" class="w-full border p-2 rounded">
-                    <!-- Options dari JS -->
-                </select>
+                <select id="editStudentClass" class="w-full border p-2 rounded"></select>
             </div>
             <div class="mt-6 flex justify-end space-x-2">
                 <button onclick="document.getElementById('modalEditStudent').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Batal</button>
                 <button onclick="window.saveEditedStudent()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Simpan</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: RINGKASAN KELAS -->
-    <div id="modalClassSummary" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center">
-        <div class="bg-white p-6 rounded-xl shadow-xl max-w-2xl w-full">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">Analitik Terperinci Kelas</h3>
-                <button onclick="document.getElementById('modalClassSummary').classList.add('hidden')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="overflow-y-auto max-h-96">
-                <table class="w-full text-sm text-left border">
-                    <thead class="bg-gray-50 border-b">
-                        <tr>
-                            <th class="px-4 py-2 border-r">Nama Kelas</th>
-                            <th class="px-4 py-2 border-r text-center text-blue-600">Lelaki</th>
-                            <th class="px-4 py-2 border-r text-center text-pink-600">Perempuan</th>
-                            <th class="px-4 py-2 text-center font-bold">Jumlah</th>
-                        </tr>
-                    </thead>
-                    <tbody id="classSummaryBody"></tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -296,7 +263,7 @@
         <span id="toastMsg">Mesej</span>
     </div>
 
-    <!-- LOGIK SISTEM & FIREBASE (JAVASCRIPT) -->
+    <!-- JAVASCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -318,60 +285,48 @@
         provider.setCustomParameters({ hd: 'moe-dl.edu.my' });
 
         window.appData = { classes: [], students: [] };
-        let charts = {};
 
-        // --- FUNGSI AUTENTIKASI ---
-        document.getElementById('btnGoogleLogin').addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch(err => alert("Ralat Log Masuk: " + err.message));
-        });
-
+        // --- AUTH ---
+        document.getElementById('btnGoogleLogin').addEventListener('click', () => signInWithPopup(auth, provider).catch(e => alert(e.message)));
         document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
 
         onAuthStateChanged(auth, (user) => {
-            const overlay = document.getElementById('loginOverlay');
-            const errorMsg = document.getElementById('loginError');
-            
-            if (user) {
-                if(user.email.endsWith('@moe-dl.edu.my') || user.email.endsWith('@moe.edu.my')) {
-                    overlay.classList.add('hidden');
-                    document.getElementById('userEmail').innerText = user.email;
-                    if(user.email === 'sekolah-7608@moe-dl.edu.my') document.getElementById('adminBadge').classList.remove('hidden');
-                    initRealtimeListeners();
-                } else {
-                    errorMsg.classList.remove('hidden');
-                    signOut(auth);
-                }
+            if (user && (user.email.endsWith('@moe-dl.edu.my') || user.email.endsWith('@moe.edu.my'))) {
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('userEmail').innerText = user.email;
+                if(user.email === 'sekolah-7608@moe-dl.edu.my') document.getElementById('adminBadge').classList.remove('hidden');
+                
+                onSnapshot(collection(db, 'classes'), (snapshot) => {
+                    window.appData.classes = [];
+                    snapshot.forEach(doc => window.appData.classes.push({ id: doc.id, ...doc.data() }));
+                    window.appData.classes.sort((a, b) => a.name.localeCompare(b.name));
+                    document.getElementById('dashTotalClasses').innerText = window.appData.classes.length;
+                    
+                    const classOpts = window.appData.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                    document.getElementById('filterClass').innerHTML = `<option value="">Semua Kelas</option>` + classOpts;
+                    document.getElementById('editStudentClass').innerHTML = classOpts;
+                    document.getElementById('markFilterClass').innerHTML = `<option value="">-- Pilih Kelas --</option>` + classOpts;
+                });
+
+                onSnapshot(collection(db, 'students'), (snapshot) => {
+                    window.appData.students = [];
+                    snapshot.forEach(doc => window.appData.students.push({ id: doc.id, ...doc.data() }));
+                    window.appData.students.sort((a, b) => a.name.localeCompare(b.name));
+                    document.getElementById('dashTotalStudents').innerText = window.appData.students.length;
+                    window.renderStudents();
+                    if(document.getElementById('marks').classList.contains('active')) window.loadMarksTable();
+                });
             } else {
-                overlay.classList.remove('hidden');
-                errorMsg.classList.add('hidden');
+                document.getElementById('loginOverlay').classList.remove('hidden');
+                if(user) document.getElementById('loginError').classList.remove('hidden');
+                signOut(auth);
             }
         });
 
-        function initRealtimeListeners() {
-            onSnapshot(collection(db, 'classes'), (snapshot) => {
-                window.appData.classes = [];
-                snapshot.forEach(doc => window.appData.classes.push({ id: doc.id, ...doc.data() }));
-                window.appData.classes.sort((a, b) => a.name.localeCompare(b.name));
-                updateClassDropdowns();
-                updateDashboard();
-                window.renderStudents();
-                if(document.getElementById('marks').classList.contains('active')) window.loadMarksTable();
-            });
-
-            onSnapshot(collection(db, 'students'), (snapshot) => {
-                window.appData.students = [];
-                snapshot.forEach(doc => window.appData.students.push({ id: doc.id, ...doc.data() }));
-                window.appData.students.sort((a, b) => a.name.localeCompare(b.name));
-                updateDashboard();
-                window.renderStudents();
-                if(document.getElementById('marks').classList.contains('active')) window.loadMarksTable();
-            });
-        }
-
+        // --- UI UTILITIES ---
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('bg-blue-600');
                 if(btn.getAttribute('data-target') === tabId) btn.classList.add('bg-blue-600');
@@ -380,96 +335,19 @@
         };
 
         window.showToast = function(msg) {
-            const toast = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+            document.getElementById('toast').classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => document.getElementById('toast').classList.add('translate-y-20', 'opacity-0'), 3000);
         };
 
-        function updateClassDropdowns() {
-            const opts = window.appData.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            document.getElementById('filterClass').innerHTML = `<option value="">Semua Kelas</option>` + opts;
-            document.getElementById('editStudentClass').innerHTML = opts;
-            document.getElementById('markFilterClass').innerHTML = `<option value="">-- Pilih Kelas --</option>` + opts;
-        }
-
-        function updateDashboard() {
-            document.getElementById('dashTotalClasses').innerText = window.appData.classes.length;
-            document.getElementById('dashTotalStudents').innerText = window.appData.students.length;
-            
-            let male = window.appData.students.filter(s => s.gender === 'L').length;
-            let female = window.appData.students.filter(s => s.gender === 'P').length;
-
-            if(charts.gender) charts.gender.destroy();
-            charts.gender = new Chart(document.getElementById('genderChart'), {
-                type: 'doughnut',
-                data: { labels: ['Lelaki', 'Perempuan'], datasets: [{ data: [male, female], backgroundColor: ['#3b82f6', '#ec4899'] }] }
-            });
-
-            // Count random TPs just for visual representation from overall subject averages
-            let tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
-            window.appData.students.forEach(s => {
-                if(s.scores && s.scores.PAT && s.scores.PAT.BM && s.scores.PAT.BM.tp) {
-                    let tp = s.scores.PAT.BM.tp;
-                    if(tpCounts[tp] !== undefined) tpCounts[tp]++;
-                }
-            });
-
-            if(charts.pbd) charts.pbd.destroy();
-            charts.pbd = new Chart(document.getElementById('pbdChart'), {
-                type: 'bar',
-                data: { labels: Object.keys(tpCounts), datasets: [{ label: 'Bil Murid', data: Object.values(tpCounts), backgroundColor: '#10b981' }] }
-            });
-        }
-
-        // --- AI JANTINA & MAPPING ---
-        window.detectGender = function(name, ic = '') {
-            if (ic && typeof ic === 'string') {
-                let cleanIC = ic.replace(/[^0-9]/g, '');
-                if (cleanIC.length >= 12) return (parseInt(cleanIC.charAt(cleanIC.length - 1)) % 2 === 0) ? 'P' : 'L';
-            }
-            let n = (name || '').toUpperCase();
-            if (n.includes('BINTI ') || n.includes(' BT ') || n.includes(' BTE ')) return 'P';
-            if (n.includes('BIN ')) return 'L';
-            
-            const p = ['SITI', 'NUR', 'NURUL', 'AISYAH', 'DAYANG', 'SARAH', 'AIN', 'AINA', 'FARAH', 'HANA', 'SOFEA', 'FATIMAH', 'QALESYA', 'QAISARA', 'JANNAH'];
-            const l = ['MOHD', 'MUHAMMAD', 'MOHAMAD', 'AHMAD', 'AWANG', 'ABDUL', 'ADAM', 'DANIEL', 'DANIAL', 'AIMAN', 'AMIR', 'AMIRUL', 'HAFIZ', 'RAYYAN'];
-            
-            for(let kw of p) if (n.includes(kw)) return 'P';
-            for(let kw of l) if (n.includes(kw)) return 'L';
-            
-            let lastChar = n.slice(-1);
-            let lastPart = n.split(' ').pop();
-            if (['A','I','E'].includes(lastChar) || ['AH','YAH','NAH','EE'].some(end => lastPart.endsWith(end))) return 'P';
-            
-            return 'L';
-        };
-
-        window.autoFixGender = async function() {
-            if(!confirm("Proses ini akan mengimbas dan membetulkan jantina semua murid. Teruskan?")) return;
-            try {
-                const batch = writeBatch(db);
-                window.appData.students.forEach(s => {
-                    let correctGender = window.detectGender(s.name, s.ic);
-                    if(s.gender !== correctGender) batch.update(doc(db, 'students', s.id), { gender: correctGender });
-                });
-                await batch.commit();
-                showToast("🪄 Semua jantina telah dibetulkan!");
-            } catch (e) { alert("Ralat AI: " + e.message); }
-        };
-
-        // --- PENGURUSAN MURID (EDIT/PADAM) ---
+        // --- PENGURUSAN MURID ---
         window.renderStudents = function() {
             const tbody = document.getElementById('studentsTableBody');
             const filterClass = document.getElementById('filterClass').value;
-            
             let filtered = window.appData.students;
             if(filterClass) filtered = filtered.filter(s => s.classId === filterClass);
 
-            if(filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-gray-400">Tiada data murid.</td></tr>`;
-                return;
-            }
+            if(filtered.length === 0) return tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-gray-400">Tiada data murid.</td></tr>`;
 
             let html = '';
             filtered.forEach(s => {
@@ -483,7 +361,7 @@
                     <td class="px-4 py-2 text-gray-600">${className}</td>
                     <td class="px-4 py-2 text-center">
                         <button data-id="${s.id}" onclick="window.openEditStudentModal(this.getAttribute('data-id'))" class="text-yellow-500 hover:text-yellow-700 mx-1"><i class="fas fa-edit"></i></button>
-                        <button data-id="${s.id}" onclick="window.deleteStudent(this.getAttribute('data-id'))" class="text-red-500 hover:text-red-700 mx-1"><i class="fas fa-trash"></i></button>
+                        <button data-id="${s.id}" onclick="if(confirm('Padam murid ini?')) deleteDoc(doc(db, 'students', this.getAttribute('data-id')))" class="text-red-500 hover:text-red-700 mx-1"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
             });
@@ -492,7 +370,6 @@
 
         window.openEditStudentModal = function(id) {
             const student = window.appData.students.find(s => s.id === id);
-            if(!student) return;
             document.getElementById('editStudentId').value = student.id;
             document.getElementById('editStudentName').value = student.name;
             document.getElementById('editStudentIC').value = student.ic || '';
@@ -502,9 +379,8 @@
         };
 
         window.saveEditedStudent = async function() {
-            const id = document.getElementById('editStudentId').value;
             try {
-                await setDoc(doc(db, 'students', id), {
+                await setDoc(doc(db, 'students', document.getElementById('editStudentId').value), {
                     name: document.getElementById('editStudentName').value.toUpperCase(),
                     ic: document.getElementById('editStudentIC').value,
                     gender: document.getElementById('editStudentGender').value,
@@ -512,33 +388,24 @@
                 }, { merge: true });
                 document.getElementById('modalEditStudent').classList.add('hidden');
                 showToast("Berjaya dikemaskini!");
-            } catch (e) { alert("Gagal menyimpan: " + e.message); }
-        };
-
-        window.deleteStudent = async function(id) {
-            if(confirm("Padam murid ini?")) await deleteDoc(doc(db, 'students', id));
+            } catch (e) { alert("Ralat: " + e.message); }
         };
 
         window.toggleSelectAll = function() {
-            const master = document.getElementById('selectAllCheckbox').checked;
-            document.querySelectorAll('.print-checkbox').forEach(cb => cb.checked = master);
+            const m = document.getElementById('selectAllCheckbox').checked;
+            document.querySelectorAll('.print-checkbox').forEach(cb => cb.checked = m);
         };
 
-        // --- FUNGSI MODUL MARKAH & PBD (BARU) ---
+        // --- PENGURUSAN MARKAH & KEHADIRAN ---
         window.getGrade = function(m) {
             if(m === '' || m === null || isNaN(m)) return '-';
             let v = parseFloat(m);
-            if(v >= 80) return 'A';
-            if(v >= 65) return 'B';
-            if(v >= 50) return 'C';
-            if(v >= 40) return 'D';
-            return 'E';
+            if(v >= 80) return 'A'; if(v >= 65) return 'B'; if(v >= 50) return 'C'; if(v >= 40) return 'D'; return 'E';
         };
 
         window.updateGradePreview = function(input) {
-            let val = input.value;
-            if(val !== '' && val < 0) input.value = 0;
-            if(val !== '' && val > 100) input.value = 100;
+            if(input.value !== '' && input.value < 0) input.value = 0;
+            if(input.value !== '' && input.value > 100) input.value = 100;
             input.parentElement.nextElementSibling.innerText = window.getGrade(input.value);
         };
 
@@ -546,42 +413,86 @@
             const classId = document.getElementById('markFilterClass').value;
             const exam = document.getElementById('markFilterExam').value;
             const subject = document.getElementById('markFilterSubject').value;
+            const thead = document.getElementById('marksTableHead');
             const tbody = document.getElementById('marksTableBody');
 
-            if(!classId) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Sila pilih Kelas dan Mata Pelajaran untuk mula mengisi markah.</td></tr>`;
-                return;
-            }
+            if(!classId) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Sila pilih Kelas dan Mata Pelajaran untuk memulakan.</td></tr>`;
 
-            let studentsInClass = window.appData.students.filter(s => s.classId === classId);
-            if(studentsInClass.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Tiada murid dalam kelas ini.</td></tr>`;
-                return;
+            let students = window.appData.students.filter(s => s.classId === classId);
+            if(students.length === 0) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Tiada murid dalam kelas ini.</td></tr>`;
+
+            // PERUBAHAN HEADERS BERGANTUNG PADA PILIHAN
+            if (subject === '_KEHADIRAN') {
+                thead.innerHTML = `
+                    <tr>
+                        <th class="px-4 py-3 text-center w-12">Bil</th>
+                        <th class="px-4 py-3">Nama Murid</th>
+                        <th class="px-4 py-3 text-center w-32">Kehadiran (%)</th>
+                        <th class="px-4 py-3 text-center w-48">Kelakuan / Sahsiah</th>
+                        <th class="px-4 py-3 text-left">Ulasan Guru Kelas</th>
+                    </tr>`;
+            } else {
+                thead.innerHTML = `
+                    <tr>
+                        <th class="px-4 py-3 text-center w-12">Bil</th>
+                        <th class="px-4 py-3">Nama Murid</th>
+                        <th class="px-4 py-3 text-center w-32">Markah (0-100)</th>
+                        <th class="px-4 py-3 text-center w-24">Gred</th>
+                        <th class="px-4 py-3 text-center w-32">PBD (TP)</th>
+                    </tr>`;
             }
 
             let html = '';
-            studentsInClass.forEach((s, idx) => {
-                // Baca skor sedia ada dari pangkalan data (jika ada)
-                let scoreObj = (s.scores && s.scores[exam] && s.scores[exam][subject]) || {};
-                let mark = scoreObj.mark !== undefined && scoreObj.mark !== null ? scoreObj.mark : '';
-                let tp = scoreObj.tp || '';
+            students.forEach((s, idx) => {
+                if (subject === '_KEHADIRAN') {
+                    // Paparan Borang Kehadiran & Kelakuan
+                    let ext = (s.scores && s.scores[exam] && s.scores[exam]['_KEHADIRAN']) || {};
+                    let att = ext.kehadiran !== undefined ? ext.kehadiran : '';
+                    let beh = ext.kelakuan || '';
+                    let cmt = ext.ulasan || '';
 
-                html += `
-                <tr class="border-b hover:bg-yellow-50 mark-row transition" data-id="${s.id}">
-                    <td class="px-4 py-2 text-center text-gray-500">${idx + 1}</td>
-                    <td class="px-4 py-2 font-bold uppercase">${s.name}</td>
-                    <td class="px-4 py-2 text-center">
-                        <input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 mark-input bg-white shadow-inner" value="${mark}" onkeyup="window.updateGradePreview(this)" onchange="window.updateGradePreview(this)" placeholder="0">
-                    </td>
-                    <td class="px-4 py-2 text-center font-bold text-lg grade-preview">${window.getGrade(mark)}</td>
-                    <td class="px-4 py-2 text-center">
-                        <select class="border border-green-300 rounded p-1.5 w-full text-center font-bold text-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 tp-input bg-white shadow-inner">
-                            <option value="">-- TP --</option>
-                            ${[1,2,3,4,5,6].map(i => `<option value="TP${i}" ${tp === 'TP'+i ? 'selected' : ''}>TP ${i}</option>`).join('')}
-                        </select>
-                    </td>
-                </tr>
-                `;
+                    html += `
+                    <tr class="border-b hover:bg-blue-50 mark-row transition" data-id="${s.id}">
+                        <td class="px-4 py-2 text-center text-gray-500">${idx + 1}</td>
+                        <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
+                        <td class="px-4 py-2 text-center">
+                            <input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 att-input shadow-inner" value="${att}" placeholder="%">
+                        </td>
+                        <td class="px-4 py-2 text-center">
+                            <select class="border border-green-300 rounded p-1.5 w-full text-center text-green-800 beh-input shadow-inner">
+                                <option value="">-- Pilih --</option>
+                                <option value="AMAT BAIK" ${beh === 'AMAT BAIK' ? 'selected' : ''}>Amat Baik</option>
+                                <option value="BAIK" ${beh === 'BAIK' ? 'selected' : ''}>Baik</option>
+                                <option value="MEMUASKAN" ${beh === 'MEMUASKAN' ? 'selected' : ''}>Memuaskan</option>
+                                <option value="PERLU BIMBINGAN" ${beh === 'PERLU BIMBINGAN' ? 'selected' : ''}>Perlu Bimbingan</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-2">
+                            <input type="text" class="border border-gray-300 rounded p-1.5 w-full text-sm cmt-input shadow-inner" value="${cmt}" placeholder="Taip ulasan pendek...">
+                        </td>
+                    </tr>`;
+                } else {
+                    // Paparan Borang Markah Biasa
+                    let sc = (s.scores && s.scores[exam] && s.scores[exam][subject]) || {};
+                    let mark = sc.mark !== undefined && sc.mark !== null ? sc.mark : '';
+                    let tp = sc.tp || '';
+                    
+                    html += `
+                    <tr class="border-b hover:bg-yellow-50 mark-row transition" data-id="${s.id}">
+                        <td class="px-4 py-2 text-center text-gray-500">${idx + 1}</td>
+                        <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
+                        <td class="px-4 py-2 text-center">
+                            <input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 mark-input shadow-inner" value="${mark}" onkeyup="window.updateGradePreview(this)" placeholder="0">
+                        </td>
+                        <td class="px-4 py-2 text-center font-bold text-lg grade-preview">${window.getGrade(mark)}</td>
+                        <td class="px-4 py-2 text-center">
+                            <select class="border border-green-300 rounded p-1.5 w-full text-center font-bold text-green-800 tp-input shadow-inner">
+                                <option value="">- TP -</option>
+                                ${[1,2,3,4,5,6].map(i => `<option value="TP${i}" ${tp === 'TP'+i ? 'selected' : ''}>TP ${i}</option>`).join('')}
+                            </select>
+                        </td>
+                    </tr>`;
+                }
             });
             tbody.innerHTML = html;
         };
@@ -590,48 +501,52 @@
             const classId = document.getElementById('markFilterClass').value;
             const exam = document.getElementById('markFilterExam').value;
             const subject = document.getElementById('markFilterSubject').value;
-
-            if(!classId) return alert("Sila pilih kelas terlebih dahulu.");
-
-            const rows = document.querySelectorAll('.mark-row');
-            if(rows.length === 0) return;
+            if(!classId) return alert("Sila pilih kelas.");
 
             try {
                 const batch = writeBatch(db);
-                rows.forEach(row => {
+                document.querySelectorAll('.mark-row').forEach(row => {
                     let id = row.getAttribute('data-id');
-                    let markVal = row.querySelector('.mark-input').value;
-                    let tpVal = row.querySelector('.tp-input').value;
-
-                    let markNum = markVal === '' ? null : parseFloat(markVal);
-                    let grade = window.getGrade(markNum);
-
-                    // Menggunakan merge: true membolehkan kita update subjek spesifik tanpa memadam data subjek lain
-                    batch.set(doc(db, 'students', id), {
-                        scores: {
-                            [exam]: {
-                                [subject]: { mark: markNum, grade: grade, tp: tpVal }
-                            }
-                        }
-                    }, { merge: true });
+                    
+                    if(subject === '_KEHADIRAN') {
+                        let attVal = row.querySelector('.att-input').value;
+                        let behVal = row.querySelector('.beh-input').value;
+                        let cmtVal = row.querySelector('.cmt-input').value;
+                        
+                        batch.set(doc(db, 'students', id), {
+                            scores: { [exam]: { '_KEHADIRAN': { 
+                                kehadiran: attVal === '' ? null : parseFloat(attVal),
+                                kelakuan: behVal,
+                                ulasan: cmtVal
+                            }}}
+                        }, { merge: true });
+                    } else {
+                        let markVal = row.querySelector('.mark-input').value;
+                        let tpVal = row.querySelector('.tp-input').value;
+                        let markNum = markVal === '' ? null : parseFloat(markVal);
+                        
+                        batch.set(doc(db, 'students', id), {
+                            scores: { [exam]: { [subject]: { 
+                                mark: markNum, grade: window.getGrade(markNum), tp: tpVal 
+                            }}}
+                        }, { merge: true });
+                    }
                 });
                 await batch.commit();
-                showToast("Semua markah berjaya disimpan ke awan!");
-            } catch (e) {
-                alert("Ralat menyimpan markah: " + e.message);
-            }
+                showToast("Rekod berjaya disimpan!");
+            } catch (e) { alert("Ralat: " + e.message); }
         };
 
-        // --- FUNGSI CETAK LAPORAN (SEBENAR) ---
+        // --- CETAK LAPORAN ---
         window.printReport = function(type) {
             let selectedIds = Array.from(document.querySelectorAll('.print-checkbox:checked')).map(cb => cb.value);
-            if(selectedIds.length === 0) return alert("Sila tick (pilih) sekurang-kurangnya seorang murid.");
+            if(selectedIds.length === 0) return alert("Sila pilih murid.");
 
             let printWindow = window.open('', '_blank');
             let htmlContent = `
                 <html>
                 <head>
-                    <title>Cetak ${type}</title>
+                    <title>Cetak Laporan ${type}</title>
                     <script src="https://cdn.tailwindcss.com"><\/script>
                     <style>
                         @page { size: A4 portrait; margin: 15mm; }
@@ -644,69 +559,54 @@
             `;
 
             const subjs = [
-                { code: 'BM', name: 'BAHASA MELAYU' },
-                { code: 'BI', name: 'BAHASA INGGERIS' },
-                { code: 'MT', name: 'MATEMATIK' },
-                { code: 'SN', name: 'SAINS' },
-                { code: 'PI', name: 'PENDIDIKAN ISLAM / MORAL' },
-                { code: 'SJ', name: 'SEJARAH' }
+                { code: 'BM', name: 'BAHASA MELAYU' }, { code: 'BI', name: 'BAHASA INGGERIS' },
+                { code: 'MT', name: 'MATEMATIK' }, { code: 'SN', name: 'SAINS' },
+                { code: 'PI', name: 'PENDIDIKAN ISLAM / MORAL' }, { code: 'SJ', name: 'SEJARAH' }
             ];
 
             selectedIds.forEach((id, index) => {
                 let s = window.appData.students.find(x => x.id === id);
                 let c = window.appData.classes.find(x => x.id === s.classId);
-                let title = type === 'PPT' ? 'PENTAKSIRAN PERTENGAHAN TAHUN' : 'PENTAKSIRAN AKHIR TAHUN';
                 
                 let marksRows = '';
-                let totalMarks = 0;
-                let validSubjectsCount = 0;
+                let totalMarks = 0, validCount = 0;
 
                 subjs.forEach((sub, idx) => {
                     let sc = (s.scores && s.scores[type] && s.scores[type][sub.code]) || {};
                     let m = sc.mark;
-                    let g = sc.grade || '-';
-                    let t = sc.tp || '-';
-                    
-                    if(typeof m === 'number') {
-                        totalMarks += m;
-                        validSubjectsCount++;
-                    }
+                    if(typeof m === 'number') { totalMarks += m; validCount++; }
                     
                     marksRows += `<tr>
-                        <td class="border border-black px-2 py-2 text-center">${idx + 1}</td>
-                        <td class="border border-black px-2 py-2 font-bold">${sub.name}</td>
-                        <td class="border border-black px-2 py-2 text-center">${typeof m === 'number' ? m : '-'}</td>
-                        <td class="border border-black px-2 py-2 text-center font-bold">${g}</td>
-                        <td class="border border-black px-2 py-2 text-center font-bold">${t}</td>
+                        <td class="border border-black px-2 py-1.5 text-center">${idx + 1}</td>
+                        <td class="border border-black px-2 py-1.5 font-bold">${sub.name}</td>
+                        <td class="border border-black px-2 py-1.5 text-center">${typeof m === 'number' ? m : '-'}</td>
+                        <td class="border border-black px-2 py-1.5 text-center font-bold">${sc.grade || '-'}</td>
+                        <td class="border border-black px-2 py-1.5 text-center font-bold">${sc.tp || '-'}</td>
                     </tr>`;
                 });
 
-                let fullMarks = validSubjectsCount > 0 ? validSubjectsCount * 100 : 0;
-                let percentage = fullMarks > 0 ? (totalMarks / fullMarks) * 100 : 0;
-                
-                let statusLulus = '';
-                if (fullMarks === 0) statusLulus = '<span class="text-gray-500 font-bold">TIADA REKOD MARKAH</span>';
-                else statusLulus = percentage >= 40 ? '<span class="text-black font-bold">MENCAPAI TAHAP MINIMUM (MTM)</span>' : '<span class="text-black font-bold">BELUM MENCAPAI TAHAP MINIMUM (BMTM)</span>';
-                
-                let classRank = "-"; 
-                let yearRank = "-";
+                let fullMarks = validCount > 0 ? validCount * 100 : 0;
+                let percentage = fullMarks > 0 ? ((totalMarks / fullMarks) * 100).toFixed(2) : '-';
+                let statusLulus = fullMarks === 0 ? '-' : (percentage >= 40 ? 'MENCAPAI TAHAP MINIMUM (MTM)' : 'BELUM MENCAPAI TAHAP MINIMUM (BMTM)');
+
+                // Ekstrak Kehadiran, Kelakuan dan Ulasan
+                let ext = (s.scores && s.scores[type] && s.scores[type]['_KEHADIRAN']) || {};
+                let att = ext.kehadiran !== undefined && ext.kehadiran !== null ? ext.kehadiran + '%' : '-';
+                let beh = ext.kelakuan || '-';
+                let cmt = ext.ulasan || '';
                 
                 htmlContent += `
                     <div class="${index < selectedIds.length - 1 ? 'page-break' : ''} report-container p-6">
                         <div class="text-center mb-6">
                             <h1 class="text-2xl font-bold uppercase">SEKOLAH KEBANGSAAN BIKANG</h1>
-                            <h2 class="text-xl font-bold mt-2 border-b-2 border-black inline-block pb-1">LAPORAN ${title} 2026</h2>
+                            <h2 class="text-xl font-bold mt-2 border-b-2 border-black inline-block pb-1">
+                                LAPORAN PENTAKSIRAN ${type === 'PPT' ? 'PERTENGAHAN' : 'AKHIR'} TAHUN 2026
+                            </h2>
                         </div>
                         
-                        <div class="mb-6 grid grid-cols-2 gap-4 text-sm font-bold uppercase">
-                            <div>
-                                <p>NAMA: ${s.name}</p>
-                                <p class="mt-1">NO. KP: ${s.ic || '-'}</p>
-                            </div>
-                            <div class="text-right">
-                                <p>KELAS: ${c ? c.name : '-'}</p>
-                                <p class="mt-1">JANTINA: ${s.gender === 'P' ? 'PEREMPUAN' : 'LELAKI'}</p>
-                            </div>
+                        <div class="mb-4 grid grid-cols-2 gap-4 text-sm font-bold uppercase">
+                            <div><p>NAMA: ${s.name}</p><p class="mt-1">NO. KP: ${s.ic || '-'}</p></div>
+                            <div class="text-right"><p>KELAS: ${c ? c.name : '-'}</p><p class="mt-1">JANTINA: ${s.gender === 'P' ? 'PEREMPUAN' : 'LELAKI'}</p></div>
                         </div>
 
                         <table class="w-full border-collapse border border-black text-sm mb-4">
@@ -719,23 +619,24 @@
                                     <th class="border border-black px-2 py-2 text-center w-24">PBD (TP)</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                ${marksRows}
-                            </tbody>
+                            <tbody>${marksRows}</tbody>
                         </table>
 
                         <div class="border border-black p-4 mb-4 text-sm font-bold uppercase grid grid-cols-2 gap-y-3">
                             <div>JUMLAH MARKAH: ${fullMarks > 0 ? totalMarks : '-'} / ${fullMarks > 0 ? fullMarks : '-'}</div>
-                            <div class="text-right">KEDUDUKAN DALAM KELAS: ${classRank}</div>
-                            <div>PERATUS KESELURUHAN: ${fullMarks > 0 ? percentage.toFixed(2) + ' %' : '-'}</div>
-                            <div class="text-right">KEDUDUKAN DALAM TAHUN: ${yearRank}</div>
-                            <div class="col-span-2 pt-2 border-t border-gray-300">STATUS PENCAPAIAN: ${statusLulus}</div>
+                            <div class="text-right">KEDUDUKAN DALAM KELAS: -</div>
+                            <div>PERATUS KESELURUHAN: ${percentage} ${percentage !== '-' ? '%' : ''}</div>
+                            <div class="text-right">KEDUDUKAN DALAM TAHUN: -</div>
+                            <div class="col-span-2 pt-2 border-t border-gray-400 grid grid-cols-2 gap-y-3">
+                                <div>PERATUS KEHADIRAN: ${att}</div>
+                                <div class="text-right">KELAKUAN / SAHSIAH: ${beh}</div>
+                                <div class="col-span-2 text-center pt-2 text-base">STATUS: ${statusLulus}</div>
+                            </div>
                         </div>
 
-                        <div class="border border-black p-4 mb-8 text-sm min-h-[120px]">
-                            <p class="font-bold uppercase mb-6">ULASAN GURU KELAS:</p>
-                            <div class="border-b border-dotted border-black mt-8"></div>
-                            <div class="border-b border-dotted border-black mt-8"></div>
+                        <div class="border border-black p-4 mb-8 text-sm min-h-[100px]">
+                            <p class="font-bold uppercase mb-2">ULASAN GURU KELAS:</p>
+                            ${cmt ? `<p class="italic text-gray-800 text-lg ml-4 mt-2">"${cmt}"</p>` : `<div class="border-b border-dotted border-black mt-8"></div>`}
                         </div>
 
                         <div class="mt-8 grid grid-cols-3 gap-6 text-center text-sm font-bold uppercase">
@@ -743,38 +644,14 @@
                             <div><br><br><p class="border-t border-black pt-2 mx-4">TANDATANGAN GURU BESAR</p></div>
                             <div><br><br><p class="border-t border-black pt-2 mx-4">TANDATANGAN IBU BAPA</p></div>
                         </div>
-                        
-                        <div class="mt-8 text-right text-xs text-gray-500">
-                            Tarikh Cetakan: ${new Date().toLocaleDateString('ms-MY')}
-                        </div>
                     </div>
                 `;
             });
 
-            htmlContent += `<script>window.onload=function(){setTimeout(function(){window.print();},1000);}<\/script></body></html>`;
+            htmlContent += `<script>window.onload=function(){setTimeout(window.print, 800);}<\/script></body></html>`;
             printWindow.document.write(htmlContent);
             printWindow.document.close();
         };
-
-        window.openClassSummaryModal = function() {
-            const tbody = document.getElementById('classSummaryBody');
-            let html = '';
-            window.appData.classes.forEach(c => {
-                let studentsInClass = window.appData.students.filter(s => s.classId === c.id);
-                let male = studentsInClass.filter(s => s.gender === 'L').length;
-                let female = studentsInClass.filter(s => s.gender === 'P').length;
-                html += `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="px-4 py-2 border-r font-bold">${c.name}</td>
-                    <td class="px-4 py-2 border-r text-center">${male}</td>
-                    <td class="px-4 py-2 border-r text-center">${female}</td>
-                    <td class="px-4 py-2 text-center font-bold bg-gray-50">${male + female}</td>
-                </tr>`;
-            });
-            tbody.innerHTML = html || '<tr><td colspan="4" class="text-center py-4">Tiada Kelas Dijumpai</td></tr>';
-            document.getElementById('modalClassSummary').classList.remove('hidden');
-        };
-
     </script>
 </body>
 </html>
