@@ -1314,59 +1314,66 @@
                 // Cuba padankan setiap murid dengan teks dalam PDF
                 students.forEach(student => {
                     let studentName = student.name.toUpperCase().replace(/\s+/g, ' ').trim();
-                    let nameWords = studentName.split(' ');
-                    // Gabungkan 3 nama pertama TANPA JARAK untuk kalis ralat PDF
-                    let searchName = nameWords.length > 2 ? nameWords.slice(0, 3).join('') : studentName.replace(/\s+/g, '');
+                    // Tapis BIN, BINTI, BITI, A/L, A/P untuk padanan bersih
+                    let cleanName = studentName.replace(/\b(BIN|BINTI|BITI|A\/L|A\/P)\b/g, '').replace(/\s+/g, ' ').trim();
+                    let nameWords = cleanName.split(' ');
+                    // Ambil 2 perkataan terawal sahaja (tanpa jarak) untuk elak typo ejaan belakang
+                    let searchName = nameWords.slice(0, 2).join(''); 
+                    
                     let studentIcStr = (student.ic || '').replace(/[^0-9]/g, '');
 
                     let bestMatchMark = null;
-                    let extractedIC = null; // Tambahan: Pembolehubah untuk simpan No KP dari PDF
+                    let extractedIC = null;
 
                     for (let rowItems of allRows) {
                         let fullRowStr = rowItems.map(r => r.str).join(' ').toUpperCase();
-                        let rowStrNoSpaces = fullRowStr.replace(/\s+/g, ''); // Buang semua jarak
+                        let rowStrNoSpaces = fullRowStr.replace(/\s+/g, '');
                         
                         let isMatch = false;
                         
-                        // PADANAN PINTAR: Cuba padan guna IC (Paling Tepat). Jika IC tiada, guna Nama Tanpa Jarak.
+                        // PADANAN 1: Melalui No. KP jika ada dalam sistem
                         if (studentIcStr.length === 12 && fullRowStr.includes(studentIcStr)) {
                             isMatch = true;
-                        } else if (rowStrNoSpaces.includes(searchName)) {
+                        } 
+                        // PADANAN 2: Melalui 2 perkataan pertama Nama Murid
+                        else if (searchName.length > 3 && rowStrNoSpaces.includes(searchName)) {
                             isMatch = true;
                         }
                         
                         if (isMatch) {
-                            // Cari kedudukan No. KP atau Nama supaya kita boleh abaikan nombor 'BIL' di permulaan
-                            let icIndex = rowItems.findIndex(r => /\b\d{12}\b/.test(r.str));
-                            let nameIdx = rowItems.findIndex(r => r.str.replace(/\s+/g, '').toUpperCase().includes(nameWords[0]));
-                            let startIndex = Math.max(icIndex, nameIdx);
+                            // Cari kedudukan No. KP di baris ini
+                            let icIndex = rowItems.findIndex(r => /\d{12}/.test(r.str));
+                            let itemsToSearch = [];
                             
-                            // Hanya cari nombor selepas Nama/IC
-                            let itemsToSearch = startIndex !== -1 ? rowItems.slice(startIndex + 1) : rowItems;
+                            if (icIndex !== -1) {
+                                // Ekstrak No KP PDF (jika murid belum ada No. KP dalam sistem)
+                                let icMatch = rowItems[icIndex].str.match(/\d{12}/);
+                                if(icMatch) extractedIC = icMatch[0];
+                                
+                                // Hanya periksa nombor SELEPAS No. KP
+                                itemsToSearch = rowItems.slice(icIndex + 1);
+                            } else {
+                                // Jika tiada No KP, periksa bermula selepas nama murid
+                                let nameIdx = rowItems.findIndex(r => r.str.replace(/\s+/g, '').toUpperCase().includes(nameWords[0]));
+                                itemsToSearch = nameIdx !== -1 ? rowItems.slice(nameIdx + 1) : rowItems;
+                            }
 
-                            // Cari nombor yang sah (dianggap markah dari 0 hingga 100) di baris yang sama
+                            // Ekstrak markah (hanya nombor bulat atau perpuluhan sah hingga 100)
                             let numbers = itemsToSearch.filter(r => /^\d+(\.\d+)?$/.test(r.str.trim())).map(r => parseFloat(r.str.trim()));
                             let validMarks = numbers.filter(n => n <= 100);
                             
                             if (validMarks.length > 0) {
-                                // Ambil markah terakhir di hujung baris yang selalunya adalah Jumlah Markah
+                                // Pilih nombor TERAKHIR di baris itu sebagai markah JUMLAH
                                 bestMatchMark = validMarks[validMarks.length - 1]; 
                             }
 
-                            // Ekstrak No KP dari baris ini jika wujud
-                            let icMatch = fullRowStr.match(/\b\d{12}\b/);
-                            if (icMatch) {
-                                extractedIC = icMatch[0];
-                            }
-
-                            break; // Henti pencarian untuk murid ini setelah dijumpai
+                            break; 
                         }
                     }
 
                     if (bestMatchMark !== null) {
                         let grade = window.getGrade(bestMatchMark);
                         
-                        // Kekalkan TP sedia ada jika ada, jika tiada biar kosong
                         let existingTP = '';
                         if (student.scores && student.scores[exam] && student.scores[exam][subject]) {
                             existingTP = student.scores[exam][subject].tp || '';
@@ -1378,7 +1385,7 @@
                             }}} 
                         };
 
-                        // KEMAS KINI NO. KP AUTOMATIK: Jika murid tiada IC dalam sistem, masukkan IC dari PDF
+                        // KEMAS KINI NO. KP SECARA AUTOMATIK JIKA KOSONG
                         if (extractedIC && (!student.ic || student.ic.trim() === '' || student.ic === '-')) {
                             updatePayload.ic = extractedIC;
                         }
@@ -1390,17 +1397,17 @@
 
                 if (matchedCount > 0) {
                     await batch.commit();
-                    showToast(`Berjaya! Markah untuk ${matchedCount} murid telah diimport.`);
+                    showToast(`Berjaya! Markah untuk ${matchedCount} murid telah diimport dan No. KP dikemaskini.`);
                     window.loadMarksTable();
                 } else {
-                    alert("Tiada padanan nama murid ditemui atau markah gagal diekstrak dari PDF. Sila semak fail PDF anda.");
+                    alert("Tiada padanan nama murid ditemui atau markah gagal diekstrak dari PDF. Pastikan nama murid di dalam sistem hampir sama dengan PDF.");
                 }
 
             } catch (e) {
                 console.error(e);
                 alert("Ralat memproses fail PDF: " + e.message);
             }
-            event.target.value = ''; // Reset input fail
+            event.target.value = '';
         };
 
         window.printReport = function(type) {
