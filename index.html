@@ -722,7 +722,11 @@
                         let icMatch = fullRowStr.match(/\b\d{12}\b/);
                         if (icMatch) {
                             let ic = icMatch[0];
-                            let numbersInRow = rowItems.filter(r => /^\d+$/.test(r.str) && r.str.length <= 3).map(r => parseInt(r.str));
+                            let icIndex = rowItems.findIndex(r => r.str.includes(ic));
+                            
+                            // HANYA cari nombor selepas No. KP untuk mengelakkan nombor 'BIL' (urutan) dibaca
+                            let itemsAfterIc = icIndex !== -1 ? rowItems.slice(icIndex + 1) : [];
+                            let numbersInRow = itemsAfterIc.filter(r => /^\d+$/.test(r.str) && r.str.length <= 3).map(r => parseInt(r.str));
                             
                             if (numbersInRow.length > 0) {
                                 let totalMark = numbersInRow[numbersInRow.length - 1];
@@ -1315,19 +1319,35 @@
                     let searchName = nameWords.length > 2 ? nameWords.slice(0, 3).join(' ') : studentName;
                     
                     let bestMatchMark = null;
+                    let extractedIC = null; // Tambahan: Pembolehubah untuk simpan No KP dari PDF
 
                     for (let rowItems of allRows) {
                         let fullRowStr = rowItems.map(r => r.str).join(' ').replace(/\s+/g, ' ').toUpperCase();
                         
                         if (fullRowStr.includes(searchName)) {
+                            // Cari kedudukan No. KP atau Nama supaya kita boleh abaikan nombor 'BIL' di permulaan
+                            let icIndex = rowItems.findIndex(r => /\b\d{12}\b/.test(r.str));
+                            let nameIdx = rowItems.findIndex(r => r.str.toUpperCase().includes(nameWords[0]));
+                            let startIndex = Math.max(icIndex, nameIdx);
+                            
+                            // Hanya cari nombor selepas Nama/IC
+                            let itemsToSearch = startIndex !== -1 ? rowItems.slice(startIndex + 1) : rowItems;
+
                             // Cari nombor yang sah (dianggap markah dari 0 hingga 100) di baris yang sama
-                            let numbers = rowItems.filter(r => /^\d+(\.\d+)?$/.test(r.str)).map(r => parseFloat(r.str));
+                            let numbers = itemsToSearch.filter(r => /^\d+(\.\d+)?$/.test(r.str)).map(r => parseFloat(r.str));
                             let validMarks = numbers.filter(n => n <= 100);
                             
                             if (validMarks.length > 0) {
                                 // Ambil markah terakhir di hujung baris yang selalunya adalah Jumlah Markah
                                 bestMatchMark = validMarks[validMarks.length - 1]; 
                             }
+
+                            // Ekstrak No KP dari baris ini jika wujud
+                            let icMatch = fullRowStr.match(/\b\d{12}\b/);
+                            if (icMatch) {
+                                extractedIC = icMatch[0];
+                            }
+
                             break; // Henti pencarian untuk murid ini setelah dijumpai
                         }
                     }
@@ -1341,11 +1361,18 @@
                             existingTP = student.scores[exam][subject].tp || '';
                         }
 
-                        batch.set(doc(db, 'students', student.id), { 
+                        let updatePayload = { 
                             scores: { [exam]: { [subject]: { 
                                 mark: bestMatchMark, grade: grade, tp: existingTP
                             }}} 
-                        }, { merge: true });
+                        };
+
+                        // KEMAS KINI NO. KP AUTOMATIK: Jika murid tiada IC dalam sistem, masukkan IC dari PDF
+                        if (extractedIC && (!student.ic || student.ic.trim() === '' || student.ic === '-')) {
+                            updatePayload.ic = extractedIC;
+                        }
+
+                        batch.set(doc(db, 'students', student.id), updatePayload, { merge: true });
                         matchedCount++;
                     }
                 });
