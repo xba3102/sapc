@@ -299,9 +299,15 @@
                             <option value="">-- Pilih Kelas Dahulu --</option>
                         </select>
                     </div>
-                    <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
-                        <i class="fas fa-save mr-2"></i>Simpan Pukal
-                    </button>
+                    <div class="flex gap-2 w-full md:w-auto mt-4 md:mt-0 flex-col md:flex-row">
+                        <label id="btnImportPdfMarks" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition whitespace-nowrap cursor-pointer opacity-50 pointer-events-none flex items-center justify-center">
+                            <i class="fas fa-file-pdf mr-2"></i>Import PDF
+                            <input type="file" id="pdfMarkFile" accept=".pdf" class="hidden" onchange="window.handlePdfMarkImport(event)">
+                        </label>
+                        <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
+                            <i class="fas fa-save mr-2"></i>Simpan Pukal
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
@@ -1156,6 +1162,14 @@
             let students = window.appData.students.filter(s => s.classId === classId);
             if(students.length === 0) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Tiada murid.</td></tr>`;
 
+            // Kawal butang Import PDF Markah
+            const btnImportPdf = document.getElementById('btnImportPdfMarks');
+            if (subject === '_KEHADIRAN') {
+                btnImportPdf.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                btnImportPdf.classList.remove('opacity-50', 'pointer-events-none');
+            }
+
             if (subject === '_KEHADIRAN') {
                 thead.innerHTML = `<tr><th class="px-4 py-3 text-center w-12">Bil</th><th class="px-4 py-3">Nama Murid</th><th class="px-4 py-3 text-center w-32">Kehadiran (%)</th><th class="px-4 py-3 text-center w-48">Sahsiah</th><th class="px-4 py-3">Ulasan</th></tr>`;
             } else {
@@ -1242,6 +1256,113 @@
             await batch.commit();
             window.showSyncStatus(false);
             showToast("Disimpan!");
+        };
+
+        // --- IMPORT PDF MARKAH KHUSUS KE DALAM JADUAL ---
+        window.handlePdfMarkImport = async function(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+
+            const classId = document.getElementById('markFilterClass').value;
+            const exam = document.getElementById('markFilterExam').value;
+            const subject = document.getElementById('markFilterSubject').value;
+
+            if(!classId || !subject) {
+                alert("Sila pilih Kelas dan Subjek dahulu di atas.");
+                return;
+            }
+
+            showToast("Membaca dan memproses nama & markah dari PDF...");
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                let students = window.appData.students.filter(s => s.classId === classId);
+                let matchedCount = 0;
+                const batch = writeBatch(db);
+
+                // Ekstrak semua teks secara perenggan mendatar (Y-axis)
+                let allRows = [];
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    
+                    let pageTextItems = textContent.items.map(item => ({
+                        str: item.str.trim(),
+                        x: Math.round(item.transform[4]),
+                        y: Math.round(item.transform[5])
+                    })).filter(it => it.str.length > 0);
+
+                    let rowsMap = {};
+                    pageTextItems.forEach(it => {
+                        let foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey) - it.y) < 5);
+                        let yKey = foundY || it.y;
+                        if (!rowsMap[yKey]) rowsMap[yKey] = [];
+                        rowsMap[yKey].push(it);
+                    });
+
+                    Object.keys(rowsMap).forEach(y => {
+                        let rowItems = rowsMap[y].sort((a,b) => a.x - b.x);
+                        allRows.push(rowItems);
+                    });
+                }
+
+                // Cuba padankan setiap murid dengan teks dalam PDF
+                students.forEach(student => {
+                    let studentName = student.name.toUpperCase().replace(/\s+/g, ' ').trim();
+                    // Guna 3 perkataan pertama sahaja untuk mengelakkan ralat ejaan BIN/BINTI
+                    let nameWords = studentName.split(' ');
+                    let searchName = nameWords.length > 2 ? nameWords.slice(0, 3).join(' ') : studentName;
+                    
+                    let bestMatchMark = null;
+
+                    for (let rowItems of allRows) {
+                        let fullRowStr = rowItems.map(r => r.str).join(' ').replace(/\s+/g, ' ').toUpperCase();
+                        
+                        if (fullRowStr.includes(searchName)) {
+                            // Cari nombor yang sah (dianggap markah dari 0 hingga 100) di baris yang sama
+                            let numbers = rowItems.filter(r => /^\d+(\.\d+)?$/.test(r.str)).map(r => parseFloat(r.str));
+                            let validMarks = numbers.filter(n => n <= 100);
+                            
+                            if (validMarks.length > 0) {
+                                // Ambil markah terakhir di hujung baris yang selalunya adalah Jumlah Markah
+                                bestMatchMark = validMarks[validMarks.length - 1]; 
+                            }
+                            break; // Henti pencarian untuk murid ini setelah dijumpai
+                        }
+                    }
+
+                    if (bestMatchMark !== null) {
+                        let grade = window.getGrade(bestMatchMark);
+                        
+                        // Kekalkan TP sedia ada jika ada, jika tiada biar kosong
+                        let existingTP = '';
+                        if (student.scores && student.scores[exam] && student.scores[exam][subject]) {
+                            existingTP = student.scores[exam][subject].tp || '';
+                        }
+
+                        batch.set(doc(db, 'students', student.id), { 
+                            scores: { [exam]: { [subject]: { 
+                                mark: bestMatchMark, grade: grade, tp: existingTP
+                            }}} 
+                        }, { merge: true });
+                        matchedCount++;
+                    }
+                });
+
+                if (matchedCount > 0) {
+                    await batch.commit();
+                    showToast(`Berjaya! Markah untuk ${matchedCount} murid telah diimport.`);
+                    window.loadMarksTable();
+                } else {
+                    alert("Tiada padanan nama murid ditemui atau markah gagal diekstrak dari PDF. Sila semak fail PDF anda.");
+                }
+
+            } catch (e) {
+                console.error(e);
+                alert("Ralat memproses fail PDF: " + e.message);
+            }
+            event.target.value = ''; // Reset input fail
         };
 
         window.printReport = function(type) {
