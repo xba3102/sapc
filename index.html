@@ -613,7 +613,7 @@
             reader.readAsArrayBuffer(file);
         };
 
-        // --- 9. FUNGSI CETAK LAPORAN (NEW WINDOW) ---
+        // --- 9. FUNGSI CETAK LAPORAN (KEMASKINI A4 PORTRAIT) ---
         window.printReport = function(type) {
             let selectedIds = Array.from(document.querySelectorAll('.print-checkbox:checked')).map(cb => cb.value);
             if(selectedIds.length === 0) {
@@ -628,12 +628,14 @@
                     <title>Cetak ${type}</title>
                     <script src="https://cdn.tailwindcss.com"><\/script>
                     <style>
-                        @page { size: A4; margin: 20mm; }
+                        /* Tetapan wajib saiz A4 Posisi Portrait */
+                        @page { size: A4 portrait; margin: 15mm; }
                         @media print { .page-break { page-break-after: always; } }
-                        body { font-family: 'Times New Roman', serif; color: black; }
+                        body { font-family: 'Times New Roman', serif; color: black; background: white; }
+                        .report-container { max-width: 210mm; margin: 0 auto; }
                     </style>
                 </head>
-                <body class="bg-white">
+                <body>
             `;
 
             selectedIds.forEach((id, index) => {
@@ -641,8 +643,20 @@
                 let c = window.appData.classes.find(x => x.id === s.classId);
                 let title = type === 'PPT' ? 'PENTAKSIRAN PERTENGAHAN TAHUN' : 'PENTAKSIRAN AKHIR TAHUN';
                 
+                // --- KIRAAN SIMULASI SEMENTARA UNTUK RUANGAN BARU ---
+                // (Oleh kerana subjek belum berfungsi sepenuhnya, kita jana nombor rawak/tetap yang relevan)
+                let marksBM = 85, marksBI = 78, marksMT = 90, marksSN = 82;
+                let totalMarks = marksBM + marksBI + marksMT + marksSN;
+                let fullMarks = 400;
+                let percentage = (totalMarks / fullMarks) * 100;
+                let statusLulus = percentage >= 40 ? '<span class="text-black font-bold">MENCAPAI TAHAP MINIMUM (MTM)</span>' : '<span class="text-black font-bold">BELUM MENCAPAI TAHAP MINIMUM (BMTM)</span>';
+                
+                // Anggaran kedudukan (randomise based on id untuk demo visual)
+                let classRank = (s.name.length % 30) + 1; 
+                let yearRank = classRank + 15;
+                
                 htmlContent += `
-                    <div class="${index < selectedIds.length - 1 ? 'page-break' : ''} p-8">
+                    <div class="${index < selectedIds.length - 1 ? 'page-break' : ''} report-container p-6">
                         <div class="text-center mb-6">
                             <h1 class="text-2xl font-bold uppercase">SEKOLAH KEBANGSAAN BIKANG</h1>
                             <h2 class="text-xl font-bold mt-2 border-b-2 border-black inline-block pb-1">LAPORAN ${title} 2026</h2>
@@ -659,10 +673,11 @@
                             </div>
                         </div>
 
-                        <table class="w-full border-collapse border border-black text-sm mb-6">
+                        <!-- Jadual Markah -->
+                        <table class="w-full border-collapse border border-black text-sm mb-4">
                             <thead class="bg-gray-100">
                                 <tr>
-                                    <th class="border border-black px-2 py-2 text-left w-12">BIL</th>
+                                    <th class="border border-black px-2 py-2 text-center w-10">BIL</th>
                                     <th class="border border-black px-2 py-2 text-left">MATA PELAJARAN</th>
                                     <th class="border border-black px-2 py-2 text-center w-24">MARKAH (%)</th>
                                     <th class="border border-black px-2 py-2 text-center w-24">GRED</th>
@@ -670,26 +685,47 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td class="border border-black px-2 py-1 text-center">1</td><td class="border border-black px-2 py-1">BAHASA MELAYU</td><td class="border border-black px-2 py-1 text-center">85</td><td class="border border-black px-2 py-1 text-center">${s.grade || 'A'}</td><td class="border border-black px-2 py-1 text-center">${s.tp || 'TP4'}</td></tr>
-                                <tr><td class="border border-black px-2 py-1 text-center">2</td><td class="border border-black px-2 py-1">BAHASA INGGERIS</td><td class="border border-black px-2 py-1 text-center">78</td><td class="border border-black px-2 py-1 text-center">${s.grade || 'B'}</td><td class="border border-black px-2 py-1 text-center">${s.tp || 'TP4'}</td></tr>
-                                <tr><td class="border border-black px-2 py-1 text-center">3</td><td class="border border-black px-2 py-1">MATEMATIK</td><td class="border border-black px-2 py-1 text-center">90</td><td class="border border-black px-2 py-1 text-center">${s.grade || 'A'}</td><td class="border border-black px-2 py-1 text-center">${s.tp || 'TP5'}</td></tr>
-                                <tr><td class="border border-black px-2 py-1 text-center">4</td><td class="border border-black px-2 py-1">SAINS</td><td class="border border-black px-2 py-1 text-center">82</td><td class="border border-black px-2 py-1 text-center">${s.grade || 'A'}</td><td class="border border-black px-2 py-1 text-center">${s.tp || 'TP4'}</td></tr>
+                                <tr><td class="border border-black px-2 py-2 text-center">1</td><td class="border border-black px-2 py-2 font-bold">BAHASA MELAYU</td><td class="border border-black px-2 py-2 text-center">${marksBM}</td><td class="border border-black px-2 py-2 text-center">${s.grade || 'A'}</td><td class="border border-black px-2 py-2 text-center">${s.tp || 'TP4'}</td></tr>
+                                <tr><td class="border border-black px-2 py-2 text-center">2</td><td class="border border-black px-2 py-2 font-bold">BAHASA INGGERIS</td><td class="border border-black px-2 py-2 text-center">${marksBI}</td><td class="border border-black px-2 py-2 text-center">${s.grade || 'B'}</td><td class="border border-black px-2 py-2 text-center">${s.tp || 'TP4'}</td></tr>
+                                <tr><td class="border border-black px-2 py-2 text-center">3</td><td class="border border-black px-2 py-2 font-bold">MATEMATIK</td><td class="border border-black px-2 py-2 text-center">${marksMT}</td><td class="border border-black px-2 py-2 text-center">${s.grade || 'A'}</td><td class="border border-black px-2 py-2 text-center">${s.tp || 'TP5'}</td></tr>
+                                <tr><td class="border border-black px-2 py-2 text-center">4</td><td class="border border-black px-2 py-2 font-bold">SAINS</td><td class="border border-black px-2 py-2 text-center">${marksSN}</td><td class="border border-black px-2 py-2 text-center">${s.grade || 'A'}</td><td class="border border-black px-2 py-2 text-center">${s.tp || 'TP4'}</td></tr>
                             </tbody>
                         </table>
 
-                        <div class="mt-20 grid grid-cols-3 gap-8 text-center text-sm font-bold uppercase">
+                        <!-- Kotak Rumusan Keseluruhan (Baru) -->
+                        <div class="border border-black p-4 mb-4 text-sm font-bold uppercase grid grid-cols-2 gap-y-3">
+                            <div>JUMLAH MARKAH: ${totalMarks} / ${fullMarks}</div>
+                            <div class="text-right">KEDUDUKAN DALAM KELAS: ${classRank} / 35</div>
+                            <div>PERATUS KESELURUHAN: ${percentage.toFixed(2)} %</div>
+                            <div class="text-right">KEDUDUKAN DALAM TAHUN: ${yearRank} / 105</div>
+                            <div class="col-span-2 pt-2 border-t border-gray-300">STATUS PENCAPAIAN: ${statusLulus}</div>
+                        </div>
+
+                        <!-- Ruang Ulasan Guru (Baru) -->
+                        <div class="border border-black p-4 mb-8 text-sm min-h-[120px]">
+                            <p class="font-bold uppercase mb-6">ULASAN GURU KELAS:</p>
+                            <div class="border-b border-dotted border-black mt-8"></div>
+                            <div class="border-b border-dotted border-black mt-8"></div>
+                        </div>
+
+                        <!-- Ruang Tandatangan -->
+                        <div class="mt-8 grid grid-cols-3 gap-6 text-center text-sm font-bold uppercase">
                             <div>
                                 <br><br>
-                                <p class="border-t border-black pt-2">TANDATANGAN GURU KELAS</p>
+                                <p class="border-t border-black pt-2 mx-4">TANDATANGAN GURU KELAS</p>
                             </div>
                             <div>
                                 <br><br>
-                                <p class="border-t border-black pt-2">TANDATANGAN GURU BESAR</p>
+                                <p class="border-t border-black pt-2 mx-4">TANDATANGAN GURU BESAR</p>
                             </div>
                             <div>
                                 <br><br>
-                                <p class="border-t border-black pt-2">TANDATANGAN IBU BAPA</p>
+                                <p class="border-t border-black pt-2 mx-4">TANDATANGAN IBU BAPA</p>
                             </div>
+                        </div>
+                        
+                        <div class="mt-8 text-right text-xs text-gray-500">
+                            Tarikh Cetakan: ${new Date().toLocaleDateString('ms-MY')}
                         </div>
                     </div>
                 `;
