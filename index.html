@@ -75,8 +75,8 @@
         <!-- HEADER PENGGUNA -->
         <header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center z-10">
             <div class="flex items-center space-x-2">
-                <i class="fas fa-cloud text-green-500"></i>
-                <span id="syncStatus" class="text-sm font-medium text-gray-600">Awan Disegerak</span>
+                <i id="syncIcon" class="fas fa-cloud text-green-500 transition-colors duration-300"></i>
+                <span id="syncStatus" class="text-sm font-medium text-gray-600 transition-colors duration-300">Awan Disegerak</span>
             </div>
             <div class="flex items-center space-x-4">
                 <div class="text-right">
@@ -120,7 +120,6 @@
                 <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                     <h2 class="text-xl font-bold text-gray-800">Pengurusan Murid</h2>
                     <div class="flex flex-wrap gap-2">
-                        <!-- Add Class/Student buttons disabled for brevity, focus on function -->
                         <button onclick="document.getElementById('modalAddClass').classList.remove('hidden')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-4 py-2 rounded-lg font-medium transition text-sm">
                             <i class="fas fa-folder-plus mr-1"></i> + Kelas
                         </button>
@@ -184,8 +183,9 @@
                             <option value="_KEHADIRAN" class="font-bold text-blue-600">📋 Kehadiran, Sahsiah & Ulasan</option>
                         </select>
                     </div>
+                    <!-- Butang Simpan Pukal dikekalkan sebagai keselamatan tambahan, walaupun Auto-Simpan sudah ada -->
                     <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
-                        <i class="fas fa-save mr-2"></i>Simpan
+                        <i class="fas fa-save mr-2"></i>Simpan Pukal
                     </button>
                 </div>
 
@@ -201,7 +201,7 @@
                 </div>
             </div>
 
-            <!-- TAB: TETAPAN (DITAMBAH BAIK) -->
+            <!-- TAB: TETAPAN -->
             <div id="settings" class="tab-content space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     
@@ -320,6 +320,7 @@
         provider.setCustomParameters({ hd: 'moe-dl.edu.my' });
 
         window.appData = { classes: [], students: [], school: { name: 'SEKOLAH KEBANGSAAN BIKANG', code: '' } };
+        window.isAutoSaving = false;
 
         // --- AUTH & LISTENERS ---
         document.getElementById('btnGoogleLogin').addEventListener('click', () => signInWithPopup(auth, provider).catch(e => alert(e.message)));
@@ -331,7 +332,6 @@
                 document.getElementById('userEmail').innerText = user.email;
                 if(user.email === 'sekolah-7608@moe-dl.edu.my') document.getElementById('adminBadge').classList.remove('hidden');
                 
-                // Listener: Profil Sekolah
                 onSnapshot(doc(db, 'settings', 'profile'), (docSnap) => {
                     if(docSnap.exists()) {
                         window.appData.school = docSnap.data();
@@ -341,7 +341,6 @@
                     }
                 });
 
-                // Listener: Kelas
                 onSnapshot(collection(db, 'classes'), (snapshot) => {
                     window.appData.classes = [];
                     snapshot.forEach(doc => window.appData.classes.push({ id: doc.id, ...doc.data() }));
@@ -354,14 +353,19 @@
                     document.getElementById('markFilterClass').innerHTML = `<option value="">-- Pilih Kelas --</option>` + classOpts;
                 });
 
-                // Listener: Murid
                 onSnapshot(collection(db, 'students'), (snapshot) => {
                     window.appData.students = [];
                     snapshot.forEach(doc => window.appData.students.push({ id: doc.id, ...doc.data() }));
                     window.appData.students.sort((a, b) => a.name.localeCompare(b.name));
                     document.getElementById('dashTotalStudents').innerText = window.appData.students.length;
-                    window.renderStudents();
-                    if(document.getElementById('marks').classList.contains('active')) window.loadMarksTable();
+                    
+                    // Render students tab if active
+                    if(document.getElementById('students').classList.contains('active')) window.renderStudents();
+                    
+                    // ONLY reload marks table if we are NOT currently typing/autosaving to prevent UI cursor loss
+                    if(document.getElementById('marks').classList.contains('active') && !window.isAutoSaving) {
+                        window.loadMarksTable();
+                    }
                 });
             } else {
                 document.getElementById('loginOverlay').classList.remove('hidden');
@@ -378,6 +382,7 @@
                 btn.classList.remove('bg-blue-600');
                 if(btn.getAttribute('data-target') === tabId) btn.classList.add('bg-blue-600');
             });
+            if(tabId === 'students') window.renderStudents();
             if(tabId === 'marks') window.loadMarksTable();
         };
 
@@ -385,6 +390,21 @@
             document.getElementById('toastMsg').innerText = msg;
             document.getElementById('toast').classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => document.getElementById('toast').classList.add('translate-y-20', 'opacity-0'), 3000);
+        };
+
+        window.showSyncStatus = function(isSaving) {
+            const icon = document.getElementById('syncIcon');
+            const text = document.getElementById('syncStatus');
+            if(isSaving) {
+                icon.className = "fas fa-spinner fa-spin text-blue-500 transition-colors duration-300";
+                text.className = "text-sm font-bold text-blue-600 transition-colors duration-300";
+                text.innerText = "Menyimpan...";
+            } else {
+                icon.className = "fas fa-cloud text-green-500 transition-colors duration-300";
+                text.className = "text-sm font-medium text-green-600 transition-colors duration-300";
+                text.innerText = "Awan Disegerak ✅";
+                setTimeout(() => text.classList.replace('text-green-600', 'text-gray-600'), 2000);
+            }
         };
 
         // --- PENGURUSAN DATA (TETAPAN) ---
@@ -427,49 +447,28 @@
                     if(!data.classes || !data.students) throw new Error("Format fail JSON tidak disokong.");
                     
                     const batch = writeBatch(db);
-                    
-                    // Pulihkan Profil Sekolah
                     if(data.school) batch.set(doc(db, 'settings', 'profile'), data.school, {merge: true});
-                    
-                    // Pulihkan Kelas
-                    data.classes.forEach(c => {
-                        const {id, ...rest} = c;
-                        batch.set(doc(db, 'classes', id), rest);
-                    });
-                    
-                    // Pulihkan Murid
-                    data.students.forEach(s => {
-                        const {id, ...rest} = s;
-                        batch.set(doc(db, 'students', id), rest);
-                    });
+                    data.classes.forEach(c => { const {id, ...rest} = c; batch.set(doc(db, 'classes', id), rest); });
+                    data.students.forEach(s => { const {id, ...rest} = s; batch.set(doc(db, 'students', id), rest); });
                     
                     await batch.commit();
                     showToast("Salinan Data (Backup) berjaya dipulihkan ke awan!");
-                } catch (err) {
-                    alert("Ralat muat naik JSON: " + err.message);
-                }
+                } catch (err) { alert("Ralat muat naik JSON: " + err.message); }
             };
             reader.readAsText(file);
-            event.target.value = ''; // reset file input
+            event.target.value = '';
         };
 
         window.wipeData = async function() {
             let confirmMsg = prompt("AMARAN KESELAMATAN: Semua kelas, murid dan markah akan dipadam secara KEKAL daripada pangkalan data awan. Sila taip 'PADAM' untuk mengesahkan tindakan ini:");
-            if (confirmMsg !== "PADAM") {
-                return alert("Tindakan dibatalkan.");
-            }
+            if (confirmMsg !== "PADAM") return alert("Tindakan dibatalkan.");
             try {
                 const batch = writeBatch(db);
-                // Padam Kelas
                 window.appData.classes.forEach(c => batch.delete(doc(db, 'classes', c.id)));
-                // Padam Murid
                 window.appData.students.forEach(s => batch.delete(doc(db, 'students', s.id)));
-                
                 await batch.commit();
                 showToast("Sistem telah berjaya dikosongkan (Reset).");
-            } catch (err) {
-                alert("Ralat ralat semasa reset data: " + err.message);
-            }
+            } catch (err) { alert("Ralat ralat semasa reset data: " + err.message); }
         };
 
         // --- KELAS & MURID (FUNGSI ASAS) ---
@@ -539,7 +538,7 @@
             document.querySelectorAll('.print-checkbox').forEach(cb => cb.checked = m);
         };
 
-        // --- MARKAH & PBD ---
+        // --- MARKAH & PBD (DENGAN AUTO-SIMPAN MASA NYATA) ---
         window.getGrade = function(m) {
             if(m === '' || m === null || isNaN(m)) return '-';
             let v = parseFloat(m);
@@ -550,6 +549,39 @@
             if(input.value !== '' && input.value < 0) input.value = 0;
             if(input.value !== '' && input.value > 100) input.value = 100;
             input.parentElement.nextElementSibling.innerText = window.getGrade(input.value);
+        };
+
+        window.autoSaveRow = async function(inputElement) {
+            window.isAutoSaving = true; // Elakkan table refresh ketika pengguna sedang menaip
+            window.showSyncStatus(true);
+            
+            const row = inputElement.closest('tr');
+            const id = row.getAttribute('data-id');
+            const exam = document.getElementById('markFilterExam').value;
+            const subject = document.getElementById('markFilterSubject').value;
+
+            try {
+                if (subject === '_KEHADIRAN') {
+                    let attVal = row.querySelector('.att-input').value;
+                    await setDoc(doc(db, 'students', id), { scores: { [exam]: { '_KEHADIRAN': { 
+                            kehadiran: attVal === '' ? null : parseFloat(attVal), 
+                            kelakuan: row.querySelector('.beh-input').value, 
+                            ulasan: row.querySelector('.cmt-input').value
+                    }}}}, { merge: true });
+                } else {
+                    let markVal = row.querySelector('.mark-input').value;
+                    let markNum = markVal === '' ? null : parseFloat(markVal);
+                    await setDoc(doc(db, 'students', id), { scores: { [exam]: { [subject]: { 
+                            mark: markNum, grade: window.getGrade(markNum), tp: row.querySelector('.tp-input').value 
+                    }}}}, { merge: true });
+                }
+                window.showSyncStatus(false);
+            } catch (e) { 
+                console.error("Gagal Auto-Simpan", e); 
+                document.getElementById('syncStatus').innerText = "Ralat Simpan ❌";
+            }
+            
+            setTimeout(() => { window.isAutoSaving = false; }, 1000);
         };
 
         window.loadMarksTable = function() {
@@ -593,9 +625,9 @@
                     html += `<tr class="border-b hover:bg-blue-50 mark-row transition" data-id="${s.id}">
                         <td class="px-4 py-2 text-center text-gray-500">${idx + 1}</td>
                         <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
-                        <td class="px-4 py-2 text-center"><input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 att-input" value="${att}"></td>
+                        <td class="px-4 py-2 text-center"><input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 att-input" value="${att}" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
                         <td class="px-4 py-2 text-center">
-                            <select class="border border-green-300 rounded p-1.5 w-full text-center text-green-800 beh-input">
+                            <select class="border border-green-300 rounded p-1.5 w-full text-center text-green-800 beh-input" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)">
                                 <option value="">-- Pilih --</option>
                                 <option value="AMAT BAIK" ${beh === 'AMAT BAIK' ? 'selected' : ''}>Amat Baik</option>
                                 <option value="BAIK" ${beh === 'BAIK' ? 'selected' : ''}>Baik</option>
@@ -603,7 +635,7 @@
                                 <option value="PERLU BIMBINGAN" ${beh === 'PERLU BIMBINGAN' ? 'selected' : ''}>Perlu Bimbingan</option>
                             </select>
                         </td>
-                        <td class="px-4 py-2"><input type="text" class="border border-gray-300 rounded p-1.5 w-full text-sm cmt-input" value="${cmt}" placeholder="Taip ulasan pendek..."></td>
+                        <td class="px-4 py-2"><input type="text" class="border border-gray-300 rounded p-1.5 w-full text-sm cmt-input" value="${cmt}" placeholder="Taip ulasan pendek..." onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
                     </tr>`;
                 } else {
                     let sc = (s.scores && s.scores[exam] && s.scores[exam][subject]) || {};
@@ -613,10 +645,10 @@
                     html += `<tr class="border-b hover:bg-yellow-50 mark-row transition" data-id="${s.id}">
                         <td class="px-4 py-2 text-center text-gray-500">${idx + 1}</td>
                         <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
-                        <td class="px-4 py-2 text-center"><input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 mark-input" value="${mark}" onkeyup="window.updateGradePreview(this)"></td>
+                        <td class="px-4 py-2 text-center"><input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 mark-input" value="${mark}" onkeyup="window.updateGradePreview(this)" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
                         <td class="px-4 py-2 text-center font-bold text-lg grade-preview">${window.getGrade(mark)}</td>
                         <td class="px-4 py-2 text-center">
-                            <select class="border border-green-300 rounded p-1.5 w-full text-center font-bold text-green-800 tp-input">
+                            <select class="border border-green-300 rounded p-1.5 w-full text-center font-bold text-green-800 tp-input" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)">
                                 <option value="">- TP -</option>
                                 ${[1,2,3,4,5,6].map(i => `<option value="TP${i}" ${tp === 'TP'+i ? 'selected' : ''}>TP ${i}</option>`).join('')}
                             </select>
@@ -627,7 +659,38 @@
             tbody.innerHTML = html;
         };
 
+        window.handleArrowNavigation = function(event, currentInput) {
+            // Hanya halang dan ubah fungsi jika butang ditekan adalah ArrowUp atau ArrowDown
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault(); // Halang nombor dari bertambah/berkurang
+
+                const currentRow = currentInput.closest('tr');
+                let targetRow = null;
+
+                if (event.key === 'ArrowUp') targetRow = currentRow.previousElementSibling;
+                if (event.key === 'ArrowDown') targetRow = currentRow.nextElementSibling;
+
+                if (targetRow) {
+                    // Cari input di baris seterusnya yang mempunyai class yang sama
+                    const classList = Array.from(currentInput.classList);
+                    const identifierClass = classList.find(c => ['mark-input', 'tp-input', 'att-input', 'beh-input', 'cmt-input'].includes(c));
+                    
+                    if (identifierClass) {
+                        const nextInput = targetRow.querySelector('.' + identifierClass);
+                        if (nextInput) {
+                            nextInput.focus();
+                            // Jika ia adalah input teks/nombor, highlight teks di dalamnya
+                            if (typeof nextInput.select === 'function') {
+                                nextInput.select();
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
         window.saveMarksBatch = async function() {
+            window.showSyncStatus(true);
             const classId = document.getElementById('markFilterClass').value;
             const exam = document.getElementById('markFilterExam').value;
             const subject = document.getElementById('markFilterSubject').value;
@@ -651,8 +714,12 @@
                     }
                 });
                 await batch.commit();
-                showToast("Rekod berjaya disimpan!");
-            } catch (e) { alert("Ralat: " + e.message); }
+                window.showSyncStatus(false);
+                showToast("Semua rekod berjaya disimpan!");
+            } catch (e) { 
+                alert("Ralat: " + e.message); 
+                document.getElementById('syncStatus').innerText = "Ralat Simpan ❌";
+            }
         };
 
         // --- CETAK LAPORAN ---
