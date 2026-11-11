@@ -278,7 +278,7 @@
             <div id="marks" class="tab-content space-y-4">
                 <div class="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 items-center justify-between">
                     <div class="flex flex-1 flex-wrap gap-4 w-full">
-                        <select id="markFilterClass" class="border p-2 rounded flex-1 min-w-[200px]" onchange="window.loadMarksTable()">
+                        <select id="markFilterClass" class="border p-2 rounded flex-1 min-w-[200px]" onchange="window.updateSubjectDropdown()">
                             <option value="">-- Pilih Kelas --</option>
                         </select>
                         <select id="markFilterExam" class="border p-2 rounded flex-1 min-w-[200px]" onchange="window.loadMarksTable()">
@@ -286,13 +286,7 @@
                             <option value="PAT" selected>Akhir Tahun (PAT) / UASA</option>
                         </select>
                         <select id="markFilterSubject" class="border p-2 rounded flex-1 min-w-[200px]" onchange="window.loadMarksTable()">
-                            <option value="BM">Bahasa Melayu</option>
-                            <option value="BI">Bahasa Inggeris</option>
-                            <option value="MT">Matematik</option>
-                            <option value="SN">Sains</option>
-                            <option value="PI">Pendidikan Islam / Moral</option>
-                            <option value="SJ">Sejarah</option>
-                            <option value="_KEHADIRAN" class="font-bold text-blue-600">📋 Kehadiran, Sahsiah & Ulasan</option>
+                            <option value="">-- Pilih Kelas Dahulu --</option>
                         </select>
                     </div>
                     <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
@@ -357,13 +351,46 @@
 
                         </div>
                     </div>
-                </div>
+                    
+                    <!-- PENGURUSAN MATA PELAJARAN (DYNAMIC SUBJECTS) -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 col-span-1 md:col-span-2">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-book mr-2"></i>Pengurusan Mata Pelajaran</h2>
+                        <p class="text-sm text-gray-500 mb-4">Urus senarai mata pelajaran mengikut tahap murid. Subjek yang ditetapkan pada Tahap tertentu tidak akan dipaparkan untuk Tahap yang lain.</p>
+                        
+                        <div class="flex flex-col md:flex-row gap-2 mb-4">
+                            <input type="text" id="newSubCode" class="border p-2 rounded w-full md:w-32 uppercase" placeholder="Kod (Cth: RBT)">
+                            <input type="text" id="newSubName" class="border p-2 rounded flex-1 uppercase" placeholder="Nama Mata Pelajaran (Cth: REKA BENTUK)">
+                            <select id="newSubTahap" class="border p-2 rounded w-full md:w-48 font-medium">
+                                <option value="ALL">Semua Tahap</option>
+                                <option value="T1">Tahap 1 Sahaja (Thn 1,2,3)</option>
+                                <option value="T2">Tahap 2 Sahaja (Thn 4,5,6)</option>
+                            </select>
+                            <button onclick="window.addSubject()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-medium shadow-sm whitespace-nowrap">Tambah Subjek</button>
+                        </div>
+                        
+                        <div class="overflow-x-auto border rounded border-gray-200">
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-gray-50 border-b text-gray-600">
+                                    <tr>
+                                        <th class="p-3 w-24">Kod</th>
+                                        <th class="p-3">Nama Mata Pelajaran</th>
+                                        <th class="p-3 text-center w-32">Fokus Tahap</th>
+                                        <th class="p-3 text-center w-24">Tindakan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="subjectListBody">
+                                    <!-- Diisi oleh JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-                <!-- INFO TEKNIKAL -->
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h3 class="font-bold text-gray-700 mb-2">Maklumat Sistem</h3>
-                    <p class="text-gray-600 text-sm mb-1">Projek Firebase (Data Awan): <span class="font-mono bg-gray-100 px-2 py-1 rounded text-blue-600">sisapc-24131</span></p>
-                    <p class="text-gray-600 text-sm">Domain Rasmi KPM: <span class="font-mono bg-gray-100 px-2 py-1 rounded text-green-600">@moe-dl.edu.my</span></p>
+                    <!-- INFO TEKNIKAL -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm col-span-1 md:col-span-2">
+                        <h3 class="font-bold text-gray-700 mb-2">Maklumat Sistem</h3>
+                        <p class="text-gray-600 text-sm mb-1">Projek Firebase (Data Awan): <span class="font-mono bg-gray-100 px-2 py-1 rounded text-blue-600">sisapc-24131</span></p>
+                        <p class="text-gray-600 text-sm">Domain Rasmi KPM: <span class="font-mono bg-gray-100 px-2 py-1 rounded text-green-600">@moe-dl.edu.my</span></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -430,7 +457,12 @@
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ hd: 'moe-dl.edu.my' });
 
-        window.appData = { classes: [], students: [], school: { name: 'SEKOLAH KEBANGSAAN BIKANG', code: '' } };
+        window.appData = { 
+            classes: [], 
+            students: [], 
+            school: { name: 'SEKOLAH KEBANGSAAN BIKANG', code: '' },
+            subjects: []
+        };
         window.isAutoSaving = false;
 
         // --- AUTH & LISTENERS ---
@@ -456,6 +488,7 @@
                         document.getElementById('adminBadge').classList.add('hidden');
                     }
                     
+                    // Listen to Profile
                     onSnapshot(doc(db, 'settings', 'profile'), (docSnap) => {
                         if (docSnap.exists()) {
                             window.appData.school = docSnap.data();
@@ -463,6 +496,27 @@
                             document.getElementById('schoolName').value = window.appData.school.name || '';
                             document.getElementById('schoolCode').value = window.appData.school.code || '';
                         }
+                    });
+
+                    // Listen to Subjects
+                    onSnapshot(doc(db, 'settings', 'subjects'), (docSnap) => {
+                        if (docSnap.exists() && docSnap.data().list) {
+                            window.appData.subjects = docSnap.data().list;
+                        } else {
+                            // Senarai Mata Pelajaran Asas (Lalai) jika pangkalan data kosong
+                            window.appData.subjects = [
+                                { code: 'BM', name: 'BAHASA MELAYU', tahap: 'ALL' },
+                                { code: 'BI', name: 'BAHASA INGGERIS', tahap: 'ALL' },
+                                { code: 'MT', name: 'MATEMATIK', tahap: 'ALL' },
+                                { code: 'SN', name: 'SAINS', tahap: 'ALL' },
+                                { code: 'PI', name: 'PENDIDIKAN ISLAM / MORAL', tahap: 'ALL' },
+                                { code: 'SJ', name: 'SEJARAH', tahap: 'T2' } // Sejarah hanya Tahap 2
+                            ];
+                            setDoc(doc(db, 'settings', 'subjects'), { list: window.appData.subjects });
+                        }
+                        if(document.getElementById('settings').classList.contains('active')) window.renderSubjectsTable();
+                        window.updateSubjectDropdown();
+                        if(document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
                     });
 
                     onSnapshot(collection(db, 'classes'), (snapshot) => {
@@ -521,6 +575,7 @@
             if(tabId === 'students') window.renderStudents();
             if(tabId === 'marks') window.loadMarksTable();
             if(tabId === 'dashboard') window.updateDashboardAnalytics();
+            if(tabId === 'settings') window.renderSubjectsTable();
         };
 
         window.showToast = function(msg) {
@@ -544,6 +599,91 @@
             }
         };
 
+        // Bantuan Tahap Kelas
+        window.getTahapKelas = function(className) {
+            if (!className) return 'ALL';
+            let name = className.trim();
+            if (/^[123]/.test(name)) return 'T1'; // Tahun 1,2,3
+            if (/^[456]/.test(name)) return 'T2'; // Tahun 4,5,6
+            return 'ALL';
+        };
+
+        // --- PENGURUSAN MATA PELAJARAN DINAMIK ---
+        window.renderSubjectsTable = function() {
+            const tbody = document.getElementById('subjectListBody');
+            let html = '';
+            window.appData.subjects.forEach((sub, idx) => {
+                let badgeClass = sub.tahap === 'ALL' ? 'bg-green-100 text-green-700' : (sub.tahap === 'T1' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700');
+                let badgeText = sub.tahap === 'ALL' ? 'Semua Tahap' : (sub.tahap === 'T1' ? 'Tahap 1' : 'Tahap 2');
+                html += `<tr class="border-b hover:bg-gray-50">
+                    <td class="p-3 font-mono font-bold">${sub.code}</td>
+                    <td class="p-3 uppercase font-medium">${sub.name}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 text-xs font-bold rounded-full ${badgeClass}">${badgeText}</span></td>
+                    <td class="p-3 text-center">
+                        <button onclick="window.deleteSubject(${idx})" class="text-red-500 hover:text-red-700 transition" title="Padam Subjek"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        };
+
+        window.addSubject = async function() {
+            const code = document.getElementById('newSubCode').value.trim().toUpperCase();
+            const name = document.getElementById('newSubName').value.trim().toUpperCase();
+            const tahap = document.getElementById('newSubTahap').value;
+            
+            if(!code || !name) return alert("Sila isikan Kod dan Nama Mata Pelajaran.");
+            if(window.appData.subjects.find(s => s.code === code)) return alert("Kod Subjek ini sudah wujud!");
+
+            let newSubjects = [...window.appData.subjects, { code, name, tahap }];
+            try {
+                await setDoc(doc(db, 'settings', 'subjects'), { list: newSubjects }, {merge: true});
+                document.getElementById('newSubCode').value = '';
+                document.getElementById('newSubName').value = '';
+                showToast("Mata Pelajaran ditambah!");
+            } catch(e) { alert("Ralat: " + e.message); }
+        };
+
+        window.deleteSubject = async function(index) {
+            if(!confirm("Anda pasti mahu memadam mata pelajaran ini? Markah sedia ada tidak akan hilang dari database tetapi ia tidak akan dipaparkan dalam slip cetakan.")) return;
+            let newSubjects = [...window.appData.subjects];
+            newSubjects.splice(index, 1);
+            try {
+                await setDoc(doc(db, 'settings', 'subjects'), { list: newSubjects }, {merge: true});
+                showToast("Mata Pelajaran dipadam.");
+            } catch(e) { alert("Ralat: " + e.message); }
+        };
+
+        window.updateSubjectDropdown = function() {
+            const classId = document.getElementById('markFilterClass').value;
+            const subjSelect = document.getElementById('markFilterSubject');
+            const currentVal = subjSelect.value;
+            
+            let selectedClass = window.appData.classes.find(x => x.id === classId);
+            let classTahap = selectedClass ? window.getTahapKelas(selectedClass.name) : 'ALL';
+
+            let html = '<option value="">-- Pilih Mata Pelajaran --</option>';
+            
+            // Tapis subjek berdasarkan Tahap
+            window.appData.subjects.forEach(sub => {
+                if (sub.tahap === 'ALL' || sub.tahap === classTahap || classTahap === 'ALL') {
+                    html += `<option value="${sub.code}">${sub.name}</option>`;
+                }
+            });
+            html += `<option value="_KEHADIRAN" class="font-bold text-blue-600">📋 Kehadiran, Sahsiah & Ulasan</option>`;
+            
+            subjSelect.innerHTML = html;
+            
+            // Kekalkan pilihan lama jika masih relevan (contohnya jika tukar antara dua kelas Tahap 2)
+            if (currentVal && Array.from(subjSelect.options).find(opt => opt.value === currentVal)) {
+                subjSelect.value = currentVal;
+            } else {
+                subjSelect.value = "";
+            }
+            window.loadMarksTable();
+        };
+
+
         // --- ANALITIK DASHBOARD & TOKOH MURID ---
         window.updateDashboardAnalytics = function() {
             const exam = document.getElementById('dashExamFilter').value;
@@ -553,10 +693,7 @@
             let totalStudentsWithMarks = 0; // Murid yang ada sebarang markah dimasukkan
             
             let html = '';
-
-            // Objek untuk simpan senarai calon Tokoh Murid
             let calonTokoh = { T1L: [], T1P: [], T2L: [], T2P: [] };
-            const subjs = ['BM', 'BI', 'MT', 'SN', 'PI', 'SJ'];
             
             window.appData.classes.forEach(c => {
                 let studentsInClass = window.appData.students.filter(s => s.classId === c.id);
@@ -565,18 +702,23 @@
                 let classHasDataCount = 0;
                 let tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
                 
-                // Tentukan Tahap Kelas (Tahap 1 atau Tahap 2)
                 let namaKelas = c.name.trim();
-                let tahapKelas = /^[123]/.test(namaKelas) ? 1 : (/^[456]/.test(namaKelas) ? 2 : 0);
+                let isTahap1 = /^[123]/.test(namaKelas);
+                let isTahap2 = /^[456]/.test(namaKelas);
+                let tahapNum = isTahap1 ? 1 : (isTahap2 ? 2 : 0);
+                let strTahap = isTahap1 ? 'T1' : 'T2';
+
+                // Dapatkan subjek dinamik mengikut kelas ini sahaja
+                let activeSubjects = window.appData.subjects.filter(sub => 
+                    sub.tahap === 'ALL' || sub.tahap === strTahap || strTahap === 'ALL'
+                );
 
                 studentsInClass.forEach(s => {
                     let totalMarks = 0;
                     let validCount = 0;
                     
-                    subjs.forEach(sub => {
-                        let sc = (s.scores && s.scores[exam] && s.scores[exam][sub]) || {};
-                        
-                        // Kira peratus lulus dan taburan TP
+                    activeSubjects.forEach(sub => {
+                        let sc = (s.scores && s.scores[exam] && s.scores[exam][sub.code]) || {};
                         if (typeof sc.mark === 'number') {
                             totalMarks += sc.mark;
                             validCount++;
@@ -596,11 +738,10 @@
                             totalStudentsPassed++;
                         }
 
-                        // Penilaian Tokoh Murid (Jika ada ambil sekurang-kurangnya 1 subjek)
-                        if (tahapKelas > 0) {
-                            let purata = totalMarks / validCount; // purata subjek yang diambil
+                        if (tahapNum > 0) {
+                            let purata = totalMarks / validCount; 
                             let jantina = s.gender === 'P' ? 'P' : 'L';
-                            let kategori = `T${tahapKelas}${jantina}`; // Cth: T1L, T2P
+                            let kategori = `T${tahapNum}${jantina}`; 
                             
                             calonTokoh[kategori].push({
                                 name: s.name,
@@ -632,15 +773,12 @@
             
             tbody.innerHTML = html;
 
-            // Kemaskini Kad Analitik Keseluruhan di Atas
             let overallMTM = totalStudentsWithMarks > 0 ? Math.round((totalStudentsPassed / totalStudentsWithMarks) * 100) : 0;
             document.getElementById('dashOverallMTM').innerText = totalStudentsWithMarks > 0 ? overallMTM + '%' : '-';
 
-            // --- KEMASKINI UI TOKOH MURID ---
+            // KEMASKINI UI TOKOH MURID 
             const updateTokohUI = (kategori, nameId, classId, marksId) => {
-                // Susun calon dari purata tertinggi ke terendah
                 let sortedList = calonTokoh[kategori].sort((a, b) => b.average - a.average);
-                
                 if (sortedList.length > 0) {
                     let pemenang = sortedList[0];
                     document.getElementById(nameId).innerText = pemenang.name;
@@ -659,7 +797,7 @@
             updateTokohUI('T2P', 'tokoh-t2-p-name', 'tokoh-t2-p-class', 'tokoh-t2-p-marks');
         };
 
-        // --- PENGURUSAN DATA (TETAPAN) ---
+        // --- PENGURUSAN DATA & BACKUP ---
         window.saveSchoolProfile = async function() {
             try {
                 await setDoc(doc(db, 'settings', 'profile'), {
@@ -675,6 +813,7 @@
                 school: window.appData.school,
                 classes: window.appData.classes,
                 students: window.appData.students,
+                subjects: window.appData.subjects,
                 timestamp: new Date().toISOString()
             };
             const blob = new Blob([JSON.stringify(backupData, null, 2)], {type: "application/json"});
@@ -700,6 +839,8 @@
                     
                     const batch = writeBatch(db);
                     if(data.school) batch.set(doc(db, 'settings', 'profile'), data.school, {merge: true});
+                    if(data.subjects) batch.set(doc(db, 'settings', 'subjects'), { list: data.subjects }, {merge: true});
+                    
                     data.classes.forEach(c => { const {id, ...rest} = c; batch.set(doc(db, 'classes', id), rest); });
                     data.students.forEach(s => { const {id, ...rest} = s; batch.set(doc(db, 'students', id), rest); });
                     
@@ -723,7 +864,7 @@
             } catch (err) { alert("Ralat ralat semasa reset data: " + err.message); }
         };
 
-        // --- KELAS & MURID (FUNGSI ASAS) ---
+        // --- KELAS & MURID ---
         window.saveNewClass = async function() {
             let cName = document.getElementById('newClassName').value.toUpperCase();
             if(!cName) return alert("Sila masukkan nama kelas.");
@@ -790,7 +931,7 @@
             document.querySelectorAll('.print-checkbox').forEach(cb => cb.checked = m);
         };
 
-        // --- MARKAH & PBD (DENGAN AUTO-SIMPAN MASA NYATA) ---
+        // --- MARKAH & PBD (AUTO-SIMPAN) ---
         window.getGrade = function(m) {
             if(m === '' || m === null || isNaN(m)) return '-';
             let v = parseFloat(m);
@@ -829,10 +970,7 @@
                 }
                 window.showSyncStatus(false);
                 
-                // Segarkan Dashboard secara senyap jika ada data markah yang berubah
-                if (document.getElementById('dashboard').classList.contains('active')) {
-                    window.updateDashboardAnalytics();
-                }
+                if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
             } catch (e) { 
                 console.error("Gagal Auto-Simpan", e); 
                 document.getElementById('syncStatus').innerText = "Ralat Simpan ❌";
@@ -848,7 +986,7 @@
             const thead = document.getElementById('marksTableHead');
             const tbody = document.getElementById('marksTableBody');
 
-            if(!classId) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Sila pilih Kelas dan Mata Pelajaran.</td></tr>`;
+            if(!classId || !subject) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Sila pilih Kelas dan Mata Pelajaran.</td></tr>`;
 
             let students = window.appData.students.filter(s => s.classId === classId);
             if(students.length === 0) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Tiada murid dalam kelas ini.</td></tr>`;
@@ -919,24 +1057,18 @@
         window.handleArrowNavigation = function(event, currentInput) {
             if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
                 event.preventDefault();
-
                 const currentRow = currentInput.closest('tr');
                 let targetRow = null;
-
                 if (event.key === 'ArrowUp') targetRow = currentRow.previousElementSibling;
                 if (event.key === 'ArrowDown') targetRow = currentRow.nextElementSibling;
-
                 if (targetRow) {
                     const classList = Array.from(currentInput.classList);
                     const identifierClass = classList.find(c => ['mark-input', 'tp-input', 'att-input', 'beh-input', 'cmt-input'].includes(c));
-                    
                     if (identifierClass) {
                         const nextInput = targetRow.querySelector('.' + identifierClass);
                         if (nextInput) {
                             nextInput.focus();
-                            if (typeof nextInput.select === 'function') {
-                                nextInput.select();
-                            }
+                            if (typeof nextInput.select === 'function') nextInput.select();
                         }
                     }
                 }
@@ -948,7 +1080,7 @@
             const classId = document.getElementById('markFilterClass').value;
             const exam = document.getElementById('markFilterExam').value;
             const subject = document.getElementById('markFilterSubject').value;
-            if(!classId) return alert("Sila pilih kelas.");
+            if(!classId || !subject) return alert("Sila pilih kelas dan mata pelajaran.");
 
             try {
                 const batch = writeBatch(db);
@@ -989,20 +1121,21 @@
                 body { font-family: 'Times New Roman', serif; color: black; background: white; }
                 .report-container { max-width: 210mm; margin: 0 auto; }</style></head><body>`;
 
-            const subjs = [
-                { code: 'BM', name: 'BAHASA MELAYU' }, { code: 'BI', name: 'BAHASA INGGERIS' },
-                { code: 'MT', name: 'MATEMATIK' }, { code: 'SN', name: 'SAINS' },
-                { code: 'PI', name: 'PENDIDIKAN ISLAM / MORAL' }, { code: 'SJ', name: 'SEJARAH' }
-            ];
-
             selectedIds.forEach((id, index) => {
                 let s = window.appData.students.find(x => x.id === id);
                 let c = window.appData.classes.find(x => x.id === s.classId);
+                let classTahap = c ? window.getTahapKelas(c.name) : 'ALL';
+                let isTahap2 = classTahap === 'T2';
+
+                // Tapis subjek untuk murid ini (hanya yang berkaitan dgn tahapnya)
+                let activeSubjects = window.appData.subjects.filter(sub => 
+                    sub.tahap === 'ALL' || sub.tahap === classTahap || classTahap === 'ALL'
+                );
                 
                 let marksRows = '';
                 let totalMarks = 0, validCount = 0;
 
-                subjs.forEach((sub, idx) => {
+                activeSubjects.forEach((sub, idx) => {
                     let sc = (s.scores && s.scores[type] && s.scores[type][sub.code]) || {};
                     let m = sc.mark;
                     if(typeof m === 'number') { totalMarks += m; validCount++; }
@@ -1022,14 +1155,8 @@
 
                 let ext = (s.scores && s.scores[type] && s.scores[type]['_KEHADIRAN']) || {};
                 
-                // PENENTUAN TAJUK UASA ATAU PAT
-                let isTahap2 = c && c.name && /^[456]/.test(c.name.trim());
-                let reportTitle = "";
-                if (type === 'PPT') {
-                    reportTitle = "LAPORAN PENTAKSIRAN PERTENGAHAN TAHUN 2026";
-                } else {
-                    reportTitle = isTahap2 ? "LAPORAN UJIAN AKHIR SESI AKADEMIK (UASA) 2026" : "LAPORAN PENTAKSIRAN AKHIR TAHUN 2026";
-                }
+                let reportTitle = type === 'PPT' ? "LAPORAN PENTAKSIRAN PERTENGAHAN TAHUN 2026" : 
+                                 (isTahap2 ? "LAPORAN UJIAN AKHIR SESI AKADEMIK (UASA) 2026" : "LAPORAN PENTAKSIRAN AKHIR TAHUN 2026");
                 
                 htmlContent += `<div class="${index < selectedIds.length - 1 ? 'page-break' : ''} report-container p-6">
                         <div class="text-center mb-6">
