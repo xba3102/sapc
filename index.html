@@ -1314,27 +1314,38 @@
                 // Cuba padankan setiap murid dengan teks dalam PDF
                 students.forEach(student => {
                     let studentName = student.name.toUpperCase().replace(/\s+/g, ' ').trim();
-                    // Guna 3 perkataan pertama sahaja untuk mengelakkan ralat ejaan BIN/BINTI
                     let nameWords = studentName.split(' ');
-                    let searchName = nameWords.length > 2 ? nameWords.slice(0, 3).join(' ') : studentName;
-                    
+                    // Gabungkan 3 nama pertama TANPA JARAK untuk kalis ralat PDF
+                    let searchName = nameWords.length > 2 ? nameWords.slice(0, 3).join('') : studentName.replace(/\s+/g, '');
+                    let studentIcStr = (student.ic || '').replace(/[^0-9]/g, '');
+
                     let bestMatchMark = null;
                     let extractedIC = null; // Tambahan: Pembolehubah untuk simpan No KP dari PDF
 
                     for (let rowItems of allRows) {
-                        let fullRowStr = rowItems.map(r => r.str).join(' ').replace(/\s+/g, ' ').toUpperCase();
+                        let fullRowStr = rowItems.map(r => r.str).join(' ').toUpperCase();
+                        let rowStrNoSpaces = fullRowStr.replace(/\s+/g, ''); // Buang semua jarak
                         
-                        if (fullRowStr.includes(searchName)) {
+                        let isMatch = false;
+                        
+                        // PADANAN PINTAR: Cuba padan guna IC (Paling Tepat). Jika IC tiada, guna Nama Tanpa Jarak.
+                        if (studentIcStr.length === 12 && fullRowStr.includes(studentIcStr)) {
+                            isMatch = true;
+                        } else if (rowStrNoSpaces.includes(searchName)) {
+                            isMatch = true;
+                        }
+                        
+                        if (isMatch) {
                             // Cari kedudukan No. KP atau Nama supaya kita boleh abaikan nombor 'BIL' di permulaan
                             let icIndex = rowItems.findIndex(r => /\b\d{12}\b/.test(r.str));
-                            let nameIdx = rowItems.findIndex(r => r.str.toUpperCase().includes(nameWords[0]));
+                            let nameIdx = rowItems.findIndex(r => r.str.replace(/\s+/g, '').toUpperCase().includes(nameWords[0]));
                             let startIndex = Math.max(icIndex, nameIdx);
                             
                             // Hanya cari nombor selepas Nama/IC
                             let itemsToSearch = startIndex !== -1 ? rowItems.slice(startIndex + 1) : rowItems;
 
                             // Cari nombor yang sah (dianggap markah dari 0 hingga 100) di baris yang sama
-                            let numbers = itemsToSearch.filter(r => /^\d+(\.\d+)?$/.test(r.str)).map(r => parseFloat(r.str));
+                            let numbers = itemsToSearch.filter(r => /^\d+(\.\d+)?$/.test(r.str.trim())).map(r => parseFloat(r.str.trim()));
                             let validMarks = numbers.filter(n => n <= 100);
                             
                             if (validMarks.length > 0) {
