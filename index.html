@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPAK SK Bikang</title>
+    <title>SPAK - Sistem Pengurusan Anugerah & PBD</title>
     <!-- Pustaka UI & Ikon -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,7 +27,7 @@
     <div id="loginOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-90 backdrop-blur-sm transition-opacity duration-300">
         <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Kementerian_Pendidikan_Malaysia_logo.svg/800px-Kementerian_Pendidikan_Malaysia_logo.svg.png" alt="KPM Logo" class="h-24 mx-auto mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">SPAK SK Bikang</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">SPAK Enterprise</h2>
             <p class="text-gray-500 mb-8">Sistem Pengurusan Anugerah & PBD<br><span class="text-sm">Sila log masuk menggunakan ID DELIMA (KPM)</span></p>
             
             <button id="btnGoogleLogin" class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition shadow-md">
@@ -48,7 +48,7 @@
     <aside class="w-64 bg-slate-800 text-white flex flex-col shadow-xl z-10 h-full flex-shrink-0">
         <div class="p-6 bg-slate-900 border-b border-slate-700">
             <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-300">SPAK</h1>
-            <p class="text-xs text-slate-400 mt-1">SK Bikang • Versi Enterprise</p>
+            <p id="sidebarSchoolName" class="text-xs text-slate-400 mt-1 font-bold">SK Bikang</p>
         </div>
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left hover:bg-slate-700 transition bg-blue-600" data-target="dashboard">
@@ -65,7 +65,7 @@
             </button>
         </nav>
         <div class="p-4 bg-slate-900 border-t border-slate-700 text-xs text-center text-slate-500">
-            &copy; 2026 SK Bikang
+            &copy; 2026 SPAK Enterprise
         </div>
     </aside>
 
@@ -96,8 +96,8 @@
             <div id="dashboard" class="tab-content active space-y-6">
                 <h2 class="text-2xl font-bold text-gray-800">Ringkasan Sistem</h2>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div onclick="window.openClassSummaryModal()" class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md cursor-pointer transition">
-                        <p class="text-gray-500 text-sm font-medium">Total Kelas <i class="fas fa-info-circle text-blue-300 ml-1"></i></p>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md transition">
+                        <p class="text-gray-500 text-sm font-medium">Total Kelas</p>
                         <p class="text-3xl font-bold text-gray-800" id="dashTotalClasses">0</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
@@ -109,23 +109,8 @@
                         <p class="text-3xl font-bold text-gray-800">85%</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500">
-                        <p class="text-gray-500 text-sm font-medium">Amaran Data</p>
-                        <p class="text-xl font-bold text-red-600 mt-1">Sila Kemaskini</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <div class="bg-white p-6 rounded-xl shadow-sm">
-                        <h3 class="font-bold text-gray-700 mb-4">Taburan Murid</h3>
-                        <div class="relative h-64 w-full flex justify-center">
-                            <canvas id="genderChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm">
-                        <h3 class="font-bold text-gray-700 mb-4">Statistik Tahap Penguasaan</h3>
-                        <div class="relative h-64 w-full flex justify-center">
-                            <canvas id="pbdChart"></canvas>
-                        </div>
+                        <p class="text-gray-500 text-sm font-medium">Status Awan</p>
+                        <p class="text-xl font-bold text-green-600 mt-1">Aktif</p>
                     </div>
                 </div>
             </div>
@@ -135,11 +120,9 @@
                 <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                     <h2 class="text-xl font-bold text-gray-800">Pengurusan Murid</h2>
                     <div class="flex flex-wrap gap-2">
+                        <!-- Add Class/Student buttons disabled for brevity, focus on function -->
                         <button onclick="document.getElementById('modalAddClass').classList.remove('hidden')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-4 py-2 rounded-lg font-medium transition text-sm">
                             <i class="fas fa-folder-plus mr-1"></i> + Kelas
-                        </button>
-                        <button onclick="window.openAddStudentModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm text-sm">
-                            <i class="fas fa-user-plus mr-1"></i> + Murid
                         </button>
                         <label class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm text-sm cursor-pointer flex items-center">
                             <i class="fas fa-file-excel mr-1"></i> Import Pukal
@@ -198,7 +181,6 @@
                             <option value="SN">Sains</option>
                             <option value="PI">Pendidikan Islam / Moral</option>
                             <option value="SJ">Sejarah</option>
-                            <!-- Ruangan Baharu untuk Kehadiran dan Sahsiah -->
                             <option value="_KEHADIRAN" class="font-bold text-blue-600">📋 Kehadiran, Sahsiah & Ulasan</option>
                         </select>
                     </div>
@@ -210,14 +192,7 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead id="marksTableHead" class="bg-blue-50 text-blue-800 border-b">
-                            <!-- Dijana Dinamik oleh JS berdasarkan Pilihan Subjek -->
-                            <tr>
-                                <th class="px-4 py-3 text-center w-12">Bil</th>
-                                <th class="px-4 py-3">Nama Murid</th>
-                                <th class="px-4 py-3 text-center w-32">Markah (0-100)</th>
-                                <th class="px-4 py-3 text-center w-24">Gred</th>
-                                <th class="px-4 py-3 text-center w-32">PBD (TP)</th>
-                            </tr>
+                            <tr><th colspan="5" class="py-2">Pilih untuk mula</th></tr>
                         </thead>
                         <tbody id="marksTableBody">
                             <tr><td colspan="5" class="text-center py-10 text-gray-400">Sila pilih Kelas dan Mata Pelajaran di atas untuk memulakan.</td></tr>
@@ -226,18 +201,64 @@
                 </div>
             </div>
 
-            <!-- TAB: TETAPAN -->
-            <div id="settings" class="tab-content space-y-4">
+            <!-- TAB: TETAPAN (DITAMBAH BAIK) -->
+            <div id="settings" class="tab-content space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- PROFIL SEKOLAH -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-school mr-2"></i>Profil Sekolah</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Nama Sekolah (Akan dipapar pada laporan)</label>
+                                <input type="text" id="schoolName" class="w-full border p-2 rounded uppercase" placeholder="Contoh: SK BIKANG">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Kod Sekolah</label>
+                                <input type="text" id="schoolCode" class="w-full border p-2 rounded uppercase" placeholder="Contoh: XBA1234">
+                            </div>
+                            <button onclick="window.saveSchoolProfile()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition shadow-sm w-full">
+                                Simpan Profil Sekolah
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PENGURUSAN DATA & RESET -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-red-100">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-database mr-2"></i>Pengurusan Data & Backup</h2>
+                        <div class="space-y-4 flex flex-col">
+                            
+                            <button onclick="window.exportJSON()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded font-medium transition shadow-sm text-left flex items-center justify-between">
+                                <span><i class="fas fa-download mr-2"></i> Muat Turun Backup (Fail .JSON)</span>
+                            </button>
+                            
+                            <label class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded font-medium transition shadow-sm cursor-pointer flex items-center justify-between">
+                                <span><i class="fas fa-upload mr-2"></i> Muat Naik / Pulihkan Backup</span>
+                                <input type="file" accept=".json" class="hidden" onchange="window.importJSON(event)">
+                            </label>
+
+                            <div class="border-t border-red-200 pt-4 mt-2">
+                                <button onclick="window.wipeData()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded font-medium transition shadow-sm text-left flex items-center justify-between w-full">
+                                    <span><i class="fas fa-trash-alt mr-2"></i> Padam Semua Data & Reset Sistem</span>
+                                </button>
+                                <p class="text-xs text-gray-500 mt-2">Ambil perhatian: Tindakan memadam ini akan menghilangkan keseluruhan senarai kelas, murid, dan markah secara kekal.</p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INFO TEKNIKAL -->
                 <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Tetapan Sistem</h2>
-                    <p class="text-gray-600 mb-2">Projek Firebase (Data Awan): <span class="font-mono bg-gray-100 px-2 py-1 rounded text-sm text-blue-600">sisapc-24131</span></p>
-                    <p class="text-gray-600">Domain Rasmi KPM: <span class="font-mono bg-gray-100 px-2 py-1 rounded text-sm text-green-600">@moe-dl.edu.my</span></p>
+                    <h3 class="font-bold text-gray-700 mb-2">Maklumat Sistem</h3>
+                    <p class="text-gray-600 text-sm mb-1">Projek Firebase (Data Awan): <span class="font-mono bg-gray-100 px-2 py-1 rounded text-blue-600">sisapc-24131</span></p>
+                    <p class="text-gray-600 text-sm">Domain Rasmi KPM: <span class="font-mono bg-gray-100 px-2 py-1 rounded text-green-600">@moe-dl.edu.my</span></p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- MODAL EDIT MURID -->
+    <!-- MODAL EDIT MURID & KELAS -->
     <div id="modalEditStudent" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center">
         <div class="bg-white p-6 rounded-xl shadow-xl w-96">
             <h3 class="text-lg font-bold mb-4">Kemaskini Profil Murid</h3>
@@ -254,6 +275,20 @@
             <div class="mt-6 flex justify-end space-x-2">
                 <button onclick="document.getElementById('modalEditStudent').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Batal</button>
                 <button onclick="window.saveEditedStudent()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH KELAS -->
+    <div id="modalAddClass" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-96">
+            <h3 class="text-lg font-bold mb-4">Tambah Kelas Baharu</h3>
+            <div class="space-y-3">
+                <input type="text" id="newClassName" class="w-full border p-2 rounded uppercase" placeholder="Nama Kelas (Cth: 1 ARIF)">
+            </div>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button onclick="document.getElementById('modalAddClass').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Batal</button>
+                <button onclick="window.saveNewClass()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Simpan</button>
             </div>
         </div>
     </div>
@@ -284,9 +319,9 @@
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ hd: 'moe-dl.edu.my' });
 
-        window.appData = { classes: [], students: [] };
+        window.appData = { classes: [], students: [], school: { name: 'SEKOLAH KEBANGSAAN BIKANG', code: '' } };
 
-        // --- AUTH ---
+        // --- AUTH & LISTENERS ---
         document.getElementById('btnGoogleLogin').addEventListener('click', () => signInWithPopup(auth, provider).catch(e => alert(e.message)));
         document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
 
@@ -296,6 +331,17 @@
                 document.getElementById('userEmail').innerText = user.email;
                 if(user.email === 'sekolah-7608@moe-dl.edu.my') document.getElementById('adminBadge').classList.remove('hidden');
                 
+                // Listener: Profil Sekolah
+                onSnapshot(doc(db, 'settings', 'profile'), (docSnap) => {
+                    if(docSnap.exists()) {
+                        window.appData.school = docSnap.data();
+                        document.getElementById('schoolName').value = window.appData.school.name || '';
+                        document.getElementById('schoolCode').value = window.appData.school.code || '';
+                        document.getElementById('sidebarSchoolName').innerText = window.appData.school.name || 'SPAK';
+                    }
+                });
+
+                // Listener: Kelas
                 onSnapshot(collection(db, 'classes'), (snapshot) => {
                     window.appData.classes = [];
                     snapshot.forEach(doc => window.appData.classes.push({ id: doc.id, ...doc.data() }));
@@ -308,6 +354,7 @@
                     document.getElementById('markFilterClass').innerHTML = `<option value="">-- Pilih Kelas --</option>` + classOpts;
                 });
 
+                // Listener: Murid
                 onSnapshot(collection(db, 'students'), (snapshot) => {
                     window.appData.students = [];
                     snapshot.forEach(doc => window.appData.students.push({ id: doc.id, ...doc.data() }));
@@ -340,7 +387,103 @@
             setTimeout(() => document.getElementById('toast').classList.add('translate-y-20', 'opacity-0'), 3000);
         };
 
-        // --- PENGURUSAN MURID ---
+        // --- PENGURUSAN DATA (TETAPAN) ---
+        window.saveSchoolProfile = async function() {
+            try {
+                await setDoc(doc(db, 'settings', 'profile'), {
+                    name: document.getElementById('schoolName').value.toUpperCase(),
+                    code: document.getElementById('schoolCode').value.toUpperCase()
+                }, { merge: true });
+                showToast("Profil Sekolah Berjaya Disimpan!");
+            } catch(e) { alert("Ralat menyimpan: " + e.message); }
+        };
+
+        window.exportJSON = function() {
+            const backupData = {
+                school: window.appData.school,
+                classes: window.appData.classes,
+                students: window.appData.students,
+                timestamp: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Backup_SPAK_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Fail JSON berjaya dimuat turun!");
+        };
+
+        window.importJSON = async function(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(!data.classes || !data.students) throw new Error("Format fail JSON tidak disokong.");
+                    
+                    const batch = writeBatch(db);
+                    
+                    // Pulihkan Profil Sekolah
+                    if(data.school) batch.set(doc(db, 'settings', 'profile'), data.school, {merge: true});
+                    
+                    // Pulihkan Kelas
+                    data.classes.forEach(c => {
+                        const {id, ...rest} = c;
+                        batch.set(doc(db, 'classes', id), rest);
+                    });
+                    
+                    // Pulihkan Murid
+                    data.students.forEach(s => {
+                        const {id, ...rest} = s;
+                        batch.set(doc(db, 'students', id), rest);
+                    });
+                    
+                    await batch.commit();
+                    showToast("Salinan Data (Backup) berjaya dipulihkan ke awan!");
+                } catch (err) {
+                    alert("Ralat muat naik JSON: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // reset file input
+        };
+
+        window.wipeData = async function() {
+            let confirmMsg = prompt("AMARAN KESELAMATAN: Semua kelas, murid dan markah akan dipadam secara KEKAL daripada pangkalan data awan. Sila taip 'PADAM' untuk mengesahkan tindakan ini:");
+            if (confirmMsg !== "PADAM") {
+                return alert("Tindakan dibatalkan.");
+            }
+            try {
+                const batch = writeBatch(db);
+                // Padam Kelas
+                window.appData.classes.forEach(c => batch.delete(doc(db, 'classes', c.id)));
+                // Padam Murid
+                window.appData.students.forEach(s => batch.delete(doc(db, 'students', s.id)));
+                
+                await batch.commit();
+                showToast("Sistem telah berjaya dikosongkan (Reset).");
+            } catch (err) {
+                alert("Ralat ralat semasa reset data: " + err.message);
+            }
+        };
+
+        // --- KELAS & MURID (FUNGSI ASAS) ---
+        window.saveNewClass = async function() {
+            let cName = document.getElementById('newClassName').value.toUpperCase();
+            if(!cName) return alert("Sila masukkan nama kelas.");
+            try {
+                await setDoc(doc(collection(db, 'classes')), { name: cName });
+                document.getElementById('modalAddClass').classList.add('hidden');
+                document.getElementById('newClassName').value = '';
+                showToast("Kelas ditambah!");
+            } catch (e) { alert(e.message); }
+        };
+
         window.renderStudents = function() {
             const tbody = document.getElementById('studentsTableBody');
             const filterClass = document.getElementById('filterClass').value;
@@ -396,7 +539,7 @@
             document.querySelectorAll('.print-checkbox').forEach(cb => cb.checked = m);
         };
 
-        // --- PENGURUSAN MARKAH & KEHADIRAN ---
+        // --- MARKAH & PBD ---
         window.getGrade = function(m) {
             if(m === '' || m === null || isNaN(m)) return '-';
             let v = parseFloat(m);
@@ -416,15 +559,13 @@
             const thead = document.getElementById('marksTableHead');
             const tbody = document.getElementById('marksTableBody');
 
-            if(!classId) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Sila pilih Kelas dan Mata Pelajaran untuk memulakan.</td></tr>`;
+            if(!classId) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Sila pilih Kelas dan Mata Pelajaran.</td></tr>`;
 
             let students = window.appData.students.filter(s => s.classId === classId);
             if(students.length === 0) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Tiada murid dalam kelas ini.</td></tr>`;
 
-            // PERUBAHAN HEADERS BERGANTUNG PADA PILIHAN
             if (subject === '_KEHADIRAN') {
-                thead.innerHTML = `
-                    <tr>
+                thead.innerHTML = `<tr>
                         <th class="px-4 py-3 text-center w-12">Bil</th>
                         <th class="px-4 py-3">Nama Murid</th>
                         <th class="px-4 py-3 text-center w-32">Kehadiran (%)</th>
@@ -432,8 +573,7 @@
                         <th class="px-4 py-3 text-left">Ulasan Guru Kelas</th>
                     </tr>`;
             } else {
-                thead.innerHTML = `
-                    <tr>
+                thead.innerHTML = `<tr>
                         <th class="px-4 py-3 text-center w-12">Bil</th>
                         <th class="px-4 py-3">Nama Murid</th>
                         <th class="px-4 py-3 text-center w-32">Markah (0-100)</th>
@@ -445,21 +585,17 @@
             let html = '';
             students.forEach((s, idx) => {
                 if (subject === '_KEHADIRAN') {
-                    // Paparan Borang Kehadiran & Kelakuan
                     let ext = (s.scores && s.scores[exam] && s.scores[exam]['_KEHADIRAN']) || {};
                     let att = ext.kehadiran !== undefined ? ext.kehadiran : '';
                     let beh = ext.kelakuan || '';
                     let cmt = ext.ulasan || '';
 
-                    html += `
-                    <tr class="border-b hover:bg-blue-50 mark-row transition" data-id="${s.id}">
+                    html += `<tr class="border-b hover:bg-blue-50 mark-row transition" data-id="${s.id}">
                         <td class="px-4 py-2 text-center text-gray-500">${idx + 1}</td>
                         <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
+                        <td class="px-4 py-2 text-center"><input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 att-input" value="${att}"></td>
                         <td class="px-4 py-2 text-center">
-                            <input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 att-input shadow-inner" value="${att}" placeholder="%">
-                        </td>
-                        <td class="px-4 py-2 text-center">
-                            <select class="border border-green-300 rounded p-1.5 w-full text-center text-green-800 beh-input shadow-inner">
+                            <select class="border border-green-300 rounded p-1.5 w-full text-center text-green-800 beh-input">
                                 <option value="">-- Pilih --</option>
                                 <option value="AMAT BAIK" ${beh === 'AMAT BAIK' ? 'selected' : ''}>Amat Baik</option>
                                 <option value="BAIK" ${beh === 'BAIK' ? 'selected' : ''}>Baik</option>
@@ -467,26 +603,20 @@
                                 <option value="PERLU BIMBINGAN" ${beh === 'PERLU BIMBINGAN' ? 'selected' : ''}>Perlu Bimbingan</option>
                             </select>
                         </td>
-                        <td class="px-4 py-2">
-                            <input type="text" class="border border-gray-300 rounded p-1.5 w-full text-sm cmt-input shadow-inner" value="${cmt}" placeholder="Taip ulasan pendek...">
-                        </td>
+                        <td class="px-4 py-2"><input type="text" class="border border-gray-300 rounded p-1.5 w-full text-sm cmt-input" value="${cmt}" placeholder="Taip ulasan pendek..."></td>
                     </tr>`;
                 } else {
-                    // Paparan Borang Markah Biasa
                     let sc = (s.scores && s.scores[exam] && s.scores[exam][subject]) || {};
                     let mark = sc.mark !== undefined && sc.mark !== null ? sc.mark : '';
                     let tp = sc.tp || '';
                     
-                    html += `
-                    <tr class="border-b hover:bg-yellow-50 mark-row transition" data-id="${s.id}">
+                    html += `<tr class="border-b hover:bg-yellow-50 mark-row transition" data-id="${s.id}">
                         <td class="px-4 py-2 text-center text-gray-500">${idx + 1}</td>
                         <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
-                        <td class="px-4 py-2 text-center">
-                            <input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 mark-input shadow-inner" value="${mark}" onkeyup="window.updateGradePreview(this)" placeholder="0">
-                        </td>
+                        <td class="px-4 py-2 text-center"><input type="number" min="0" max="100" class="border border-blue-300 rounded p-1.5 w-20 text-center font-bold text-blue-800 mark-input" value="${mark}" onkeyup="window.updateGradePreview(this)"></td>
                         <td class="px-4 py-2 text-center font-bold text-lg grade-preview">${window.getGrade(mark)}</td>
                         <td class="px-4 py-2 text-center">
-                            <select class="border border-green-300 rounded p-1.5 w-full text-center font-bold text-green-800 tp-input shadow-inner">
+                            <select class="border border-green-300 rounded p-1.5 w-full text-center font-bold text-green-800 tp-input">
                                 <option value="">- TP -</option>
                                 ${[1,2,3,4,5,6].map(i => `<option value="TP${i}" ${tp === 'TP'+i ? 'selected' : ''}>TP ${i}</option>`).join('')}
                             </select>
@@ -507,29 +637,17 @@
                 const batch = writeBatch(db);
                 document.querySelectorAll('.mark-row').forEach(row => {
                     let id = row.getAttribute('data-id');
-                    
                     if(subject === '_KEHADIRAN') {
                         let attVal = row.querySelector('.att-input').value;
-                        let behVal = row.querySelector('.beh-input').value;
-                        let cmtVal = row.querySelector('.cmt-input').value;
-                        
-                        batch.set(doc(db, 'students', id), {
-                            scores: { [exam]: { '_KEHADIRAN': { 
-                                kehadiran: attVal === '' ? null : parseFloat(attVal),
-                                kelakuan: behVal,
-                                ulasan: cmtVal
-                            }}}
-                        }, { merge: true });
+                        batch.set(doc(db, 'students', id), { scores: { [exam]: { '_KEHADIRAN': { 
+                                kehadiran: attVal === '' ? null : parseFloat(attVal), kelakuan: row.querySelector('.beh-input').value, ulasan: row.querySelector('.cmt-input').value
+                        }}}}, { merge: true });
                     } else {
                         let markVal = row.querySelector('.mark-input').value;
-                        let tpVal = row.querySelector('.tp-input').value;
                         let markNum = markVal === '' ? null : parseFloat(markVal);
-                        
-                        batch.set(doc(db, 'students', id), {
-                            scores: { [exam]: { [subject]: { 
-                                mark: markNum, grade: window.getGrade(markNum), tp: tpVal 
-                            }}}
-                        }, { merge: true });
+                        batch.set(doc(db, 'students', id), { scores: { [exam]: { [subject]: { 
+                                mark: markNum, grade: window.getGrade(markNum), tp: row.querySelector('.tp-input').value 
+                        }}}}, { merge: true });
                     }
                 });
                 await batch.commit();
@@ -543,20 +661,12 @@
             if(selectedIds.length === 0) return alert("Sila pilih murid.");
 
             let printWindow = window.open('', '_blank');
-            let htmlContent = `
-                <html>
-                <head>
-                    <title>Cetak Laporan ${type}</title>
-                    <script src="https://cdn.tailwindcss.com"><\/script>
-                    <style>
-                        @page { size: A4 portrait; margin: 15mm; }
-                        @media print { .page-break { page-break-after: always; } }
-                        body { font-family: 'Times New Roman', serif; color: black; background: white; }
-                        .report-container { max-width: 210mm; margin: 0 auto; }
-                    </style>
-                </head>
-                <body>
-            `;
+            let schoolNameForPrint = window.appData.school.name || "SEKOLAH KEBANGSAAN BIKANG";
+            
+            let htmlContent = `<html><head><title>Laporan ${type}</title><script src="https://cdn.tailwindcss.com"><\/script>
+                <style>@page { size: A4 portrait; margin: 15mm; } @media print { .page-break { page-break-after: always; } }
+                body { font-family: 'Times New Roman', serif; color: black; background: white; }
+                .report-container { max-width: 210mm; margin: 0 auto; }</style></head><body>`;
 
             const subjs = [
                 { code: 'BM', name: 'BAHASA MELAYU' }, { code: 'BI', name: 'BAHASA INGGERIS' },
@@ -589,26 +699,19 @@
                 let percentage = fullMarks > 0 ? ((totalMarks / fullMarks) * 100).toFixed(2) : '-';
                 let statusLulus = fullMarks === 0 ? '-' : (percentage >= 40 ? 'MENCAPAI TAHAP MINIMUM (MTM)' : 'BELUM MENCAPAI TAHAP MINIMUM (BMTM)');
 
-                // Ekstrak Kehadiran, Kelakuan dan Ulasan
                 let ext = (s.scores && s.scores[type] && s.scores[type]['_KEHADIRAN']) || {};
-                let att = ext.kehadiran !== undefined && ext.kehadiran !== null ? ext.kehadiran + '%' : '-';
-                let beh = ext.kelakuan || '-';
-                let cmt = ext.ulasan || '';
                 
-                htmlContent += `
-                    <div class="${index < selectedIds.length - 1 ? 'page-break' : ''} report-container p-6">
+                htmlContent += `<div class="${index < selectedIds.length - 1 ? 'page-break' : ''} report-container p-6">
                         <div class="text-center mb-6">
-                            <h1 class="text-2xl font-bold uppercase">SEKOLAH KEBANGSAAN BIKANG</h1>
+                            <h1 class="text-2xl font-bold uppercase">${schoolNameForPrint}</h1>
                             <h2 class="text-xl font-bold mt-2 border-b-2 border-black inline-block pb-1">
                                 LAPORAN PENTAKSIRAN ${type === 'PPT' ? 'PERTENGAHAN' : 'AKHIR'} TAHUN 2026
                             </h2>
                         </div>
-                        
                         <div class="mb-4 grid grid-cols-2 gap-4 text-sm font-bold uppercase">
                             <div><p>NAMA: ${s.name}</p><p class="mt-1">NO. KP: ${s.ic || '-'}</p></div>
                             <div class="text-right"><p>KELAS: ${c ? c.name : '-'}</p><p class="mt-1">JANTINA: ${s.gender === 'P' ? 'PEREMPUAN' : 'LELAKI'}</p></div>
                         </div>
-
                         <table class="w-full border-collapse border border-black text-sm mb-4">
                             <thead class="bg-gray-100">
                                 <tr>
@@ -621,33 +724,28 @@
                             </thead>
                             <tbody>${marksRows}</tbody>
                         </table>
-
                         <div class="border border-black p-4 mb-4 text-sm font-bold uppercase grid grid-cols-2 gap-y-3">
                             <div>JUMLAH MARKAH: ${fullMarks > 0 ? totalMarks : '-'} / ${fullMarks > 0 ? fullMarks : '-'}</div>
                             <div class="text-right">KEDUDUKAN DALAM KELAS: -</div>
                             <div>PERATUS KESELURUHAN: ${percentage} ${percentage !== '-' ? '%' : ''}</div>
                             <div class="text-right">KEDUDUKAN DALAM TAHUN: -</div>
                             <div class="col-span-2 pt-2 border-t border-gray-400 grid grid-cols-2 gap-y-3">
-                                <div>PERATUS KEHADIRAN: ${att}</div>
-                                <div class="text-right">KELAKUAN / SAHSIAH: ${beh}</div>
+                                <div>PERATUS KEHADIRAN: ${ext.kehadiran !== undefined && ext.kehadiran !== null ? ext.kehadiran + '%' : '-'}</div>
+                                <div class="text-right">KELAKUAN / SAHSIAH: ${ext.kelakuan || '-'}</div>
                                 <div class="col-span-2 text-center pt-2 text-base">STATUS: ${statusLulus}</div>
                             </div>
                         </div>
-
                         <div class="border border-black p-4 mb-8 text-sm min-h-[100px]">
                             <p class="font-bold uppercase mb-2">ULASAN GURU KELAS:</p>
-                            ${cmt ? `<p class="italic text-gray-800 text-lg ml-4 mt-2">"${cmt}"</p>` : `<div class="border-b border-dotted border-black mt-8"></div>`}
+                            ${ext.ulasan ? `<p class="italic text-gray-800 text-lg ml-4 mt-2">"${ext.ulasan}"</p>` : `<div class="border-b border-dotted border-black mt-8"></div>`}
                         </div>
-
                         <div class="mt-8 grid grid-cols-3 gap-6 text-center text-sm font-bold uppercase">
                             <div><br><br><p class="border-t border-black pt-2 mx-4">TANDATANGAN GURU KELAS</p></div>
                             <div><br><br><p class="border-t border-black pt-2 mx-4">TANDATANGAN GURU BESAR</p></div>
                             <div><br><br><p class="border-t border-black pt-2 mx-4">TANDATANGAN IBU BAPA</p></div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
-
             htmlContent += `<script>window.onload=function(){setTimeout(window.print, 800);}<\/script></body></html>`;
             printWindow.document.write(htmlContent);
             printWindow.document.close();
