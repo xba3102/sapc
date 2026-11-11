@@ -366,6 +366,9 @@
                                 <option value="T2">Tahap 2 Sahaja (Thn 4,5,6)</option>
                             </select>
                             <button onclick="window.addSubject()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-medium shadow-sm whitespace-nowrap">Tambah Subjek</button>
+                            <button id="btnAIGenerateSubj" onclick="window.generateSubjectsAI()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded font-medium shadow-sm whitespace-nowrap" title="Biar AI senaraikan subjek KSSR secara automatik">
+                                <i class="fas fa-magic mr-1"></i> Jana AI
+                            </button>
                         </div>
                         
                         <div class="overflow-x-auto border rounded border-gray-200">
@@ -652,6 +655,80 @@
                 await setDoc(doc(db, 'settings', 'subjects'), { list: newSubjects }, {merge: true});
                 showToast("Mata Pelajaran dipadam.");
             } catch(e) { alert("Ralat: " + e.message); }
+        };
+
+        window.generateSubjectsAI = async function() {
+            if(!confirm("Fungsi ini akan menggunakan AI untuk mencari dan memasukkan subjek standard sekolah rendah (KSSR). Subjek yang sudah wujud tidak akan ditindih. Teruskan?")) return;
+
+            const btn = document.getElementById('btnAIGenerateSubj');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menjana...';
+            btn.disabled = true;
+
+            try {
+                const prompt = "Berikan senarai mata pelajaran standard untuk sekolah rendah di Malaysia (KSSR) termasuk subjek elektif biasa (seperti Pendidikan Jasmani, Kesihatan, Muzik, Seni Visual, RBT dll). Untuk 'tahap', gunakan 'ALL' untuk Tahun 1-6, 'T1' untuk Tahun 1-3 sahaja, dan 'T2' untuk Tahun 4-6 sahaja (contohnya Sejarah dan RBT adalah T2). Berikan sekurang-kurangnya 12 subjek utama dan elektif.";
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "code": { "type": "STRING", "description": "Singkatan 2-4 huruf, cth: BM, BI, MT, SN, SJ, RBT, PJPK" },
+                                    "name": { "type": "STRING", "description": "Nama penuh mata pelajaran huruf besar, cth: PENDIDIKAN MUZIK" },
+                                    "tahap": { "type": "STRING", "enum": ["ALL", "T1", "T2"] }
+                                },
+                                "required": ["code", "name", "tahap"]
+                            }
+                        }
+                    }
+                };
+
+                const apiKey = ""; // API key dikendalikan oleh Canvas
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0) {
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    const aiSubjects = JSON.parse(jsonText);
+
+                    let currentSubjects = [...window.appData.subjects];
+                    let addedCount = 0;
+
+                    aiSubjects.forEach(aiSub => {
+                        aiSub.code = aiSub.code.toUpperCase();
+                        aiSub.name = aiSub.name.toUpperCase();
+                        // Semak jika kod subjek sudah wujud
+                        const existsIndex = currentSubjects.findIndex(s => s.code === aiSub.code);
+                        if (existsIndex === -1) {
+                            currentSubjects.push(aiSub);
+                            addedCount++;
+                        }
+                    });
+
+                    if (addedCount > 0) {
+                        await setDoc(doc(db, 'settings', 'subjects'), { list: currentSubjects }, {merge: true});
+                        showToast(`${addedCount} subjek baharu berjaya ditambah oleh AI!`);
+                    } else {
+                        showToast("Tiada subjek baharu ditambah. Senarai subjek sudah lengkap.");
+                    }
+                } else {
+                    throw new Error("Respon AI tidak sah.");
+                }
+            } catch (e) {
+                alert("Ralat penjanaan AI: " + e.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         };
 
         window.updateSubjectDropdown = function() {
