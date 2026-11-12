@@ -15,6 +15,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
@@ -296,29 +297,17 @@
                             <option value="PAT" selected>Akhir Tahun (PAT / UASA / Matriks)</option>
                         </select>
                         <select id="markFilterSubject" class="border p-2 rounded flex-1 min-w-[200px]" onchange="window.loadMarksTable()">
-                            <option value="">-- Pilih Kelas Dahulu --</option>
-                        </select>
-                    </div>
-                    <div class="flex gap-2 w-full md:w-auto mt-4 md:mt-0 flex-col md:flex-row">
-                        <label id="btnImportPdfMarks" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition whitespace-nowrap cursor-pointer opacity-50 pointer-events-none flex items-center justify-center">
-                            <i class="fas fa-file-pdf mr-2"></i>Import PDF
-                            <input type="file" id="pdfMarkFile" accept=".pdf" class="hidden" onchange="window.handlePdfMarkImport(event)">
-                        </label>
-                        <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
-                            <i class="fas fa-save mr-2"></i>Simpan Pukal
-                        </button>
-                    </div>
+                        <option value="">-- Pilih Kelas Dahulu --</option>
+                    </select>
                 </div>
-
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead id="marksTableHead" class="bg-blue-50 text-blue-800 border-b">
-                            <tr><th colspan="5" class="py-2">Pilih untuk mula</th></tr>
-                        </thead>
-                        <tbody id="marksTableBody">
-                            <tr><td colspan="5" class="text-center py-10 text-gray-400">Sila pilih Kelas dan Mata Pelajaran di atas untuk memulakan.</td></tr>
-                        </tbody>
-                    </table>
+                <div class="flex gap-2 w-full md:w-auto mt-4 md:mt-0 flex-col md:flex-row">
+                    <label id="btnImportMarksFile" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition whitespace-nowrap cursor-pointer opacity-50 pointer-events-none flex items-center justify-center">
+                        <i class="fas fa-file-import mr-2"></i>Import Fail (PDF/Excel/Word)
+                        <input type="file" id="markFileImport" accept=".pdf, .xlsx, .xls, .docx" class="hidden" onchange="window.handleMarkFileImport(event)">
+                    </label>
+                    <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
+                        <i class="fas fa-save mr-2"></i>Simpan Pukal
+                    </button>
                 </div>
             </div>
 
@@ -1172,12 +1161,12 @@
             let students = window.appData.students.filter(s => s.classId === classId);
             if(students.length === 0) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Tiada murid.</td></tr>`;
 
-            // Kawal butang Import PDF Markah
-            const btnImportPdf = document.getElementById('btnImportPdfMarks');
+            // Kawal butang Import Fail Markah
+            const btnImportFile = document.getElementById('btnImportMarksFile');
             if (subject === '_KEHADIRAN') {
-                btnImportPdf.classList.add('opacity-50', 'pointer-events-none');
+                btnImportFile.classList.add('opacity-50', 'pointer-events-none');
             } else {
-                btnImportPdf.classList.remove('opacity-50', 'pointer-events-none');
+                btnImportFile.classList.remove('opacity-50', 'pointer-events-none');
             }
 
             if (subject === '_KEHADIRAN') {
@@ -1248,51 +1237,53 @@
             if(!classId || !subject) return alert("Pilih kelas & subjek.");
 
             const batch = writeBatch(db);
-            document.querySelectorAll('.mark-row').forEach(row => {
-                let id = row.getAttribute('data-id');
-                if(subject === '_KEHADIRAN') {
-                    let attVal = row.querySelector('.att-input').value;
-                    batch.set(doc(db, 'students', id), { scores: { [exam]: { '_KEHADIRAN': { 
-                            kehadiran: attVal === '' ? null : parseFloat(attVal), kelakuan: row.querySelector('.beh-input').value, ulasan: row.querySelector('.cmt-input').value
-                    }}}}, { merge: true });
-                } else {
-                    let markVal = row.querySelector('.mark-input').value;
-                    let markNum = markVal === '' ? null : parseFloat(markVal);
-                    batch.set(doc(db, 'students', id), { scores: { [exam]: { [subject]: { 
-                            mark: markNum, grade: window.getGrade(markNum), tp: row.querySelector('.tp-input').value 
-                    }}}}, { merge: true });
-                }
-            });
-            await batch.commit();
-            window.showSyncStatus(false);
-            showToast("Disimpan!");
-        };
-
-        // --- IMPORT PDF MARKAH KHUSUS KE DALAM JADUAL ---
-        window.handlePdfMarkImport = async function(event) {
-            const file = event.target.files[0];
-            if(!file) return;
-
-            const classId = document.getElementById('markFilterClass').value;
-            const exam = document.getElementById('markFilterExam').value;
-            const subject = document.getElementById('markFilterSubject').value;
-
-            if(!classId || !subject) {
-                alert("Sila pilih Kelas dan Subjek dahulu di atas.");
-                return;
+        document.querySelectorAll('.mark-row').forEach(row => {
+            let id = row.getAttribute('data-id');
+            if(subject === '_KEHADIRAN') {
+                let attVal = row.querySelector('.att-input').value;
+                batch.set(doc(db, 'students', id), { scores: { [exam]: { '_KEHADIRAN': { 
+                        kehadiran: attVal === '' ? null : parseFloat(attVal), kelakuan: row.querySelector('.beh-input').value, ulasan: row.querySelector('.cmt-input').value
+                }}}}, { merge: true });
+            } else {
+                let markVal = row.querySelector('.mark-input').value;
+                let markNum = markVal === '' ? null : parseFloat(markVal);
+                batch.set(doc(db, 'students', id), { scores: { [exam]: { [subject]: { 
+                        mark: markNum, grade: window.getGrade(markNum), tp: row.querySelector('.tp-input').value 
+                }}}}, { merge: true });
             }
+        });
+        await batch.commit();
+        window.showSyncStatus(false);
+        showToast("Disimpan!");
+    };
 
-            showToast("Membaca dan memproses nama & markah dari PDF...");
-            try {
+    // --- IMPORT FAIL MARKAH (PDF/EXCEL/WORD) KHUSUS KE DALAM JADUAL ---
+    window.handleMarkFileImport = async function(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+
+        const classId = document.getElementById('markFilterClass').value;
+        const exam = document.getElementById('markFilterExam').value;
+        const subject = document.getElementById('markFilterSubject').value;
+
+        if(!classId || !subject) {
+            alert("Sila pilih Kelas dan Subjek dahulu di atas.");
+            return;
+        }
+
+        showToast("Membaca dan memproses nama & markah dari fail...");
+        try {
+            let students = window.appData.students.filter(s => s.classId === classId);
+            let matchedCount = 0;
+            const batch = writeBatch(db);
+
+            // Ekstrak semua teks baris demi baris
+            let allRows = [];
+            let fileName = file.name.toLowerCase();
+
+            if (fileName.endsWith('.pdf')) {
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                
-                let students = window.appData.students.filter(s => s.classId === classId);
-                let matchedCount = 0;
-                const batch = writeBatch(db);
-
-                // Ekstrak semua teks baris demi baris
-                let allRows = [];
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
@@ -1316,132 +1307,148 @@
                         allRows.push(rowItems.map(r => r.str).join(' '));
                     });
                 }
+            } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                allRows = jsonData.map(row => row.filter(cell => cell !== null && cell !== undefined).join(' '));
+            } else if (fileName.endsWith('.docx')) {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                allRows = result.value.split('\n').filter(line => line.trim().length > 0);
+            } else {
+                alert("Format fail tidak disokong. Sila gunakan PDF, Excel (.xlsx/.xls), atau Word (.docx).");
+                event.target.value = '';
+                return;
+            }
 
-                // AI Helper: Mengesan markah JUMLAH paling tepat
-                const getJumlahToken = (tokens) => {
-                    if (tokens.length === 0) return null;
-                    if (tokens.length === 1) return tokens[0] === 'T' ? 'T' : (parseInt(tokens[0]) <= 100 ? tokens[0] : null);
-                    
-                    let nums = tokens.map(t => t === 'T' ? 0 : parseInt(t));
-                    
-                    // Semak jika nombor TERAKHIR adalah hasil tambah (JUMLAH sebenar)
-                    let sumLast = 0;
-                    for(let i=0; i<nums.length-1; i++) sumLast += nums[i];
-                    if (sumLast === nums[nums.length-1] && sumLast > 0) return tokens[tokens.length-1];
+            // AI Helper: Mengesan markah JUMLAH paling tepat
+            const getJumlahToken = (tokens) => {
+                if (tokens.length === 0) return null;
+                if (tokens.length === 1) return tokens[0] === 'T' ? 'T' : (parseInt(tokens[0]) <= 100 ? tokens[0] : null);
+                
+                let nums = tokens.map(t => t === 'T' ? 0 : parseInt(t));
+                
+                // Semak jika nombor TERAKHIR adalah hasil tambah (JUMLAH sebenar)
+                let sumLast = 0;
+                for(let i=0; i<nums.length-1; i++) sumLast += nums[i];
+                if (sumLast === nums[nums.length-1] && sumLast > 0) return tokens[tokens.length-1];
 
-                    // Semak jika nombor KEDUA TERAKHIR adalah hasil tambah (Jika nombor terakhir ialah "BIL" pelajar seterusnya)
-                    if (nums.length >= 3) {
-                        let sumSecLast = 0;
-                        for(let i=0; i<nums.length-2; i++) sumSecLast += nums[i];
-                        if (sumSecLast === nums[nums.length-2] && sumSecLast > 0) return tokens[tokens.length-2];
-                    }
-
-                    // Fallback jika murid Tidak Hadir (T)
-                    if (tokens[tokens.length-1] === 'T') return 'T';
-                    if (tokens.length >= 2 && tokens[tokens.length-2] === 'T' && tokens[tokens.length-1] !== 'T') return 'T';
-
-                    // Fallback akhir: Buang nombor BIL jika ada, dan ambil bakinya
-                    let last = nums[nums.length-1];
-                    if (last <= 50 && tokens.length > 2) {
-                        return tokens[tokens.length-2] === 'T' ? 'T' : tokens[tokens.length-2];
-                    }
-                    return tokens[tokens.length-1] === 'T' ? 'T' : tokens[tokens.length-1];
-                };
-
-                // Cuba padankan setiap murid 
-                students.forEach(student => {
-                    let studentSysIC = (student.ic || '').replace(/[^0-9]/g, '');
-                    // Bersihkan nama dengan membuang Bin/Binti/Biti dan semua jarak (spaces) supaya 100% kalis typo
-                    let cleanSysName = student.name.toUpperCase().replace(/\s+(BIN|BINTI|BITI|A\/L|A\/P)\s+/g, '').replace(/[^A-Z]/g, '');
-                    let shortSysName = cleanSysName.substring(0, Math.max(10, cleanSysName.length - 5)); 
-                    
-                    let bestMatchMark = null;
-                    let extractedIC = null;
-
-                    for (let rawStr of allRows) {
-                        let upperRow = rawStr.toUpperCase();
-                        let cleanRowStr = upperRow.replace(/\s+(BIN|BINTI|BITI|A\/L|A\/P)\s+/g, '').replace(/[^A-Z0-9]/g, ''); 
-                        let cleanRowLetters = cleanRowStr.replace(/[^A-Z]/g, '');
-
-                        let isMatch = false;
-                        
-                        // PADANAN: Semak No KP dahulu, jika tiada semak Nama Rapat (tanpa spasi)
-                        if (studentSysIC.length === 12 && cleanRowStr.includes(studentSysIC)) {
-                            isMatch = true;
-                        } else if (cleanSysName.length > 5 && cleanRowLetters.includes(cleanSysName)) {
-                            isMatch = true;
-                        } else if (shortSysName.length > 5 && cleanRowLetters.includes(shortSysName)) {
-                            isMatch = true;
-                        }
-                        
-                        if (isMatch) {
-                            // Ekstrak 12 digit KP di dalam baris
-                            let icMatch = upperRow.match(/\b\d{12}\b/);
-                            let textAfterIC = "";
-
-                            if (icMatch) {
-                                extractedIC = icMatch[0];
-                                let idx = upperRow.indexOf(extractedIC);
-                                textAfterIC = upperRow.substring(idx + 12);
-                            } else {
-                                textAfterIC = upperRow; // Tiada IC di dalam baris tersebut
-                            }
-
-                            // Kumpul token markah selepas IC (Nombor atau T sahaja)
-                            let tokens = textAfterIC.trim().split(/\s+/);
-                            let markTokens = [];
-                            
-                            for (let t of tokens) {
-                                if (/^(\d+|T)$/i.test(t)) {
-                                    markTokens.push(t);
-                                } else if (t.length > 0) {
-                                    break; // Berhenti apabila terjumpa huruf teks/nama baru
-                                }
-                            }
-                            
-                            bestMatchMark = getJumlahToken(markTokens);
-                            break; 
-                        }
-                    }
-
-                    if (bestMatchMark !== null) {
-                        let grade = window.getGrade(bestMatchMark === 'T' ? 0 : bestMatchMark);
-                        let existingTP = (student.scores && student.scores[exam] && student.scores[exam][subject]) ? (student.scores[exam][subject].tp || '') : '';
-
-                        let updatePayload = { 
-                            scores: { [exam]: { [subject]: { 
-                                mark: bestMatchMark === 'T' ? 'T' : parseInt(bestMatchMark), 
-                                grade: bestMatchMark === 'T' ? 'TH' : grade, 
-                                tp: existingTP
-                            }}} 
-                        };
-
-                        // Update No KP automatik jika kosong
-                        if (extractedIC && (!student.ic || student.ic.trim() === '' || student.ic === '-')) {
-                            updatePayload.ic = extractedIC;
-                        }
-
-                        batch.set(doc(db, 'students', student.id), updatePayload, { merge: true });
-                        matchedCount++;
-                    }
-                });
-
-                if (matchedCount > 0) {
-                    await batch.commit();
-                    showToast(`Berjaya! Markah untuk ${matchedCount} murid telah diimport tepat pada lajur JUMLAH.`);
-                    window.loadMarksTable();
-                } else {
-                    alert("Tiada padanan atau tiada markah dikesan. Pastikan fail PDF adalah untuk kelas yang betul.");
+                // Semak jika nombor KEDUA TERAKHIR adalah hasil tambah (Jika nombor terakhir ialah "BIL" pelajar seterusnya)
+                if (nums.length >= 3) {
+                    let sumSecLast = 0;
+                    for(let i=0; i<nums.length-2; i++) sumSecLast += nums[i];
+                    if (sumSecLast === nums[nums.length-2] && sumSecLast > 0) return tokens[tokens.length-2];
                 }
 
-            } catch (e) {
-                console.error(e);
-                alert("Ralat memproses fail PDF: " + e.message);
-            }
-            event.target.value = '';
-        };
+                // Fallback jika murid Tidak Hadir (T)
+                if (tokens[tokens.length-1] === 'T') return 'T';
+                if (tokens.length >= 2 && tokens[tokens.length-2] === 'T' && tokens[tokens.length-1] !== 'T') return 'T';
 
-        window.printReport = function(type) {
+                // Fallback akhir: Buang nombor BIL jika ada, dan ambil bakinya
+                let last = nums[nums.length-1];
+                if (last <= 50 && tokens.length > 2) {
+                    return tokens[tokens.length-2] === 'T' ? 'T' : tokens[tokens.length-2];
+                }
+                return tokens[tokens.length-1] === 'T' ? 'T' : tokens[tokens.length-1];
+            };
+
+            // Cuba padankan setiap murid 
+            students.forEach(student => {
+                let studentSysIC = (student.ic || '').replace(/[^0-9]/g, '');
+                // Bersihkan nama dengan membuang Bin/Binti/Biti dan semua jarak (spaces) supaya 100% kalis typo
+                let cleanSysName = student.name.toUpperCase().replace(/\s+(BIN|BINTI|BITI|A\/L|A\/P)\s+/g, '').replace(/[^A-Z]/g, '');
+                let shortSysName = cleanSysName.substring(0, Math.max(10, cleanSysName.length - 5)); 
+                
+                let bestMatchMark = null;
+                let extractedIC = null;
+
+                for (let rawStr of allRows) {
+                    let upperRow = rawStr.toUpperCase();
+                    let cleanRowStr = upperRow.replace(/\s+(BIN|BINTI|BITI|A\/L|A\/P)\s+/g, '').replace(/[^A-Z0-9]/g, ''); 
+                    let cleanRowLetters = cleanRowStr.replace(/[^A-Z]/g, '');
+
+                    let isMatch = false;
+                    
+                    // PADANAN: Semak No KP dahulu, jika tiada semak Nama Rapat (tanpa spasi)
+                    if (studentSysIC.length === 12 && cleanRowStr.includes(studentSysIC)) {
+                        isMatch = true;
+                    } else if (cleanSysName.length > 5 && cleanRowLetters.includes(cleanSysName)) {
+                        isMatch = true;
+                    } else if (shortSysName.length > 5 && cleanRowLetters.includes(shortSysName)) {
+                        isMatch = true;
+                    }
+                    
+                    if (isMatch) {
+                        // Ekstrak 12 digit KP di dalam baris
+                        let icMatch = upperRow.match(/\b\d{12}\b/);
+                        let textAfterIC = "";
+
+                        if (icMatch) {
+                            extractedIC = icMatch[0];
+                            let idx = upperRow.indexOf(extractedIC);
+                            textAfterIC = upperRow.substring(idx + 12);
+                        } else {
+                            textAfterIC = upperRow; // Tiada IC di dalam baris tersebut
+                        }
+
+                        // Kumpul token markah selepas IC (Nombor atau T sahaja)
+                        let tokens = textAfterIC.trim().split(/\s+/);
+                        let markTokens = [];
+                        
+                        for (let t of tokens) {
+                            if (/^(\d+|T)$/i.test(t)) {
+                                markTokens.push(t);
+                            } else if (t.length > 0) {
+                                break; // Berhenti apabila terjumpa huruf teks/nama baru
+                            }
+                        }
+                        
+                        bestMatchMark = getJumlahToken(markTokens);
+                        break; 
+                    }
+                }
+
+                if (bestMatchMark !== null) {
+                    let grade = window.getGrade(bestMatchMark === 'T' ? 0 : bestMatchMark);
+                    let existingTP = (student.scores && student.scores[exam] && student.scores[exam][subject]) ? (student.scores[exam][subject].tp || '') : '';
+
+                    let updatePayload = { 
+                        scores: { [exam]: { [subject]: { 
+                            mark: bestMatchMark === 'T' ? 'T' : parseInt(bestMatchMark), 
+                            grade: bestMatchMark === 'T' ? 'TH' : grade, 
+                            tp: existingTP
+                        }}} 
+                    };
+
+                    // Update No KP automatik jika kosong
+                    if (extractedIC && (!student.ic || student.ic.trim() === '' || student.ic === '-')) {
+                        updatePayload.ic = extractedIC;
+                    }
+
+                    batch.set(doc(db, 'students', student.id), updatePayload, { merge: true });
+                    matchedCount++;
+                }
+            });
+
+            if (matchedCount > 0) {
+                await batch.commit();
+                showToast(`Berjaya! Markah untuk ${matchedCount} murid telah diimport tepat pada lajur JUMLAH.`);
+                window.loadMarksTable();
+            } else {
+                alert("Tiada padanan atau tiada markah dikesan. Pastikan fail adalah untuk kelas yang betul.");
+            }
+
+        } catch (e) {
+            console.error(e);
+            alert("Ralat memproses fail: " + e.message);
+        }
+        event.target.value = '';
+    };
+
+    window.printReport = function(type) {
             let selectedIds = Array.from(document.querySelectorAll('.print-checkbox:checked')).map(cb => cb.value);
             if(selectedIds.length === 0) return alert("Pilih murid.");
 
