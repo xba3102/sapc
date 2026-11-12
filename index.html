@@ -1285,7 +1285,7 @@
                 let matchedCount = 0;
                 const batch = writeBatch(db);
 
-                // Ekstrak semua teks secara perenggan mendatar (Y-axis)
+                // Ekstrak semua teks baris demi baris (berdasarkan kedudukan Y)
                 let allRows = [];
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
@@ -1299,6 +1299,7 @@
 
                     let rowsMap = {};
                     pageTextItems.forEach(it => {
+                        // Cari baris yang sama (toleransi Y +- 5 pixel)
                         let foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey) - it.y) < 5);
                         let yKey = foundY || it.y;
                         if (!rowsMap[yKey]) rowsMap[yKey] = [];
@@ -1306,78 +1307,72 @@
                     });
 
                     Object.keys(rowsMap).forEach(y => {
+                        // Susun teks dari kiri ke kanan (berdasarkan X)
                         let rowItems = rowsMap[y].sort((a,b) => a.x - b.x);
-                        allRows.push(rowItems);
+                        let rawStr = rowItems.map(r => r.str).join(' '); // Cantum menjadi satu baris ayat
+                        allRows.push(rawStr);
                     });
                 }
 
-                // Cuba padankan setiap murid dengan teks dalam PDF
+                // Cuba padankan setiap murid dengan teks di dalam senarai baris PDF
                 students.forEach(student => {
-                    let studentName = student.name.toUpperCase().replace(/\s+/g, ' ').trim();
-                    // Tapis BIN, BINTI, BITI, A/L, A/P untuk padanan bersih
-                    let cleanName = studentName.replace(/\b(BIN|BINTI|BITI|A\/L|A\/P)\b/g, '').replace(/\s+/g, ' ').trim();
-                    let nameWords = cleanName.split(' ');
-                    // Ambil 2 perkataan terawal sahaja (tanpa jarak) untuk elak typo ejaan belakang
-                    let searchName = nameWords.slice(0, 2).join(''); 
-                    
                     let studentIcStr = (student.ic || '').replace(/[^0-9]/g, '');
-
+                    // Bersihkan nama: buang BIN/BINTI, buang simbol/jarak, ambil 15 huruf terawal sbg carian unik
+                    let cleanSysName = student.name.toUpperCase().replace(/\b(BIN|BINTI|BITI|A\/L|A\/P)\b/g, '').replace(/[^A-Z]/g, '');
+                    let sysNamePrefix = cleanSysName.substring(0, 15); 
+                    
                     let bestMatchMark = null;
                     let extractedIC = null;
 
-                    for (let rowItems of allRows) {
-                        let fullRowStr = rowItems.map(r => r.str).join(' ').toUpperCase();
-                        let rowStrNoSpaces = fullRowStr.replace(/\s+/g, '');
+                    for (let rawStr of allRows) {
+                        let upperRawStr = rawStr.toUpperCase();
+                        let noSpaceRawStr = upperRawStr.replace(/[^A-Z0-9]/g, '');
                         
                         let isMatch = false;
                         
-                        // PADANAN 1: Melalui No. KP jika ada dalam sistem
-                        if (studentIcStr.length === 12 && fullRowStr.includes(studentIcStr)) {
+                        // PADANAN 1: Melalui No. KP (Sangat Tepat & Kebal Kesalahan Ejaan Nama)
+                        if (studentIcStr.length === 12 && upperRawStr.includes(studentIcStr)) {
                             isMatch = true;
                         } 
-                        // PADANAN 2: Melalui 2 perkataan pertama Nama Murid
-                        else if (searchName.length > 3 && rowStrNoSpaces.includes(searchName)) {
+                        // PADANAN 2: Melalui Nama (Jika sistem tiada No. KP murid ini)
+                        else if (sysNamePrefix.length > 5 && noSpaceRawStr.includes(sysNamePrefix)) {
                             isMatch = true;
                         }
                         
                         if (isMatch) {
-                            // Cari kedudukan No. KP di baris ini
-                            let icIndex = rowItems.findIndex(r => /\d{12}/.test(r.str));
-                            let itemsToSearch = [];
-                            
-                            if (icIndex !== -1) {
-                                // Ekstrak No KP PDF (jika murid belum ada No. KP dalam sistem)
-                                let icMatch = rowItems[icIndex].str.match(/\d{12}/);
-                                if(icMatch) extractedIC = icMatch[0];
-                                
-                                // Hanya periksa nombor SELEPAS No. KP
-                                itemsToSearch = rowItems.slice(icIndex + 1);
+                            // Mencari 12-digit No KP di dalam baris teks PDF ini
+                            let rowIcMatch = upperRawStr.match(/\b\d{12}\b/);
+                            let textAfterIC = "";
+
+                            if (rowIcMatch) {
+                                extractedIC = rowIcMatch[0];
+                                let idx = upperRawStr.indexOf(extractedIC);
+                                // Potong teks dan HANYA AMBIL BAHAGIAN SELEPAS NO. KP (Mengelak ambil 'BIL')
+                                textAfterIC = upperRawStr.substring(idx + 12);
                             } else {
-                                // Jika tiada No KP, periksa bermula selepas nama murid
-                                let nameIdx = rowItems.findIndex(r => r.str.replace(/\s+/g, '').toUpperCase().includes(nameWords[0]));
-                                itemsToSearch = nameIdx !== -1 ? rowItems.slice(nameIdx + 1) : rowItems;
+                                // Jika PDF tiada IC langsung, ambil keseluruhan teks
+                                textAfterIC = upperRawStr;
                             }
 
-                            // Ekstrak markah (hanya nombor bulat atau perpuluhan sah hingga 100)
-                            let numbers = itemsToSearch.filter(r => /^\d+(\.\d+)?$/.test(r.str.trim())).map(r => parseFloat(r.str.trim()));
+                            // Ekstrak Markah: Kumpul semua nombor bebas selepas No. KP (B.A, B.B, B.C, Jumlah)
+                            let tokens = textAfterIC.trim().split(/\s+/);
+                            let numbers = tokens.filter(t => /^\d+(\.\d+)?$/.test(t)).map(Number);
+                            
+                            // Tapis hanya markah logik (0 hingga 100)
                             let validMarks = numbers.filter(n => n <= 100);
                             
                             if (validMarks.length > 0) {
-                                // Pilih nombor TERAKHIR di baris itu sebagai markah JUMLAH
+                                // Rahsia Matriks KPM: Nombor yang paling TERAKHIR sekali di baris tersebut adalah markah JUMLAH!
                                 bestMatchMark = validMarks[validMarks.length - 1]; 
                             }
 
-                            break; 
+                            break; // Selesai murid ini, lompat ke murid seterusnya
                         }
                     }
 
                     if (bestMatchMark !== null) {
                         let grade = window.getGrade(bestMatchMark);
-                        
-                        let existingTP = '';
-                        if (student.scores && student.scores[exam] && student.scores[exam][subject]) {
-                            existingTP = student.scores[exam][subject].tp || '';
-                        }
+                        let existingTP = (student.scores && student.scores[exam] && student.scores[exam][subject]) ? (student.scores[exam][subject].tp || '') : '';
 
                         let updatePayload = { 
                             scores: { [exam]: { [subject]: { 
@@ -1385,7 +1380,7 @@
                             }}} 
                         };
 
-                        // KEMAS KINI NO. KP SECARA AUTOMATIK JIKA KOSONG
+                        // KEMAS KINI NO. KP SECARA AUTOMATIK JIKA SISTEM KOSONG
                         if (extractedIC && (!student.ic || student.ic.trim() === '' || student.ic === '-')) {
                             updatePayload.ic = extractedIC;
                         }
@@ -1397,10 +1392,10 @@
 
                 if (matchedCount > 0) {
                     await batch.commit();
-                    showToast(`Berjaya! Markah untuk ${matchedCount} murid telah diimport dan No. KP dikemaskini.`);
+                    showToast(`Berjaya! Markah untuk ${matchedCount} murid telah diimport tepat pada lajur JUMLAH.`);
                     window.loadMarksTable();
                 } else {
-                    alert("Tiada padanan nama murid ditemui atau markah gagal diekstrak dari PDF. Pastikan nama murid di dalam sistem hampir sama dengan PDF.");
+                    alert("Tiada padanan atau tiada markah dikesan. Pastikan ejaan nama di sistem hampir sama dengan PDF atau No. KP dimasukkan dengan betul.");
                 }
 
             } catch (e) {
