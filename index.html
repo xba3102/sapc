@@ -1380,7 +1380,11 @@ Jika anda langsung tidak menjumpai markah untuk murid tertentu dalam teks terseb
                 })
             });
 
-            if (!response.ok) throw new Error("Gagal menghubungi pelayan AI Gemini. Sila semak semula jika API Key anda sah di ruang Tetapan.");
+            if (!response.ok) {
+                const errDetail = await response.json().catch(()=>({}));
+                let errMsg = errDetail.error?.message || "Ralat tidak diketahui.";
+                throw new Error("Tindak balas API: " + errMsg);
+            }
 
             const data = await response.json();
             let aiText = data.candidates[0].content.parts[0].text;
