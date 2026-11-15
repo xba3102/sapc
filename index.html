@@ -554,7 +554,6 @@
 
         // --- INISIALISASI DATA AWAN ---
         window.initializeAppAfterAuth = function() {
-            // Bersihkan listener lama jika log masuk semula tanpa muat semula halaman
             if (Array.isArray(window.activeUnsubscribers)) {
                 window.activeUnsubscribers.forEach(unsub => {
                     try { unsub(); } catch (_) {}
@@ -793,7 +792,6 @@
                     return;
                 }
 
-                // Cari baris pengepala yang mengandungi lajur NAMA (mengabaikan kepala surat di baris atas)
                 let headerRowIdx = -1;
                 let nameCol = -1, icCol = -1, classCol = -1, genderCol = -1;
 
@@ -1457,7 +1455,6 @@
             const tbody = document.getElementById('marksTableBody');
             const btnImport = document.getElementById('btnImportMarksFile');
 
-            // Benarkan butang Import Borang Transit apabila kelas telah dipilih
             if (classId && subject !== '_KEHADIRAN') {
                 btnImport.classList.remove('opacity-50', 'pointer-events-none');
             } else {
@@ -2065,7 +2062,6 @@
                                     });
                                     rowName = nameParts.join(' ').trim();
 
-                                    // Semak jika separuh nama berada pada baris tepat di atas No. KP
                                     if (!rowName && rIdx > 0) {
                                         const prevY = parseInt(sortedYKeys[rIdx - 1]);
                                         if (Math.abs(prevY - currentY) <= 15) {
@@ -2073,6 +2069,58 @@
                                             if (/^[A-Z\s\/@.'-]+$/.test(prevRowStr) && prevRowStr.length >= 3 && !window.detectSubjectCodeFromText(prevRowStr)) {
                                                 rowName = prevRowStr;
                                             }
+                                        }
+                                    }
+                                } else {
+                                    // Semak baris sambungan nama murid yang terpecah di bawah No. KP
+                                    if (lastStudentRecord && lastStudentY !== null && Math.abs(lastStudentY - currentY) <= 15) {
+                                        const pureNameCandidate = rowItems
+                                            .filter(it => !activeJumlahZone || (it.x + it.width / 2) < activeJumlahZone.zoneLeft)
+                                            .map(r => r.str)
+                                            .join(' ')
+                                            .toUpperCase()
+                                            .trim();
+                                        if (/^[A-Z\s\/@.'-]+$/.test(pureNameCandidate) && pureNameCandidate.length >= 2 && !window.detectSubjectCodeFromText(pureNameCandidate)) {
+                                            lastStudentRecord.nama = (lastStudentRecord.nama + ' ' + pureNameCandidate).replace(/\s+/g, ' ').trim();
+                                            return;
+                                        }
+                                    }
+
+                                    // Semak baris murid tanpa No. KP dalam PDF
+                                    const nameParts = [];
+                                    rowItems.forEach(it => {
+                                        const itCenter = it.x + (it.width / 2);
+                                        if (activeJumlahZone && itCenter >= activeJumlahZone.zoneLeft) return;
+                                        const tok = it.str.toUpperCase();
+                                        if (!/^\d+(\.\d+)?$/.test(tok) && tok !== 'T' && tok !== 'TH') {
+                                            nameParts.push(tok);
+                                        }
+                                    });
+                                    const candidateName = nameParts.join(' ').trim();
+                                    const normCand = window.normalizeNameForMatching(candidateName);
+                                    if (normCand.length >= 5 && studentsInClass.some(s => window.normalizeNameForMatching(s.name) === normCand)) {
+                                        isStudentRow = true;
+                                        rowName = candidateName;
+                                    }
+                                }
+
+                                if (!isStudentRow) return;
+
+                                const activeSubject = currentPdfSubject || fallbackSubject;
+                                let extractedMark = null;
+                                let methodUsed = 'fallback_row';
+
+                                if (activeJumlahZone) {
+                                    const itemsInZone = rowItems.filter(it => {
+                                        const center = it.x + (it.width / 2);
+                                        return center >= activeJumlahZone.zoneLeft && center <= activeJumlahZone.zoneRight;
+                                    });
+                                    for (const zItem of itemsInZone) {
+                                        const parsed = window.parseSingleJumlahValue(zItem.str);
+                                        if (parsed !== null) {
+                                            extractedMark = parsed;
+                                            methodUsed = 'jumlah_col';
+                                            break;
                                         }
                                     }
                                 } else {
@@ -2089,7 +2137,7 @@
                                     extractedMark = window.extractJumlahMarkFromTokens(markTokens);
                                 }
 
-                                if (extractedMark !== null) {
+                                if (activeSubject && extractedMark !== null) {
                                     upsertExtractedStudent(rowIC, rowName, activeSubject, extractedMark, methodUsed);
                                     const cleanIC = window.normalizeICForMatching(rowIC);
                                     const keyLookup = cleanIC.length === 12
@@ -2157,8 +2205,6 @@
         // --- PRATONTON (PREVIEW MODAL) & PEMADANAN PINTAR ---
         window.buildImportPreviewModal = function(extractedStudents, systemStudents) {
             let previewRows = [];
-            let matchedCount = 0;
-            let unmatchedCount = 0;
 
             extractedStudents.forEach(item => {
                 let rawDocName = item.nama || item.nama_dokumen || 'TANPA NAMA';
@@ -2172,8 +2218,6 @@
                 if (!matchedSysStudent && cleanedDocName.length > 3) {
                     matchedSysStudent = systemStudents.find(s => window.normalizeNameForMatching(s.name) === cleanedDocName);
                 }
-
-                if (matchedSysStudent) matchedCount++; else unmatchedCount++;
 
                 let normalizedMarks = {};
                 let rawMarkahObj = item.markah || {};
