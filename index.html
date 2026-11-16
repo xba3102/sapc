@@ -414,6 +414,64 @@
                     </div>
 
                     <!-- INFO TEKNIKAL -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm col-span-1 md:col-span-2">
+                        <h3 class="font-bold text-gray-700 mb-2">Maklumat Sistem</h3>
+                        <p class="text-gray-600 text-sm mb-1">Projek Firebase (Data Awan): <span class="font-mono bg-gray-100 px-2 py-1 rounded text-blue-600">sisapc-24131</span></p>
+                        <p class="text-gray-600 text-sm">Domain Rasmi KPM: <span class="font-mono bg-gray-100 px-2 py-1 rounded text-green-600">@moe-dl.edu.my</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL EDIT MURID -->
+    <div id="modalEditStudent" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-96">
+            <h3 class="text-lg font-bold mb-4">Kemaskini Profil Murid</h3>
+            <input type="hidden" id="editStudentId">
+            <div class="space-y-3">
+                <input type="text" id="editStudentName" class="w-full border p-2 rounded uppercase" placeholder="Nama Penuh">
+                <input type="text" id="editStudentIC" class="w-full border p-2 rounded" placeholder="No. KP (Tanpa sempang)">
+                <select id="editStudentGender" class="w-full border p-2 rounded">
+                    <option value="L">Lelaki (L)</option>
+                    <option value="P">Perempuan (P)</option>
+                </select>
+                <select id="editStudentClass" class="w-full border p-2 rounded"></select>
+            </div>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button onclick="document.getElementById('modalEditStudent').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Batal</button>
+                <button onclick="window.saveEditedStudent()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH KELAS -->
+    <div id="modalAddClass" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-96">
+            <h3 class="text-lg font-bold mb-4">Tambah Kelas Baharu</h3>
+            <div class="space-y-3">
+                <input type="text" id="newClassName" class="w-full border p-2 rounded uppercase" placeholder="Nama Kelas (Cth: 1 ARIF)">
+            </div>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button onclick="document.getElementById('modalAddClass').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Batal</button>
+                <button onclick="window.saveNewClass()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PENGESAHAN TINDAKAN -->
+    <div id="modalConfirmAction" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full">
+            <h3 id="confirmModalTitle" class="text-lg font-bold text-gray-800 mb-2">Pengesahan</h3>
+            <p id="confirmModalMessage" class="text-sm text-gray-600 mb-4"></p>
+            <input type="text" id="confirmModalInput" class="w-full border p-2 rounded uppercase mb-4 hidden" placeholder="">
+            <div class="flex justify-end space-x-2">
+                <button id="btnConfirmCancel" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Batal</button>
+                <button id="btnConfirmProceed" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold">Teruskan</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL PRATONTON IMPORT MARKAH & TP PBD -->
     <div id="modalPreviewImport" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden">
@@ -445,64 +503,6 @@
         </div>
     </div>
 
-    <!-- MODAL TAMBAH KELAS -->
-    <div id="modalAddClass" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center">
-        <div class="bg-white p-6 rounded-xl shadow-xl w-96">
-            <h3 class="text-lg font-bold mb-4">Tambah Kelas Baharu</h3>
-            <div class="space-y-3">
-                <input type="text" id="newClassName" class="w-full border p-2 rounded uppercase" placeholder="Nama Kelas (Cth: 1 ARIF)">
-            </div>
-            <div class="mt-6 flex justify-end space-x-2">
-                <button onclick="document.getElementById('modalAddClass').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Batal</button>
-                <button onclick="window.saveNewClass()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Simpan</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL PENGESAHAN TINDAKAN -->
-    <div id="modalConfirmAction" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center p-4">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full">
-            <h3 id="confirmModalTitle" class="text-lg font-bold text-gray-800 mb-2">Pengesahan</h3>
-            <p id="confirmModalMessage" class="text-sm text-gray-600 mb-4"></p>
-            <input type="text" id="confirmModalInput" class="w-full border p-2 rounded uppercase mb-4 hidden" placeholder="">
-            <div class="flex justify-end space-x-2">
-                <button id="btnConfirmCancel" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Batal</button>
-                <button id="btnConfirmProceed" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold">Teruskan</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL PRATONTON IMPORT MARKAH -->
-    <div id="modalPreviewImport" class="modal-overlay fixed inset-0 z-50 hidden flex justify-center items-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-            <div class="p-6 bg-slate-900 text-white flex justify-between items-center">
-                <h3 class="text-xl font-bold"><i class="fas fa-clipboard-check mr-2 text-green-400"></i>Pratonton Pemadanan Borang Transit Markah</h3>
-                <button onclick="document.getElementById('modalPreviewImport').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">&times;</button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1 space-y-4">
-                <div id="previewSummaryCards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-                <div class="overflow-x-auto border rounded border-gray-200">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-100 text-gray-700 border-b">
-                            <tr>
-                                <th class="p-3 w-28 text-center">Status</th>
-                                <th class="p-3">Nama (Dalam Fail)</th>
-                                <th class="p-3">Padanan Murid Sistem</th>
-                                <th class="p-3 w-32">No. KP</th>
-                                <th class="p-3 text-center">Markah / Subjek Dikesan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="previewTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="p-4 bg-gray-50 border-t flex justify-end space-x-3">
-                <button onclick="document.getElementById('modalPreviewImport').classList.add('hidden')" class="px-5 py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg font-bold">Batal</button>
-                <button onclick="window.confirmAndSaveImport()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md"><i class="fas fa-save mr-2"></i>Sahkan & Import Markah</button>
-            </div>
-        </div>
-    </div>
-
     <!-- NOTIFIKASI TOAST -->
     <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform transition-transform translate-y-20 opacity-0 z-50">
         <span id="toastMsg">Mesej</span>
@@ -528,42 +528,69 @@
         const auth = getAuth(app);
 
         const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ hd: 'moe-dl.edu.my' });
+        provider.setCustomParameters({ hd: 'moe-dl.edu.my', prompt: 'select_account' });
 
-        window.appData = { 
-            classes: [], 
-            students: [], 
-            school: { name: 'SEKOLAH KEBANGSAAN BIKANG', code: '' },
+        window.appData = {
+            classes: [],
+            students: [],
+            school: { name: 'SEKOLAH KEBANGSAAN BIKANG', code: '', year: new Date().getFullYear().toString() },
             subjects: []
         };
         window.isAutoSaving = false;
-        window.activeUnsubscribers = [];
+        window.firestoreUnsubscribers = [];
 
-        // Helper pecahan batch Firestore (maksimum 450 operasi setiap batch)
-        window.commitOperationsInChunks = async function(operations) {
-            const CHUNK_SIZE = 450;
-            for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
-                const batch = writeBatch(db);
-                const chunk = operations.slice(i, i + CHUNK_SIZE);
-                chunk.forEach(op => {
-                    if (op.type === 'set') {
-                        batch.set(op.ref, op.data, op.options || {});
-                    } else if (op.type === 'delete') {
-                        batch.delete(op.ref);
+        // --- PENGESAHAN DIALOG TERSUAI (MENGGANTIKAN ALERT / CONFIRM / PROMPT) ---
+        window.showConfirmDialog = function({ title = "Pengesahan", message = "", requireText = "", placeholder = "", confirmBtnClass = "bg-blue-600 hover:bg-blue-700" }) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('modalConfirmAction');
+                const titleEl = document.getElementById('confirmModalTitle');
+                const msgEl = document.getElementById('confirmModalMessage');
+                const inputEl = document.getElementById('confirmModalInput');
+                const btnCancel = document.getElementById('btnConfirmCancel');
+                const btnProceed = document.getElementById('btnConfirmProceed');
+
+                titleEl.innerText = title;
+                msgEl.innerText = message;
+                btnProceed.className = `px-4 py-2 text-white rounded-lg font-bold ${confirmBtnClass}`;
+
+                if (requireText) {
+                    inputEl.value = '';
+                    inputEl.placeholder = placeholder || `Taip '${requireText}'`;
+                    inputEl.classList.remove('hidden');
+                } else {
+                    inputEl.classList.add('hidden');
+                }
+
+                const cleanup = (result) => {
+                    modal.classList.add('hidden');
+                    btnCancel.removeEventListener('click', onCancel);
+                    btnProceed.removeEventListener('click', onProceed);
+                    resolve(result);
+                };
+
+                const onCancel = () => cleanup(false);
+                const onProceed = () => {
+                    if (requireText && inputEl.value.trim().toUpperCase() !== requireText.toUpperCase()) {
+                        window.showToast(`Sila taip '${requireText}' untuk meneruskan.`);
+                        return;
                     }
-                });
-                await batch.commit();
-            }
+                    cleanup(true);
+                };
+
+                btnCancel.addEventListener('click', onCancel);
+                btnProceed.addEventListener('click', onProceed);
+                modal.classList.remove('hidden');
+                if (requireText) inputEl.focus();
+            });
         };
 
-        // --- INISIALISASI DATA AWAN ---
+        // --- INISIALISASI PENDENGAR FIRESTORE SELEPAS LOG MASUK ---
         window.initializeAppAfterAuth = function() {
-            if (Array.isArray(window.activeUnsubscribers)) {
-                window.activeUnsubscribers.forEach(unsub => {
-                    try { unsub(); } catch (_) {}
-                });
-            }
-            window.activeUnsubscribers = [];
+            // Bersihkan pendengar lama jika ada supaya tidak berlaku pertindihan
+            window.firestoreUnsubscribers.forEach(unsub => {
+                try { unsub(); } catch (e) {}
+            });
+            window.firestoreUnsubscribers = [];
 
             const unsubProfile = onSnapshot(doc(db, 'settings', 'profile'), (docSnap) => {
                 if (docSnap.exists()) {
@@ -574,7 +601,6 @@
                     document.getElementById('schoolYear').value = window.appData.school.year || new Date().getFullYear();
                 }
             });
-            window.activeUnsubscribers.push(unsubProfile);
 
             const unsubSubjects = onSnapshot(doc(db, 'settings', 'subjects'), (docSnap) => {
                 if (docSnap.exists() && docSnap.data().list) {
@@ -594,20 +620,19 @@
                 window.updateSubjectDropdown();
                 if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
             });
-            window.activeUnsubscribers.push(unsubSubjects);
 
             const unsubClasses = onSnapshot(collection(db, 'classes'), (snapshot) => {
                 window.appData.classes = [];
-                snapshot.forEach(docItem => window.appData.classes.push({ id: docItem.id, ...docItem.data() }));
+                snapshot.forEach(d => window.appData.classes.push({ id: d.id, ...d.data() }));
                 window.appData.classes.sort((a, b) => a.name.localeCompare(b.name));
-                
+
                 document.getElementById('dashTotalClasses').innerText = window.appData.classes.length;
-                
-                const classOpts = '<option value="">Semua Kelas</option>' + window.appData.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-                const markClassOpts = '<option value="">-- Pilih Kelas --</option>' + window.appData.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-                
+
                 const prevFilterClass = document.getElementById('filterClass').value;
                 const prevMarkClass = document.getElementById('markFilterClass').value;
+
+                const classOpts = '<option value="">Semua Kelas</option>' + window.appData.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                const markClassOpts = '<option value="">-- Pilih Kelas --</option>' + window.appData.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
                 document.getElementById('filterClass').innerHTML = classOpts;
                 document.getElementById('editStudentClass').innerHTML = classOpts.replace('<option value="">Semua Kelas</option>', '');
@@ -615,34 +640,36 @@
 
                 if (prevFilterClass) document.getElementById('filterClass').value = prevFilterClass;
                 if (prevMarkClass) document.getElementById('markFilterClass').value = prevMarkClass;
-                
+
                 if (document.getElementById('students').classList.contains('active')) window.renderStudents();
                 if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
             });
-            window.activeUnsubscribers.push(unsubClasses);
 
             const unsubStudents = onSnapshot(collection(db, 'students'), (snapshot) => {
                 window.appData.students = [];
-                snapshot.forEach(docItem => window.appData.students.push({ id: docItem.id, ...docItem.data() }));
+                snapshot.forEach(d => window.appData.students.push({ id: d.id, ...d.data() }));
                 window.appData.students.sort((a, b) => a.name.localeCompare(b.name));
                 document.getElementById('dashTotalStudents').innerText = window.appData.students.length;
-                
+
                 if (document.getElementById('students').classList.contains('active')) window.renderStudents();
                 if (document.getElementById('marks').classList.contains('active') && !window.isAutoSaving) {
                     window.loadMarksTable();
                 }
                 if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
             });
-            window.activeUnsubscribers.push(unsubStudents);
+
+            window.firestoreUnsubscribers.push(unsubProfile, unsubSubjects, unsubClasses, unsubStudents);
         };
 
-        // --- AUTH & LISTENERS ---
+        // --- PENGESAHAN LOG MASUK ID DELIMA ---
         document.getElementById('btnGoogleLogin').addEventListener('click', async () => {
             const btn = document.getElementById('btnGoogleLogin');
             const btnText = document.getElementById('btnGoogleText');
+            const errEl = document.getElementById('loginError');
+            errEl.classList.add('hidden');
             btnText.innerHTML = 'Sila Tunggu... <i class="fas fa-spinner fa-spin ml-2"></i>';
             btn.disabled = true;
-            
+
             try {
                 await signInWithPopup(auth, provider);
             } catch (error) {
@@ -652,7 +679,11 @@
                     errorMsg = "Pelayar menyekat tetingkap timbul (Pop-up). Sila benarkan Pop-up di tetapan pelayar.";
                 } else if (error.code === 'auth/popup-closed-by-user') {
                     errorMsg = "Tetingkap log masuk ditutup sebelum selesai.";
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    errorMsg = `Domain (${window.location.hostname}) belum dibenarkan dalam Firebase Authentication.`;
                 }
+                errEl.innerText = errorMsg;
+                errEl.classList.remove('hidden');
                 window.showToast("Ralat Log Masuk: " + errorMsg);
                 btnText.innerHTML = 'Log Masuk ID DELIMA';
                 btn.disabled = false;
@@ -669,22 +700,22 @@
 
             if (user) {
                 const isDelima = user.email && (user.email.endsWith('@moe-dl.edu.my') || user.email.endsWith('@moe.edu.my'));
-
                 if (isDelima) {
                     document.getElementById('loginOverlay').classList.add('hidden');
                     document.getElementById('loginError').classList.add('hidden');
                     document.getElementById('userEmail').innerText = user.email;
-                    
+
                     if (user.email === 'sekolah-7608@moe-dl.edu.my') {
                         document.getElementById('adminBadge').classList.remove('hidden');
                     } else {
                         document.getElementById('adminBadge').classList.add('hidden');
                     }
-                    
                     window.initializeAppAfterAuth();
                 } else {
+                    const errEl = document.getElementById('loginError');
+                    errEl.innerText = "Hanya e-mel @moe-dl.edu.my atau @moe.edu.my dibenarkan!";
                     document.getElementById('loginOverlay').classList.remove('hidden');
-                    document.getElementById('loginError').classList.remove('hidden');
+                    errEl.classList.remove('hidden');
                     signOut(auth);
                 }
             } else {
@@ -692,50 +723,7 @@
             }
         });
 
-        // --- MODAL PENGESAHAN TERSUAI ---
-        window.openConfirmModal = function({ title, message, requireKeyword = '', danger = false, onConfirm }) {
-            const modal = document.getElementById('modalConfirmAction');
-            const titleEl = document.getElementById('confirmModalTitle');
-            const msgEl = document.getElementById('confirmModalMessage');
-            const inputEl = document.getElementById('confirmModalInput');
-            const btnCancel = document.getElementById('btnConfirmCancel');
-            const btnProceed = document.getElementById('btnConfirmProceed');
-
-            titleEl.innerText = title || 'Pengesahan';
-            msgEl.innerText = message || '';
-            inputEl.value = '';
-            inputEl.placeholder = requireKeyword ? `Taip '${requireKeyword}' untuk sahkan` : '';
-
-            if (requireKeyword) {
-                inputEl.classList.remove('hidden');
-            } else {
-                inputEl.classList.add('hidden');
-            }
-
-            btnProceed.className = danger
-                ? 'px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold'
-                : 'px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold';
-
-            const cleanup = () => {
-                modal.classList.add('hidden');
-                btnCancel.onclick = null;
-                btnProceed.onclick = null;
-            };
-
-            btnCancel.onclick = cleanup;
-            btnProceed.onclick = async () => {
-                if (requireKeyword && inputEl.value.trim().toUpperCase() !== requireKeyword.toUpperCase()) {
-                    window.showToast(`Sila taip '${requireKeyword}' dengan tepat.`);
-                    return;
-                }
-                cleanup();
-                if (onConfirm) await onConfirm();
-            };
-
-            modal.classList.remove('hidden');
-        };
-
-        // --- UI UTILITIES ---
+        // --- UTILITI ANTARAMUKA (UI) ---
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
@@ -778,105 +766,127 @@
             return 'ALL';
         };
 
-        // --- IMPORT PUKAL MURID (EXCEL / CSV) ---
+        // --- PEMBANTU KELOMPOK (CHUNKED BATCH WRITE FIRESTORE <= 450) ---
+        window.commitOperationsInChunks = async function(operations) {
+            const CHUNK_SIZE = 450;
+            for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
+                const chunk = operations.slice(i, i + CHUNK_SIZE);
+                const batch = writeBatch(db);
+                chunk.forEach(op => {
+                    if (op.type === 'delete') {
+                        batch.delete(op.ref);
+                    } else {
+                        batch.set(op.ref, op.data, op.options || {});
+                    }
+                });
+                await batch.commit();
+            }
+        };
+
+        // --- IMPORT PUKAL MURID (CSV / EXCEL) ---
         window.handleBulkImport = async function(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             window.showToast("Memproses fail senarai murid...");
             try {
-                const arrayBuffer = await file.arrayBuffer();
-                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
-
-                if (!rawRows || rawRows.length === 0) {
-                    window.showToast("Fail kosong atau tiada rekod murid ditemui.");
-                    event.target.value = '';
-                    return;
+                let rows = [];
+                if (file.name.toLowerCase().endsWith('.csv')) {
+                    const text = await file.text();
+                    const parsed = Papa.parse(text, { skipEmptyLines: true });
+                    rows = parsed.data || [];
+                } else {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '', raw: false });
                 }
 
-                let headerRowIdx = -1;
-                let nameCol = -1, icCol = -1, classCol = -1, genderCol = -1;
+                let headerIdx = -1;
+                let nameCol = -1, icCol = -1, genderCol = -1, classCol = -1;
 
-                for (let r = 0; r < Math.min(rawRows.length, 20); r++) {
-                    const rowCells = (rawRows[r] || []).map(c => c.toString().trim().toUpperCase());
-                    const foundName = rowCells.findIndex(c => /\bNAMA\b/.test(c));
+                for (let r = 0; r < Math.min(rows.length, 20); r++) {
+                    const rowCells = (rows[r] || []).map(c => c.toString().trim().toUpperCase());
+                    const foundName = rowCells.findIndex(c => c.includes('NAMA'));
                     if (foundName !== -1) {
-                        headerRowIdx = r;
+                        headerIdx = r;
                         nameCol = foundName;
-                        icCol = rowCells.findIndex(c => /(KP|PENGENALAN|MYKID|IC)/.test(c));
-                        classCol = rowCells.findIndex(c => /\bKELAS\b/.test(c));
-                        genderCol = rowCells.findIndex(c => /\bJANTINA\b/.test(c));
+                        icCol = rowCells.findIndex(c => c.includes('KP') || c.includes('PENGENALAN') || c.includes('MYKID') || c === 'IC');
+                        genderCol = rowCells.findIndex(c => c.includes('JANTINA') || c === 'L/P');
+                        classCol = rowCells.findIndex(c => c.includes('KELAS') || c.includes('TINGKATAN'));
                         break;
                     }
                 }
 
-                if (headerRowIdx === -1 || nameCol === -1) {
-                    window.showToast("Tiada lajur NAMA dikesan dalam fail.");
+                if (headerIdx === -1) {
+                    window.showToast("Lajur 'NAMA' tidak ditemui dalam fail tersebut.");
                     event.target.value = '';
                     return;
                 }
 
-                const operations = [];
-                const classCache = {};
-                window.appData.classes.forEach(c => { classCache[c.name.toUpperCase()] = c.id; });
+                const classMap = {};
+                window.appData.classes.forEach(c => {
+                    classMap[c.name.trim().toUpperCase()] = c.id;
+                });
 
-                let importedCount = 0;
-                for (let r = headerRowIdx + 1; r < rawRows.length; r++) {
-                    const row = rawRows[r] || [];
-                    const rawName = row[nameCol] !== undefined ? row[nameCol].toString().replace(/\s+/g, ' ').trim().toUpperCase() : '';
-                    if (!rawName || rawName.length < 3 || /^JUMLAH\b/.test(rawName)) continue;
+                const ops = [];
+                let addedCount = 0;
 
-                    const rawIC = (icCol !== -1 && row[icCol] !== undefined) ? row[icCol].toString().replace(/[^0-9]/g, '') : '';
-                    const rawClass = (classCol !== -1 && row[classCol] !== undefined) ? row[classCol].toString().trim().toUpperCase() : '';
-                    let rawGender = (genderCol !== -1 && row[genderCol] !== undefined) ? row[genderCol].toString().trim().toUpperCase() : '';
+                for (let r = headerIdx + 1; r < rows.length; r++) {
+                    const row = rows[r] || [];
+                    const rawName = (row[nameCol] || '').toString().trim().toUpperCase();
+                    if (!rawName || rawName.length < 3 || rawName === 'NAMA') continue;
 
-                    if (rawGender.startsWith('P')) rawGender = 'P';
-                    else if (rawGender.startsWith('L')) rawGender = 'L';
+                    const rawIC = icCol !== -1 ? (row[icCol] || '').toString().replace(/[^0-9]/g, '') : '';
+                    let rawGender = genderCol !== -1 ? (row[genderCol] || '').toString().trim().toUpperCase() : '';
+                    if (rawGender.startsWith('P') || rawGender === 'PEREMPUAN') rawGender = 'P';
+                    else if (rawGender.startsWith('L') || rawGender === 'LELAKI') rawGender = 'L';
                     else if (rawIC.length === 12) {
-                        rawGender = (parseInt(rawIC.slice(-1), 10) % 2 === 0) ? 'P' : 'L';
+                        rawGender = (parseInt(rawIC.charAt(11), 10) % 2 === 0) ? 'P' : 'L';
                     } else {
                         rawGender = 'L';
                     }
 
-                    let targetClassId = '';
-                    if (rawClass) {
-                        if (classCache[rawClass]) {
-                            targetClassId = classCache[rawClass];
-                        } else {
-                            const newClassRef = doc(collection(db, 'classes'));
-                            operations.push({ type: 'set', ref: newClassRef, data: { name: rawClass } });
-                            classCache[rawClass] = newClassRef.id;
-                            targetClassId = newClassRef.id;
+                    let targetClassId = document.getElementById('filterClass').value || '';
+                    if (classCol !== -1 && row[classCol]) {
+                        const cName = row[classCol].toString().trim().toUpperCase();
+                        if (cName) {
+                            if (!classMap[cName]) {
+                                const newClassRef = doc(collection(db, 'classes'));
+                                ops.push({ type: 'set', ref: newClassRef, data: { name: cName } });
+                                classMap[cName] = newClassRef.id;
+                            }
+                            targetClassId = classMap[cName];
                         }
                     }
 
                     const existingStudent = rawIC.length === 12
                         ? window.appData.students.find(s => (s.ic || '').replace(/[^0-9]/g, '') === rawIC)
-                        : window.appData.students.find(s => s.name.toUpperCase() === rawName);
+                        : window.appData.students.find(s => s.name.trim().toUpperCase() === rawName && s.classId === targetClassId);
 
-                    const targetDocRef = existingStudent ? doc(db, 'students', existingStudent.id) : doc(collection(db, 'students'));
-                    operations.push({
-                        type: 'set',
-                        ref: targetDocRef,
-                        data: {
-                            name: rawName,
-                            ic: rawIC,
-                            gender: rawGender,
-                            classId: targetClassId || (existingStudent ? existingStudent.classId : '')
-                        },
-                        options: { merge: true }
-                    });
-
-                    importedCount++;
+                    if (existingStudent) {
+                        ops.push({
+                            type: 'set',
+                            ref: doc(db, 'students', existingStudent.id),
+                            data: { name: rawName, ic: rawIC || existingStudent.ic || '', gender: rawGender, classId: targetClassId || existingStudent.classId || '' },
+                            options: { merge: true }
+                        });
+                    } else {
+                        const newStuRef = doc(collection(db, 'students'));
+                        ops.push({
+                            type: 'set',
+                            ref: newStuRef,
+                            data: { name: rawName, ic: rawIC, gender: rawGender, classId: targetClassId, scores: {} }
+                        });
+                    }
+                    addedCount++;
                 }
 
-                if (importedCount > 0) {
-                    await window.commitOperationsInChunks(operations);
-                    window.showToast(`Berjaya mengimport ${importedCount} rekod murid!`);
+                if (ops.length > 0) {
+                    await window.commitOperationsInChunks(ops);
+                    window.showToast(`Berjaya mengimport/mengemaskini ${addedCount} rekod murid!`);
                 } else {
-                    window.showToast("Tiada rekod murid sah ditemui di bawah lajur NAMA.");
+                    window.showToast("Tiada rekod murid sah ditemui dalam fail.");
                 }
             } catch (e) {
                 console.error(e);
@@ -885,29 +895,37 @@
             event.target.value = '';
         };
 
-        // --- AUTO-BETUL JANTINA BERDASARKAN NO. KP ---
+        // --- AUTO-BETUL JANTINA BERDASARKAN DIGIT TERAKHIR NO. KP / NAMA ---
         window.autoFixGender = async function() {
-            const batch = writeBatch(db);
-            let fixedCount = 0;
-
+            const ops = [];
             window.appData.students.forEach(s => {
-                const cleanIC = (s.ic || '').replace(/[^0-9]/g, '');
-                if (cleanIC.length === 12) {
-                    const lastDigit = parseInt(cleanIC.slice(-1), 10);
-                    const detectedGender = (lastDigit % 2 === 0) ? 'P' : 'L';
-                    if (s.gender !== detectedGender) {
-                        batch.set(doc(db, 'students', s.id), { gender: detectedGender }, { merge: true });
-                        fixedCount++;
-                    }
+                const ic = (s.ic || '').replace(/[^0-9]/g, '');
+                let detectedGender = null;
+                if (ic.length === 12) {
+                    const lastDigit = parseInt(ic.charAt(11), 10);
+                    detectedGender = (lastDigit % 2 === 0) ? 'P' : 'L';
+                } else if (/\bBINTI\b|\bBT\b/.test(s.name.toUpperCase())) {
+                    detectedGender = 'P';
+                } else if (/\bBIN\b/.test(s.name.toUpperCase())) {
+                    detectedGender = 'L';
+                }
+
+                if (detectedGender && s.gender !== detectedGender) {
+                    ops.push({
+                        type: 'set',
+                        ref: doc(db, 'students', s.id),
+                        data: { gender: detectedGender },
+                        options: { merge: true }
+                    });
                 }
             });
 
-            if (fixedCount > 0) {
-                await batch.commit();
-                window.showToast(`Jantina ${fixedCount} murid telah dibetulkan mengikut No. KP!`);
-            } else {
+            if (ops.length === 0) {
                 window.showToast("Semua jantina murid sudah tepat.");
+                return;
             }
+            await window.commitOperationsInChunks(ops);
+            window.showToast(`Berjaya membetulkan jantina bagi ${ops.length} murid!`);
         };
 
         // --- IMPORT TRANSIT MATRIKS TAHUN 4 (PDF) ---
@@ -919,14 +937,14 @@
             try {
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                
-                let extractedData = {}; 
+
+                let extractedData = {};
                 let detectedClass = null;
 
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
-                    
+
                     let pageTextItems = textContent.items.map(item => ({
                         str: item.str.trim(),
                         x: Math.round(item.transform[4]),
@@ -967,8 +985,8 @@
                             let ic = icMatch[0];
                             let icIndex = rowItems.findIndex(r => r.str.includes(ic));
                             let itemsAfterIc = icIndex !== -1 ? rowItems.slice(icIndex + 1) : [];
-                            let numbersInRow = itemsAfterIc.filter(r => /^\d+$/.test(r.str) && r.str.length <= 3).map(r => parseInt(r.str, 10));
-                            
+                            let numbersInRow = itemsAfterIc.filter(r => /^\d+$/.test(r.str) && r.str.length <= 3).map(r => parseInt(r.str));
+
                             if (numbersInRow.length > 0) {
                                 let totalMark = numbersInRow[numbersInRow.length - 1];
                                 if (!isNaN(totalMark) && totalMark <= 100) {
@@ -981,41 +999,36 @@
                 }
 
                 let matchedCount = 0;
-                const batch = writeBatch(db);
-
-                if (detectedClass) {
-                    let foundClass = window.appData.classes.find(c => c.name.toUpperCase() === detectedClass.toUpperCase());
-                    if (!foundClass) {
-                        const newClassRef = doc(collection(db, 'classes'));
-                        batch.set(newClassRef, { name: detectedClass.toUpperCase() });
-                    }
-                }
+                const ops = [];
 
                 Object.keys(extractedData).forEach(ic => {
-                    let student = window.appData.students.find(s => s.ic === ic);
+                    let student = window.appData.students.find(s => (s.ic || '').replace(/[^0-9]/g, '') === ic);
                     if (student) {
-                        let scoresToUpdate = {};
+                        let existingPat = (student.scores && student.scores['PAT']) ? { ...student.scores['PAT'] } : {};
                         let subjs = extractedData[ic];
                         Object.keys(subjs).forEach(sCode => {
                             let m = subjs[sCode];
-                            scoresToUpdate[sCode] = { mark: m, grade: window.getGrade(m), tp: 'TP3' };
+                            let existingTp = existingPat[sCode] ? (existingPat[sCode].tp || '') : '';
+                            existingPat[sCode] = { mark: m, grade: window.getGrade(m), tp: existingTp };
                         });
 
-                        batch.set(doc(db, 'students', student.id), { 
-                            scores: { 'PAT': scoresToUpdate } 
-                        }, { merge: true });
+                        ops.push({
+                            type: 'set',
+                            ref: doc(db, 'students', student.id),
+                            data: { scores: { 'PAT': existingPat } },
+                            options: { merge: true }
+                        });
                         matchedCount++;
                     }
                 });
 
                 if (matchedCount > 0) {
-                    await batch.commit();
+                    await window.commitOperationsInChunks(ops);
                     window.showToast(`Berjaya import markah untuk ${matchedCount} murid dari PDF Transit!`);
                     window.loadMarksTable();
                 } else {
                     window.showToast("Tiada padanan No. KP murid ditemui antara fail PDF transit dan sistem.");
                 }
-
             } catch (e) {
                 console.error(e);
                 window.showToast("Ralat memproses fail PDF: " + e.message);
@@ -1046,7 +1059,7 @@
             const code = document.getElementById('newSubCode').value.trim().toUpperCase();
             const name = document.getElementById('newSubName').value.trim().toUpperCase();
             const tahap = document.getElementById('newSubTahap').value;
-            
+
             if (!code || !name) {
                 window.showToast("Sila isikan Kod dan Nama Mata Pelajaran.");
                 return;
@@ -1067,81 +1080,81 @@
             }
         };
 
-        window.deleteSubject = function(index) {
-            window.openConfirmModal({
-                title: 'Padam Mata Pelajaran',
-                message: 'Anda pasti mahu memadam mata pelajaran ini daripada senarai sistem?',
-                danger: true,
-                onConfirm: async () => {
-                    let newSubjects = [...window.appData.subjects];
-                    newSubjects.splice(index, 1);
-                    try {
-                        await setDoc(doc(db, 'settings', 'subjects'), { list: newSubjects }, { merge: true });
-                        window.showToast("Mata Pelajaran dipadam.");
-                    } catch (e) {
-                        window.showToast("Ralat: " + e.message);
-                    }
-                }
+        window.deleteSubject = async function(index) {
+            const confirmed = await window.showConfirmDialog({
+                title: "Padam Mata Pelajaran",
+                message: "Anda pasti mahu memadam mata pelajaran ini daripada senarai?",
+                confirmBtnClass: "bg-red-600 hover:bg-red-700"
             });
+            if (!confirmed) return;
+
+            let newSubjects = [...window.appData.subjects];
+            newSubjects.splice(index, 1);
+            try {
+                await setDoc(doc(db, 'settings', 'subjects'), { list: newSubjects }, { merge: true });
+                window.showToast("Mata Pelajaran dipadam.");
+            } catch (e) {
+                window.showToast("Ralat: " + e.message);
+            }
         };
 
-        window.generateSubjectsAI = function() {
-            window.openConfirmModal({
-                title: 'Jana Subjek Standard KSSR',
-                message: 'Fungsi ini akan menambah senarai mata pelajaran standard KSSR (Tahap 1 & Tahap 2) secara automatik tanpa menindih subjek sedia ada. Teruskan?',
-                onConfirm: async () => {
-                    const btn = document.getElementById('btnAIGenerateSubj');
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menjana...';
-                    btn.disabled = true;
-
-                    try {
-                        const standardSubjects = [
-                            { code: "BM", name: "BAHASA MELAYU", tahap: "ALL" },
-                            { code: "BI", name: "BAHASA INGGERIS", tahap: "ALL" },
-                            { code: "MT", name: "MATEMATIK", tahap: "ALL" },
-                            { code: "SN", name: "SAINS", tahap: "ALL" },
-                            { code: "PI", name: "PENDIDIKAN ISLAM", tahap: "ALL" },
-                            { code: "PM", name: "PENDIDIKAN MORAL", tahap: "ALL" },
-                            { code: "BA", name: "BAHASA ARAB", tahap: "ALL" },
-                            { code: "PJ", name: "PENDIDIKAN JASMANI", tahap: "ALL" },
-                            { code: "PK", name: "PENDIDIKAN KESIHATAN", tahap: "ALL" },
-                            { code: "PSV", name: "PENDIDIKAN SENI VISUAL", tahap: "ALL" },
-                            { code: "MZ", name: "PENDIDIKAN MUZIK", tahap: "ALL" },
-                            { code: "RBT", name: "REKA BENTUK DAN TEKNOLOGI", tahap: "T2" },
-                            { code: "SJ", name: "SEJARAH", tahap: "T2" }
-                        ];
-
-                        let currentSubjects = [...window.appData.subjects];
-                        let addedCount = 0;
-                        
-                        standardSubjects.forEach(subItem => {
-                            if (!currentSubjects.find(s => s.code === subItem.code)) {
-                                currentSubjects.push(subItem);
-                                addedCount++;
-                            }
-                        });
-
-                        if (addedCount > 0) {
-                            await setDoc(doc(db, 'settings', 'subjects'), { list: currentSubjects }, { merge: true });
-                            window.showToast(`${addedCount} Subjek KSSR berjaya ditambah!`);
-                        } else {
-                            window.showToast("Semua subjek KSSR sudah wujud.");
-                        }
-                    } catch (e) {
-                        window.showToast("Ralat Penjanaan: " + e.message);
-                    } finally {
-                        btn.innerHTML = '<i class="fas fa-magic mr-1"></i> Jana Subjek KSSR';
-                        btn.disabled = false;
-                    }
-                }
+        window.generateSubjectsAI = async function() {
+            const confirmed = await window.showConfirmDialog({
+                title: "Jana Senarai Subjek KSSR",
+                message: "Fungsi ini akan menambah senarai subjek standard KSSR (Tahap 1 & Tahap 2) yang belum wujud ke dalam sistem. Teruskan?"
             });
+            if (!confirmed) return;
+
+            const btn = document.getElementById('btnAIGenerateSubj');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menjana...';
+            btn.disabled = true;
+
+            try {
+                const kssrSubjects = [
+                    { code: "BM", name: "BAHASA MELAYU", tahap: "ALL" },
+                    { code: "BI", name: "BAHASA INGGERIS", tahap: "ALL" },
+                    { code: "MT", name: "MATEMATIK", tahap: "ALL" },
+                    { code: "SN", name: "SAINS", tahap: "ALL" },
+                    { code: "PI", name: "PENDIDIKAN ISLAM", tahap: "ALL" },
+                    { code: "PM", name: "PENDIDIKAN MORAL", tahap: "ALL" },
+                    { code: "BA", name: "BAHASA ARAB", tahap: "ALL" },
+                    { code: "PJ", name: "PENDIDIKAN JASMANI", tahap: "ALL" },
+                    { code: "PK", name: "PENDIDIKAN KESIHATAN", tahap: "ALL" },
+                    { code: "PSV", name: "PENDIDIKAN SENI VISUAL", tahap: "ALL" },
+                    { code: "MZ", name: "PENDIDIKAN MUZIK", tahap: "ALL" },
+                    { code: "RBT", name: "REKA BENTUK DAN TEKNOLOGI", tahap: "T2" },
+                    { code: "SJ", name: "SEJARAH", tahap: "T2" }
+                ];
+
+                let currentSubjects = [...window.appData.subjects];
+                let addedCount = 0;
+
+                kssrSubjects.forEach(sub => {
+                    if (!currentSubjects.find(s => s.code === sub.code)) {
+                        currentSubjects.push(sub);
+                        addedCount++;
+                    }
+                });
+
+                if (addedCount > 0) {
+                    await setDoc(doc(db, 'settings', 'subjects'), { list: currentSubjects }, { merge: true });
+                    window.showToast(`${addedCount} Subjek KSSR berjaya ditambah!`);
+                } else {
+                    window.showToast("Semua subjek KSSR sudah wujud.");
+                }
+            } catch (e) {
+                window.showToast("Ralat Penjanaan: " + e.message);
+            } finally {
+                btn.innerHTML = '<i class="fas fa-magic mr-1"></i> Jana Subjek KSSR';
+                btn.disabled = false;
+            }
         };
 
         window.updateSubjectDropdown = function() {
             const classId = document.getElementById('markFilterClass').value;
             const subjSelect = document.getElementById('markFilterSubject');
             const currentVal = subjSelect.value;
-            
+
             let selectedClass = window.appData.classes.find(x => x.id === classId);
             let classTahap = selectedClass ? window.getTahapKelas(selectedClass.name) : 'ALL';
 
@@ -1153,7 +1166,9 @@
             });
             html += `<option value="_KEHADIRAN" class="font-bold text-blue-600">📋 Kehadiran, Sahsiah & Ulasan</option>`;
             subjSelect.innerHTML = html;
-            if (currentVal) subjSelect.value = currentVal;
+            if (currentVal && Array.from(subjSelect.options).some(o => o.value === currentVal)) {
+                subjSelect.value = currentVal;
+            }
             window.loadMarksTable();
         };
 
@@ -1161,24 +1176,24 @@
         window.updateDashboardAnalytics = function() {
             const exam = document.getElementById('dashExamFilter').value;
             const tbody = document.getElementById('dashAnalyticsBody');
-            
+
             let totalStudentsPassed = 0;
             let totalStudentsWithMarks = 0;
             let html = '';
             let calonTokoh = { T1L: [], T1P: [], T2L: [], T2P: [] };
-            
+
             window.appData.classes.forEach(c => {
                 let studentsInClass = window.appData.students.filter(s => s.classId === c.id);
                 let classPassedCount = 0, classHasDataCount = 0;
                 let tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
-                
+
                 let namaKelas = c.name.trim();
                 let isTahap1 = /^[123]/.test(namaKelas);
                 let isTahap2 = /^[456]/.test(namaKelas);
                 let tahapNum = isTahap1 ? 1 : (isTahap2 ? 2 : 0);
                 let strTahap = isTahap1 ? 'T1' : 'T2';
 
-                let activeSubjects = window.appData.subjects.filter(sub => 
+                let activeSubjects = window.appData.subjects.filter(sub =>
                     sub.tahap === 'ALL' || sub.tahap === strTahap || strTahap === 'ALL'
                 );
 
@@ -1186,10 +1201,13 @@
                     let totalMarks = 0, validCount = 0;
                     activeSubjects.forEach(sub => {
                         let sc = (s.scores && s.scores[exam] && s.scores[exam][sub.code]) || {};
-                        if (typeof sc.mark === 'number') { totalMarks += sc.mark; validCount++; }
+                        if (typeof sc.mark === 'number' && !isNaN(sc.mark)) {
+                            totalMarks += sc.mark;
+                            validCount++;
+                        }
                         if (sc.tp && tpCounts[sc.tp] !== undefined) tpCounts[sc.tp]++;
                     });
-                    
+
                     if (validCount > 0) {
                         classHasDataCount++;
                         totalStudentsWithMarks++;
@@ -1197,13 +1215,13 @@
                         if (percentage >= 40) { classPassedCount++; totalStudentsPassed++; }
 
                         if (tahapNum > 0) {
-                            let purata = totalMarks / validCount; 
+                            let purata = totalMarks / validCount;
                             let jantina = s.gender === 'P' ? 'P' : 'L';
                             calonTokoh[`T${tahapNum}${jantina}`].push({ name: s.name, className: namaKelas, average: purata });
                         }
                     }
                 });
-                
+
                 let passRate = classHasDataCount > 0 ? Math.round((classPassedCount / classHasDataCount) * 100) : 0;
                 html += `<tr class="border-b hover:bg-gray-50 transition">
                     <td class="px-4 py-2 font-bold text-gray-700">${c.name}</td>
@@ -1216,7 +1234,7 @@
                     <td class="px-4 py-2 text-center text-blue-600 font-medium">${tpCounts.TP6}</td>
                 </tr>`;
             });
-            
+
             if (window.appData.classes.length === 0) html = `<tr><td colspan="8" class="text-center py-10 text-gray-400">Tiada data kelas.</td></tr>`;
             tbody.innerHTML = html;
 
@@ -1256,7 +1274,12 @@
         };
 
         window.exportJSON = function() {
-            const data = { school: window.appData.school, classes: window.appData.classes, students: window.appData.students, subjects: window.appData.subjects };
+            const data = {
+                school: window.appData.school,
+                classes: window.appData.classes,
+                students: window.appData.students,
+                subjects: window.appData.subjects
+            };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1274,43 +1297,46 @@
             reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    const operations = [];
-                    if (data.school) operations.push({ type: 'set', ref: doc(db, 'settings', 'profile'), data: data.school, options: { merge: true } });
-                    if (data.subjects) operations.push({ type: 'set', ref: doc(db, 'settings', 'subjects'), data: { list: data.subjects }, options: { merge: true } });
-                    if (Array.isArray(data.classes)) {
-                        data.classes.forEach(c => { const { id, ...rest } = c; operations.push({ type: 'set', ref: doc(db, 'classes', id), data: rest }); });
-                    }
-                    if (Array.isArray(data.students)) {
-                        data.students.forEach(s => { const { id, ...rest } = s; operations.push({ type: 'set', ref: doc(db, 'students', id), data: rest }); });
-                    }
-                    await window.commitOperationsInChunks(operations);
+                    const ops = [];
+                    if (data.school) ops.push({ type: 'set', ref: doc(db, 'settings', 'profile'), data: data.school, options: { merge: true } });
+                    if (data.subjects) ops.push({ type: 'set', ref: doc(db, 'settings', 'subjects'), data: { list: data.subjects }, options: { merge: true } });
+                    (data.classes || []).forEach(c => {
+                        const { id, ...rest } = c;
+                        ops.push({ type: 'set', ref: doc(db, 'classes', id), data: rest });
+                    });
+                    (data.students || []).forEach(s => {
+                        const { id, ...rest } = s;
+                        ops.push({ type: 'set', ref: doc(db, 'students', id), data: rest });
+                    });
+                    await window.commitOperationsInChunks(ops);
                     window.showToast("Data berjaya dipulihkan!");
                 } catch (err) {
-                    window.showToast("Ralat fail backup: " + err.message);
+                    window.showToast("Ralat memulihkan backup: " + err.message);
                 }
             };
             reader.readAsText(file);
             event.target.value = '';
         };
 
-        window.wipeData = function() {
-            window.openConfirmModal({
-                title: 'Reset & Padam Semua Data',
-                message: "Tindakan ini akan memadam keseluruhan kelas, murid, dan markah secara kekal. Taip 'PADAM' untuk mengesahkan:",
-                requireKeyword: 'PADAM',
-                danger: true,
-                onConfirm: async () => {
-                    try {
-                        const operations = [];
-                        window.appData.classes.forEach(c => operations.push({ type: 'delete', ref: doc(db, 'classes', c.id) }));
-                        window.appData.students.forEach(s => operations.push({ type: 'delete', ref: doc(db, 'students', s.id) }));
-                        await window.commitOperationsInChunks(operations);
-                        window.showToast("Sistem dikosongkan.");
-                    } catch (err) {
-                        window.showToast("Ralat: " + err.message);
-                    }
-                }
+        window.wipeData = async function() {
+            const confirmed = await window.showConfirmDialog({
+                title: "Padam Semua Data & Reset Sistem",
+                message: "Tindakan ini akan memadam keseluruhan senarai kelas, murid, dan markah secara kekal. Taip 'PADAM' untuk mengesahkan:",
+                requireText: "PADAM",
+                placeholder: "Taip PADAM",
+                confirmBtnClass: "bg-red-600 hover:bg-red-700"
             });
+            if (!confirmed) return;
+
+            try {
+                const ops = [];
+                window.appData.classes.forEach(c => ops.push({ type: 'delete', ref: doc(db, 'classes', c.id) }));
+                window.appData.students.forEach(s => ops.push({ type: 'delete', ref: doc(db, 'students', s.id) }));
+                await window.commitOperationsInChunks(ops);
+                window.showToast("Sistem dikosongkan.");
+            } catch (err) {
+                window.showToast("Ralat: " + err.message);
+            }
         };
 
         // --- MURID & KELAS ---
@@ -1324,18 +1350,6 @@
             document.getElementById('newClassName').value = '';
             document.getElementById('modalAddClass').classList.add('hidden');
             window.showToast("Kelas ditambah!");
-        };
-
-        window.deleteStudent = function(id) {
-            window.openConfirmModal({
-                title: 'Padam Rekod Murid',
-                message: 'Anda pasti mahu memadam rekod murid ini daripada pangkalan data?',
-                danger: true,
-                onConfirm: async () => {
-                    await deleteDoc(doc(db, 'students', id));
-                    window.showToast("Rekod murid dipadam.");
-                }
-            });
         };
 
         window.renderStudents = function() {
@@ -1359,12 +1373,23 @@
                     <td class="px-4 py-2 text-center">${s.gender === 'P' ? '<span class="text-pink-500 font-bold">P</span>' : '<span class="text-blue-500 font-bold">L</span>'}</td>
                     <td class="px-4 py-2 text-gray-600">${className}</td>
                     <td class="px-4 py-2 text-center">
-                        <button data-id="${s.id}" onclick="window.openEditStudentModal(this.getAttribute('data-id'))" class="text-yellow-500 hover:text-yellow-700 mx-1"><i class="fas fa-edit"></i></button>
-                        <button data-id="${s.id}" onclick="window.deleteStudent(this.getAttribute('data-id'))" class="text-red-500 hover:text-red-700 mx-1"><i class="fas fa-trash"></i></button>
+                        <button data-id="${s.id}" onclick="window.openEditStudentModal(this.getAttribute('data-id'))" class="text-yellow-500 hover:text-yellow-700 mx-1" title="Kemaskini"><i class="fas fa-edit"></i></button>
+                        <button data-id="${s.id}" onclick="window.deleteStudentRecord(this.getAttribute('data-id'))" class="text-red-500 hover:text-red-700 mx-1" title="Padam"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
             });
             tbody.innerHTML = html;
+        };
+
+        window.deleteStudentRecord = async function(id) {
+            const confirmed = await window.showConfirmDialog({
+                title: "Padam Rekod Murid",
+                message: "Adakah anda pasti mahu memadam rekod murid ini?",
+                confirmBtnClass: "bg-red-600 hover:bg-red-700"
+            });
+            if (!confirmed) return;
+            await deleteDoc(doc(db, 'students', id));
+            window.showToast("Rekod murid dipadam.");
         };
 
         window.openEditStudentModal = function(id) {
@@ -1380,13 +1405,13 @@
 
         window.saveEditedStudent = async function() {
             await setDoc(doc(db, 'students', document.getElementById('editStudentId').value), {
-                name: document.getElementById('editStudentName').value.toUpperCase(),
-                ic: document.getElementById('editStudentIC').value,
+                name: document.getElementById('editStudentName').value.trim().toUpperCase(),
+                ic: document.getElementById('editStudentIC').value.replace(/[^0-9]/g, ''),
                 gender: document.getElementById('editStudentGender').value,
                 classId: document.getElementById('editStudentClass').value
             }, { merge: true });
             document.getElementById('modalEditStudent').classList.add('hidden');
-            window.showToast("Dikemaskini!");
+            window.showToast("Profil murid dikemaskini!");
         };
 
         window.toggleSelectAll = function() {
@@ -1396,9 +1421,10 @@
 
         // --- MARKAH & PBD ---
         window.getGrade = function(m) {
-            if (m === 'T' || m === 'TH') return 'TH';
-            if (m === '' || m === null || isNaN(m)) return '-';
+            if (m === '' || m === null || m === undefined) return '-';
+            if (m.toString().trim().toUpperCase() === 'T' || m.toString().trim().toUpperCase() === 'TH') return 'TH';
             let v = parseFloat(m);
+            if (isNaN(v)) return '-';
             if (v >= 80) return 'A';
             if (v >= 65) return 'B';
             if (v >= 50) return 'C';
@@ -1407,13 +1433,13 @@
         };
 
         window.updateGradePreview = function(input) {
-            const raw = input.value.trim().toUpperCase();
+            let raw = input.value.trim().toUpperCase();
             if (raw === 'T' || raw === 'TH') {
                 input.parentElement.nextElementSibling.innerText = 'TH';
                 return;
             }
-            const num = parseFloat(raw);
-            if (!isNaN(num)) {
+            if (raw !== '' && !isNaN(raw)) {
+                let num = parseFloat(raw);
                 if (num < 0) input.value = 0;
                 if (num > 100) input.value = 100;
             }
@@ -1431,21 +1457,35 @@
             try {
                 if (subject === '_KEHADIRAN') {
                     let attVal = row.querySelector('.att-input').value;
-                    await setDoc(doc(db, 'students', id), { scores: { [exam]: { '_KEHADIRAN': { 
-                        kehadiran: attVal === '' ? null : parseFloat(attVal), 
-                        kelakuan: row.querySelector('.beh-input').value, 
-                        ulasan: row.querySelector('.cmt-input').value
-                    }}}}, { merge: true });
+                    await setDoc(doc(db, 'students', id), {
+                        scores: {
+                            [exam]: {
+                                '_KEHADIRAN': {
+                                    kehadiran: attVal === '' ? null : parseFloat(attVal),
+                                    kelakuan: row.querySelector('.beh-input').value,
+                                    ulasan: row.querySelector('.cmt-input').value
+                                }
+                            }
+                        }
+                    }, { merge: true });
                 } else {
                     let markVal = row.querySelector('.mark-input').value.trim().toUpperCase();
                     let markParsed = markVal === '' ? null : ((markVal === 'T' || markVal === 'TH') ? 'T' : parseFloat(markVal));
-                    await setDoc(doc(db, 'students', id), { scores: { [exam]: { [subject]: { 
-                        mark: markParsed, grade: window.getGrade(markParsed), tp: row.querySelector('.tp-input').value 
-                    }}}}, { merge: true });
+                    await setDoc(doc(db, 'students', id), {
+                        scores: {
+                            [exam]: {
+                                [subject]: {
+                                    mark: markParsed,
+                                    grade: window.getGrade(markParsed),
+                                    tp: row.querySelector('.tp-input').value
+                                }
+                            }
+                        }
+                    }, { merge: true });
                 }
                 window.showSyncStatus(false);
                 if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
-            } catch (e) { 
+            } catch (e) {
                 document.getElementById('syncStatus').innerText = "Ralat ❌";
             }
             setTimeout(() => { window.isAutoSaving = false; }, 1000);
@@ -1457,23 +1497,136 @@
             const subject = document.getElementById('markFilterSubject').value;
             const thead = document.getElementById('marksTableHead');
             const tbody = document.getElementById('marksTableBody');
-            const btnImport = document.getElementById('btnImportMarksFile');
-            const btnImportTp = document.getElementById('btnImportTpFile');
 
+            const btnImportMarks = document.getElementById('btnImportMarksFile');
+            const btnImportTp = document.getElementById('btnImportTpFile');
             if (classId && subject !== '_KEHADIRAN') {
-                btnImport.classList.remove('opacity-50', 'pointer-events-none');
-                if (btnImportTp) btnImportTp.classList.remove('opacity-50', 'pointer-events-none');
+                btnImportMarks.classList.remove('opacity-50', 'pointer-events-none');
+                btnImportTp.classList.remove('opacity-50', 'pointer-events-none');
             } else {
-                btnImport.classList.add('opacity-50', 'pointer-events-none');
-                if (btnImportTp) btnImportTp.classList.add('opacity-50', 'pointer-events-none');
+                btnImportMarks.classList.add('opacity-50', 'pointer-events-none');
+                btnImportTp.classList.add('opacity-50', 'pointer-events-none');
             }
 
             if (!classId || !subject) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Sila pilih Kelas dan Mata Pelajaran.</td></tr>`;
                 return;
             }
-// ... existing code ... -->
-        // --- MODUL UTAMA: IMPORT BORANG TRANSIT & TP PBD SPPB (PDF / EXCEL / WORD) ---
+
+            let students = window.appData.students.filter(s => s.classId === classId);
+            if (students.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Tiada murid dalam kelas ini.</td></tr>`;
+                return;
+            }
+
+            if (subject === '_KEHADIRAN') {
+                thead.innerHTML = `<tr><th class="px-4 py-3 text-center w-12">Bil</th><th class="px-4 py-3">Nama Murid</th><th class="px-4 py-3 text-center w-32">Kehadiran (%)</th><th class="px-4 py-3 text-center w-48">Sahsiah</th><th class="px-4 py-3">Ulasan</th></tr>`;
+            } else {
+                thead.innerHTML = `<tr><th class="px-4 py-3 text-center w-12">Bil</th><th class="px-4 py-3">Nama Murid</th><th class="px-4 py-3 text-center w-32">Markah / T</th><th class="px-4 py-3 text-center w-24">Gred</th><th class="px-4 py-3 text-center w-32">TP (PBD)</th></tr>`;
+            }
+
+            let html = '';
+            students.forEach((s, idx) => {
+                if (subject === '_KEHADIRAN') {
+                    let ext = (s.scores && s.scores[exam] && s.scores[exam]['_KEHADIRAN']) || {};
+                    html += `<tr class="border-b hover:bg-blue-50 mark-row" data-id="${s.id}">
+                        <td class="px-4 py-2 text-center">${idx + 1}</td>
+                        <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
+                        <td class="px-4 py-2 text-center"><input type="number" min="0" max="100" class="border rounded p-1.5 w-20 text-center font-bold att-input" value="${ext.kehadiran !== undefined && ext.kehadiran !== null ? ext.kehadiran : ''}" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
+                        <td class="px-4 py-2 text-center">
+                            <select class="border rounded p-1.5 w-full text-center beh-input" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)">
+                                <option value="">-- Pilih --</option>
+                                <option value="AMAT BAIK" ${ext.kelakuan === 'AMAT BAIK' ? 'selected' : ''}>Amat Baik</option>
+                                <option value="BAIK" ${ext.kelakuan === 'BAIK' ? 'selected' : ''}>Baik</option>
+                                <option value="MEMUASKAN" ${ext.kelakuan === 'MEMUASKAN' ? 'selected' : ''}>Memuaskan</option>
+                                <option value="PERLU BIMBINGAN" ${ext.kelakuan === 'PERLU BIMBINGAN' ? 'selected' : ''}>Perlu Bimbingan</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-2"><input type="text" class="border rounded p-1.5 w-full text-sm cmt-input" value="${ext.ulasan || ''}" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
+                    </tr>`;
+                } else {
+                    let sc = (s.scores && s.scores[exam] && s.scores[exam][subject]) || {};
+                    let mark = sc.mark !== undefined && sc.mark !== null ? sc.mark : '';
+                    html += `<tr class="border-b hover:bg-yellow-50 mark-row" data-id="${s.id}">
+                        <td class="px-4 py-2 text-center">${idx + 1}</td>
+                        <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
+                        <td class="px-4 py-2 text-center"><input type="text" class="border rounded p-1.5 w-20 text-center font-bold uppercase mark-input" value="${mark}" onkeyup="window.updateGradePreview(this)" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
+                        <td class="px-4 py-2 text-center font-bold text-lg grade-preview">${window.getGrade(mark)}</td>
+                        <td class="px-4 py-2 text-center">
+                            <select class="border rounded p-1.5 w-full text-center font-bold tp-input" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)">
+                                <option value="">- TP -</option>
+                                ${[1, 2, 3, 4, 5, 6].map(i => `<option value="TP${i}" ${sc.tp === 'TP' + i ? 'selected' : ''}>TP ${i}</option>`).join('')}
+                            </select>
+                        </td>
+                    </tr>`;
+                }
+            });
+            tbody.innerHTML = html;
+        };
+
+        window.handleArrowNavigation = function(event, currentInput) {
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                const row = currentInput.closest('tr');
+                const targetRow = event.key === 'ArrowUp' ? row.previousElementSibling : row.nextElementSibling;
+                if (targetRow) {
+                    const cls = Array.from(currentInput.classList).find(c => ['mark-input', 'tp-input', 'att-input', 'beh-input', 'cmt-input'].includes(c));
+                    if (cls) {
+                        const nextInput = targetRow.querySelector('.' + cls);
+                        if (nextInput) { nextInput.focus(); if (nextInput.select) nextInput.select(); }
+                    }
+                }
+            }
+        };
+
+        window.saveMarksBatch = async function() {
+            window.showSyncStatus(true);
+            const classId = document.getElementById('markFilterClass').value;
+            const exam = document.getElementById('markFilterExam').value;
+            const subject = document.getElementById('markFilterSubject').value;
+            if (!classId || !subject) {
+                window.showToast("Sila pilih kelas & subjek.");
+                return;
+            }
+
+            const batch = writeBatch(db);
+            document.querySelectorAll('.mark-row').forEach(row => {
+                let id = row.getAttribute('data-id');
+                if (subject === '_KEHADIRAN') {
+                    let attVal = row.querySelector('.att-input').value;
+                    batch.set(doc(db, 'students', id), {
+                        scores: {
+                            [exam]: {
+                                '_KEHADIRAN': {
+                                    kehadiran: attVal === '' ? null : parseFloat(attVal),
+                                    kelakuan: row.querySelector('.beh-input').value,
+                                    ulasan: row.querySelector('.cmt-input').value
+                                }
+                            }
+                        }
+                    }, { merge: true });
+                } else {
+                    let markVal = row.querySelector('.mark-input').value.trim().toUpperCase();
+                    let markParsed = markVal === '' ? null : ((markVal === 'T' || markVal === 'TH') ? 'T' : parseFloat(markVal));
+                    batch.set(doc(db, 'students', id), {
+                        scores: {
+                            [exam]: {
+                                [subject]: {
+                                    mark: markParsed,
+                                    grade: window.getGrade(markParsed),
+                                    tp: row.querySelector('.tp-input').value
+                                }
+                            }
+                        }
+                    }, { merge: true });
+                }
+            });
+            await batch.commit();
+            window.showSyncStatus(false);
+            window.showToast("Markah disimpan!");
+        };
+
+        // --- NORMALISASI NAMA & PENGESANAN SUBJEK ---
         window.normalizeHomoglyphs = function(str) {
             if (!str) return "";
             const map = {
@@ -1498,11 +1651,9 @@
             const normTarget = window.normalizeNameForMatching(rawName);
             if (normTarget.length < 3) return null;
 
-            // 1. Padanan tepat selepas dinormalkan
             const exact = studentsList.find(s => window.normalizeNameForMatching(s.name) === normTarget);
             if (exact) return exact;
 
-            // 2. Padanan set perkataan (mengatasi susunan baris nama terpecah dalam sel PDF seperti "BINTI MAS SYAZIRA MASRAN")
             const targetTokens = normTarget.split(' ').filter(t => t.length >= 2);
             if (targetTokens.length === 0) return null;
             const sortedTargetStr = [...targetTokens].sort().join(' ');
@@ -1513,7 +1664,6 @@
             });
             if (sortedExact) return sortedExact;
 
-            // 3. Padanan pertindihan perkataan tinggi (>= 80% sepadan)
             let bestCandidate = null;
             let bestScore = 0;
             studentsList.forEach(s => {
@@ -1533,62 +1683,39 @@
             if (!ic) return "";
             return ic.toString().replace(/[^0-9]/g, '');
         };
-// ... existing code ... -->
-                    } else if (fileName.endsWith('.docx')) {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
-                        const parser = new DOMParser();
-                        const docHtml = parser.parseFromString(result.value, 'text/html');
 
-                        let rollingSubject = fileSubjectHint;
-                        const blocks = docHtml.body.querySelectorAll('p, h1, h2, h3, h4, table');
-                        blocks.forEach(el => {
-                            if (el.tagName !== 'TABLE') {
-                                const detected = window.detectSubjectCodeFromText(el.textContent);
-                                if (detected) rollingSubject = detected;
-                            } else {
-                                const tableRows = [];
-                                el.querySelectorAll('tr').forEach(tr => {
-                                    const rowCells = [];
-                                    tr.querySelectorAll('th, td').forEach(cell => {
-                                        rowCells.push(cell.textContent.replace(/\s+/g, ' ').trim());
-                                    });
-                                    tableRows.push(rowCells);
-                                });
-                                processGridRows(tableRows, rollingSubject);
-                            }
-                        });
-                    } else {
-                        window.showToast("Format fail tidak disokong: " + file.name);
-                    }
-                }
-
-                const extractedStudentsList = Object.values(studentRecordsMap);
-                if (extractedStudentsList.length === 0) {
-                    window.showToast("Tiada markah dalam lajur JUMLAH ditemui. Pastikan subjek dipilih atau lajur JUMLAH wujud.");
-                } else {
-                    window.buildImportPreviewModal(extractedStudentsList, studentsInClass, 'MARKAH');
-                }
-
-            } catch (e) {
-                console.error(e);
-                window.showToast("Ralat membaca fail dokumen: " + e.message);
-            }
-            event.target.value = '';
-        };
-
-        // --- ENJIN IMPORT TAHAP PENGUASAAN (TP 1-6) SPPB PBD + AUTO-ISI NO. KP ---
-        window.parseSppbTpValue = function(rawText) {
-            if (!rawText) return null;
-            const upper = rawText.toString().toUpperCase().trim();
-            // Padankan "TP5(TAHAP PENGUASAAN 5)", "TP 5", "TP5", atau "TAHAP PENGUASAAN 5"
-            const tpMatch = upper.match(/\bTP\s*([1-6])\b/) || upper.match(/TAHAP\s*PENGUASAAN\s*([1-6])\b/);
-            if (tpMatch) return 'TP' + tpMatch[1];
-            if (/^[1-6]$/.test(upper)) return 'TP' + upper;
+        window.detectSubjectCodeFromText = function(text) {
+            if (!text) return null;
+            const upper = window.normalizeHomoglyphs(text).toUpperCase();
+            if (/\b041\b/.test(upper) || upper.includes('BAHASA MELAYU')) return 'BM';
+            if (/\b043\b/.test(upper) || upper.includes('BAHASA INGGERIS')) return 'BI';
+            if (/\b045\b/.test(upper) || upper.includes('MATEMATIK') || upper.includes('MATHEMATICS')) return 'MT';
+            if (/\b048\b/.test(upper) || upper.includes('SAINS') || upper.includes('SCIENCE')) return 'SN';
+            if (upper.includes('PENDIDIKAN ISLAM')) return 'PI';
+            if (upper.includes('PENDIDIKAN MORAL')) return 'PM';
+            if (upper.includes('BAHASA ARAB')) return 'BA';
+            if (upper.includes('SEJARAH')) return 'SJ';
+            if (upper.includes('REKA BENTUK') || /\bRBT\b/.test(upper)) return 'RBT';
+            if (upper.includes('PENDIDIKAN JASMANI') && upper.includes('KESIHATAN')) return 'PJPK';
+            if (upper.includes('PENDIDIKAN JASMANI')) return 'PJ';
+            if (upper.includes('PENDIDIKAN KESIHATAN')) return 'PK';
+            if (upper.includes('PENDIDIKAN SENI') || /\bPSV\b/.test(upper)) return 'PSV';
+            if (upper.includes('PENDIDIKAN MUZIK')) return 'MZ';
             return null;
         };
 
-        window.handleSppbTpImport = async function(event) {
+        window.mapKpmSubjectToSpakCode = function(rawSubj) {
+            if (!rawSubj) return '';
+            const upper = rawSubj.toString().trim().toUpperCase();
+            if (upper === 'MATH' || upper === 'MATEMATIK' || upper === '045') return 'MT';
+            if (upper === 'SAINS' || upper === 'SCIENCE' || upper === '048') return 'SN';
+            if (upper === 'BAHASA MELAYU' || upper === '041') return 'BM';
+            if (upper === 'BAHASA INGGERIS' || upper === '043') return 'BI';
+            return upper;
+        };
+
+        // --- MODUL 1: IMPORT BORANG TRANSIT MARKAH (PDF / EXCEL / WORD) ---
+        window.handleTransitFormImport = async function(event) {
             const files = Array.from(event.target.files || []);
             if (files.length === 0) return;
 
@@ -1597,75 +1724,113 @@
             const fallbackSubject = (selectedSubjDropdown && selectedSubjDropdown !== '_KEHADIRAN') ? selectedSubjDropdown : null;
 
             if (!classId) {
-                window.showToast("Sila pilih kelas terlebih dahulu sebelum mengimport fail SPPB.");
+                window.showToast("Sila pilih kelas terlebih dahulu.");
                 event.target.value = '';
                 return;
             }
 
-            window.showToast("Membaca laporan SPPB PBD (Nama, No. KP & Tahap Penguasaan)...");
+            window.showToast("Membaca borang transit & mengunci lajur JUMLAH...");
 
             try {
                 const studentsInClass = window.appData.students.filter(s => s.classId === classId);
-                const extractedMap = {};
-                let autoDetectedSubject = null;
+                const studentRecordsMap = {};
 
-                const upsertSppbRecord = (ic, name, subjCode, tpValue) => {
-                    if (!subjCode || !tpValue) return;
+                const upsertStudentSubjectMark = (ic, name, subjCode, markValue, sourceType = 'jumlah_col') => {
+                    if (!subjCode || markValue === null || markValue === undefined || markValue === '') return;
                     const cleanIC = window.normalizeICForMatching(ic);
                     const cleanName = window.normalizeHomoglyphs(name || '').replace(/\s+/g, ' ').trim().toUpperCase();
                     const normName = window.normalizeNameForMatching(cleanName);
 
                     if (cleanIC.length !== 12 && normName.length < 3) return;
 
-                    let key = cleanIC.length === 12 ? `IC_${cleanIC}` : `NAME_${normName}`;
-                    if (!extractedMap[key]) {
-                        extractedMap[key] = {
+                    const key = cleanIC.length === 12 ? `IC_${cleanIC}` : `NAME_${normName}`;
+                    if (!studentRecordsMap[key]) {
+                        studentRecordsMap[key] = {
                             no_kp: cleanIC.length === 12 ? cleanIC : '',
                             nama: cleanName || 'TANPA NAMA',
-                            tps: {}
+                            markah: {},
+                            sourceMeta: {}
                         };
                     } else {
-                        if (cleanIC.length === 12 && !extractedMap[key].no_kp) extractedMap[key].no_kp = cleanIC;
-                        if (cleanName && extractedMap[key].nama === 'TANPA NAMA') extractedMap[key].nama = cleanName;
+                        if (cleanIC.length === 12 && !studentRecordsMap[key].no_kp) studentRecordsMap[key].no_kp = cleanIC;
+                        if (cleanName && studentRecordsMap[key].nama === 'TANPA NAMA') studentRecordsMap[key].nama = cleanName;
                     }
-                    extractedMap[key].tps[subjCode] = tpValue;
+                    studentRecordsMap[key].markah[subjCode] = { jumlah: markValue };
+                    studentRecordsMap[key].sourceMeta[subjCode] = sourceType;
                 };
 
-                // Pemproses jadual Grid (Excel / Word SPPB)
-                const processSppbGridRows = (rows, defaultSubj) => {
+                const detectPdfJumlahZone = (items) => {
+                    const jumlahHeader = items.find(it => /^JUMLAH$/i.test(it.str) || /^JUM\.?$/i.test(it.str));
+                    if (!jumlahHeader) return null;
+
+                    const headerRowItems = items
+                        .filter(it => Math.abs(it.y - jumlahHeader.y) <= 18)
+                        .sort((a, b) => a.x - b.x);
+
+                    const leftNeighbors = headerRowItems.filter(it => (it.x + it.width) <= jumlahHeader.x + 2);
+                    const rightNeighbors = headerRowItems.filter(it => it.x >= (jumlahHeader.x + jumlahHeader.width) - 2);
+
+                    const leftNeighbor = leftNeighbors.length > 0 ? leftNeighbors[leftNeighbors.length - 1] : null;
+                    const rightNeighbor = rightNeighbors.length > 0 ? rightNeighbors[0] : null;
+
+                    const zoneLeft = leftNeighbor
+                        ? ((leftNeighbor.x + leftNeighbor.width + jumlahHeader.x) / 2)
+                        : jumlahHeader.x - 14;
+                    const zoneRight = rightNeighbor
+                        ? ((jumlahHeader.x + jumlahHeader.width + rightNeighbor.x) / 2)
+                        : jumlahHeader.x + jumlahHeader.width + 24;
+
+                    return { headerY: jumlahHeader.y, zoneLeft, zoneRight };
+                };
+
+                const processGridRows = (rows, defaultSubj) => {
                     let currentSubj = defaultSubj;
-                    let nameCol = -1, icCol = -1, tpCol = -1;
+                    let jumlahColIdx = -1, nameColIdx = -1, icColIdx = -1;
 
                     for (let r = 0; r < rows.length; r++) {
                         const cells = (rows[r] || []).map(c => (c === null || c === undefined) ? '' : c.toString().replace(/\s+/g, ' ').trim());
                         const joined = cells.join(' ').toUpperCase();
                         if (!joined) continue;
 
-                        if (joined.includes('MATA PELAJARAN') || !/\b\d{12}\b/.test(joined)) {
+                        if (!/\b\d{12}\b/.test(joined)) {
                             const det = window.detectSubjectCodeFromText(joined);
-                            if (det) {
-                                currentSubj = det;
-                                if (!autoDetectedSubject) autoDetectedSubject = det;
-                            }
+                            if (det) currentSubj = det;
                         }
 
-                        const foundTpHeader = cells.findIndex(c => /TAHAP\s*PENGUASAAN/i.test(c) || /^TP$/i.test(c));
-                        const foundNameHeader = cells.findIndex(c => /\bNAMA\b/i.test(c));
-                        if (foundTpHeader !== -1 && foundNameHeader !== -1) {
-                            tpCol = foundTpHeader;
-                            nameCol = foundNameHeader;
-                            icCol = cells.findIndex(c => /(ID\s*PENGENALAN|NO\.?\s*K\.?P|KAD\s*PENGENALAN|MYKID)/i.test(c));
+                        const foundJumlah = cells.findIndex(c => /^JUMLAH$/i.test(c) || /^JUM\.?$/i.test(c) || /^MARKAH\s*AKHIR$/i.test(c));
+                        if (foundJumlah !== -1) {
+                            jumlahColIdx = foundJumlah;
+                            const headerBlock = [rows[r - 1] || [], cells, rows[r + 1] || []];
+                            headerBlock.forEach(hRow => {
+                                hRow.forEach((hCell, cIdx) => {
+                                    const txt = (hCell || '').toString().trim().toUpperCase();
+                                    if (/\bNAMA\b/.test(txt) && nameColIdx === -1) nameColIdx = cIdx;
+                                    if (/(NO\.?\s*K\.?P|PENGENALAN|MYKID|\bIC\b)/.test(txt) && icColIdx === -1) icColIdx = cIdx;
+                                });
+                            });
                             continue;
                         }
 
-                        if (tpCol !== -1 && nameCol !== -1) {
-                            const rawName = cells[nameCol] || '';
-                            const rawId = icCol !== -1 ? (cells[icCol] || '') : '';
-                            const rawTp = cells[tpCol] || '';
-                            const parsedTp = window.parseSppbTpValue(rawTp);
+                        if (jumlahColIdx !== -1) {
+                            const rawScoreCell = (cells[jumlahColIdx] || '').toUpperCase().trim();
+                            let parsedScore = null;
+                            if (rawScoreCell === 'T' || rawScoreCell === 'TH') {
+                                parsedScore = 'T';
+                            } else if (/^\d+(\.\d+)?$/.test(rawScoreCell)) {
+                                const numVal = parseFloat(rawScoreCell);
+                                if (numVal >= 0 && numVal <= 100) parsedScore = numVal;
+                            }
+
+                            const rawName = nameColIdx !== -1 ? (cells[nameColIdx] || '') : '';
+                            let rawIC = icColIdx !== -1 ? (cells[icColIdx] || '') : '';
+                            if (!rawIC) {
+                                const icFound = cells.find(c => /\b\d{12}\b/.test(c.replace(/[^0-9]/g, '')));
+                                if (icFound) rawIC = icFound;
+                            }
+
                             const activeSubj = currentSubj || fallbackSubject;
-                            if (activeSubj && parsedTp && rawName.length >= 3) {
-                                upsertSppbRecord(rawId, rawName, activeSubj, parsedTp);
+                            if (activeSubj && parsedScore !== null && (rawName.length >= 3 || window.normalizeICForMatching(rawIC).length === 12)) {
+                                upsertStudentSubjectMark(rawIC, rawName, activeSubj, parsedScore, 'jumlah_col');
                             }
                         }
                     }
@@ -1678,7 +1843,7 @@
                     if (fileName.endsWith('.pdf')) {
                         const arrayBuffer = await file.arrayBuffer();
                         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                        let currentPdfSubj = fileSubjectHint;
+                        let currentPdfSubject = fileSubjectHint;
 
                         for (let p = 1; p <= pdf.numPages; p++) {
                             const page = await pdf.getPage(p);
@@ -1695,93 +1860,328 @@
 
                             if (items.length === 0) continue;
 
-                            // 1. Kesan subjek dari blok kepala atas halaman ("Mata Pelajaran : BAHASA INGGERIS")
                             const maxPageY = Math.max(...items.map(it => it.y));
-                            const headerAreaText = items
-                                .filter(it => it.y >= maxPageY - 160)
-                                .sort((a, b) => (Math.abs(b.y - a.y) > 4 ? b.y - a.y : a.x - b.x))
+                            const headerText = items
+                                .filter(it => it.y >= maxPageY - 150)
                                 .map(it => it.str)
                                 .join(' ');
-                            const detectedHeaderSubj = window.detectSubjectCodeFromText(headerAreaText);
-                            if (detectedHeaderSubj) {
-                                currentPdfSubj = detectedHeaderSubj;
-                                if (!autoDetectedSubject) autoDetectedSubject = detectedHeaderSubj;
-                            }
+                            const detectedSubj = window.detectSubjectCodeFromText(headerText);
+                            if (detectedSubj) currentPdfSubject = detectedSubj;
 
-                            // 2. Kesan koordinat lajur jadual SPPB (Nama, ID Pengenalan, Kemahiran, Tahap Penguasaan, Ulasan Guru)
-                            const namaHeader = items.find(it => /^NAMA$/i.test(it.str));
-                            const idHeader = items.find(it => /^ID$/i.test(it.str) || /PENGENALAN/i.test(it.str));
-                            const jantinaHeader = items.find(it => /^JANTINA$/i.test(it.str));
-                            const kemahiranHeader = items.find(it => /^KEMAHIRAN$/i.test(it.str));
-                            const tpHeader = items.find(it => /^TAHAP$/i.test(it.str) || /^PENGUASAAN$/i.test(it.str));
-                            const ulasanHeader = items.find(it => /^ULASAN/i.test(it.str));
-
-                            const headerY = namaHeader ? namaHeader.y : (tpHeader ? tpHeader.y : null);
-
-                            const nameZoneLeft = namaHeader ? namaHeader.x - 12 : 45;
-                            const nameZoneRight = idHeader ? idHeader.x - 6 : 195;
-                            const idZoneLeft = idHeader ? idHeader.x - 10 : nameZoneRight;
-                            const idZoneRight = jantinaHeader ? jantinaHeader.x - 6 : (kemahiranHeader ? kemahiranHeader.x - 25 : 275);
-
-                            const tpLeftEdge = tpHeader ? tpHeader.x : 385;
-                            const tpZoneLeft = kemahiranHeader
-                                ? Math.max(tpLeftEdge - 12, (kemahiranHeader.x + kemahiranHeader.width + tpLeftEdge) / 2)
-                                : tpLeftEdge - 12;
-                            const tpZoneRight = ulasanHeader
-                                ? ulasanHeader.x - 6
-                                : tpLeftEdge + 85;
-
-                            // 3. Kumpulkan item utama mengikut lajur di bawah kepala jadual
-                            const bodyItems = headerY !== null
-                                ? items.filter(it => it.y < headerY - 12)
-                                : items;
-
-                            const nameItems = bodyItems.filter(it => {
-                                const cx = it.x + (it.width / 2);
-                                return cx >= nameZoneLeft && cx <= nameZoneRight;
+                            const jumlahZone = detectPdfJumlahZone(items);
+                            const rowsMap = {};
+                            items.forEach(it => {
+                                const foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey, 10) - it.y) <= 5);
+                                const yKey = foundY || it.y;
+                                if (!rowsMap[yKey]) rowsMap[yKey] = [];
+                                rowsMap[yKey].push(it);
                             });
 
-                            const idItems = bodyItems.filter(it => {
-                                const cx = it.x + (it.width / 2);
-                                return cx >= idZoneLeft && cx <= idZoneRight && /^[A-Z0-9]{6,14}$/i.test(it.str);
-                            }).sort((a, b) => b.y - a.y);
+                            const sortedYKeys = Object.keys(rowsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+                            sortedYKeys.forEach((yKey, rIdx) => {
+                                const rowItems = rowsMap[yKey].sort((a, b) => a.x - b.x);
+                                const rowStr = rowItems.map(r => r.str).join(' ');
+                                const icMatch = rowStr.match(/\b\d{12}\b/);
 
-                            const tpItems = bodyItems.filter(it => {
-                                const cx = it.x + (it.width / 2);
-                                return cx >= tpZoneLeft && cx <= tpZoneRight && /TP\s*[1-6]/i.test(it.str);
-                            }).sort((a, b) => b.y - a.y);
+                                if (icMatch) {
+                                    const ic = icMatch[0];
+                                    const icItem = rowItems.find(r => r.str.includes(ic));
+                                    const nameItemsSameRow = rowItems.filter(r => r.x < (icItem ? icItem.x - 4 : 250) && !/^\d{1,3}\.?$/.test(r.str));
+                                    let combinedName = nameItemsSameRow.map(r => r.str).join(' ').trim();
 
-                            // Gunakan senarai sauh utama (ID Pengenalan atau TP) untuk memisahkan setiap jalur murid
-                            const anchors = idItems.length >= tpItems.length ? idItems : tpItems;
-                            const activeSubj = currentPdfSubj || fallbackSubject;
+                                    [-1, 1].forEach(offset => {
+                                        const adjKey = sortedYKeys[rIdx + offset];
+                                        if (adjKey && Math.abs(parseInt(adjKey, 10) - parseInt(yKey, 10)) <= 15) {
+                                            const adjRow = rowsMap[adjKey];
+                                            const adjStr = adjRow.map(r => r.str).join(' ');
+                                            if (!/\b\d{12}\b/.test(adjStr)) {
+                                                const extraName = adjRow
+                                                    .filter(r => r.x < (icItem ? icItem.x - 4 : 250) && /^[A-Z@\/'\.\s]+$/i.test(r.str) && r.str.length >= 2)
+                                                    .map(r => r.str)
+                                                    .join(' ')
+                                                    .trim();
+                                                if (extraName) combinedName = `${combinedName} ${extraName}`.trim();
+                                            }
+                                        }
+                                    });
 
-                            anchors.forEach((anchor, idx) => {
-                                const prevY = idx > 0 ? anchors[idx - 1].y : (headerY !== null ? headerY - 12 : anchor.y + 45);
-                                const nextY = idx < anchors.length - 1 ? anchors[idx + 1].y : anchor.y - 45;
+                                    let scoreVal = null;
+                                    let sourceType = 'jumlah_col';
 
-                                const bandTop = idx === 0
-                                    ? Math.min(prevY, anchor.y + 38)
-                                    : (prevY + anchor.y) / 2;
-                                const bandBottom = idx === anchors.length - 1
-                                    ? Math.max(nextY, anchor.y - 42)
-                                    : (anchor.y + nextY) / 2;
+                                    if (jumlahZone) {
+                                        const itemsInZone = rowItems.filter(r => {
+                                            const cx = r.x + (r.width / 2);
+                                            return cx >= jumlahZone.zoneLeft && cx <= jumlahZone.zoneRight;
+                                        });
+                                        const scoreToken = itemsInZone.find(r => /^(T|TH|\d{1,3}(\.\d+)?)$/i.test(r.str));
+                                        if (scoreToken) {
+                                            const up = scoreToken.str.toUpperCase();
+                                            if (up === 'T' || up === 'TH') {
+                                                scoreVal = 'T';
+                                            } else {
+                                                const num = parseFloat(up);
+                                                if (!isNaN(num) && num >= 0 && num <= 100) scoreVal = num;
+                                            }
+                                        }
+                                    } else {
+                                        sourceType = 'row_fallback';
+                                        const afterIc = icItem ? rowItems.filter(r => r.x > icItem.x + icItem.width) : [];
+                                        const nums = afterIc.filter(r => /^(T|TH|\d{1,3})$/i.test(r.str));
+                                        if (nums.length > 0) {
+                                            const lastTok = nums[nums.length - 1].str.toUpperCase();
+                                            scoreVal = (lastTok === 'T' || lastTok === 'TH') ? 'T' : parseFloat(lastTok);
+                                        }
+                                    }
 
-                                // Dapatkan ID Pengenalan dalam jalur murid ini
-                                const matchedIdObj = idItems.find(it => it.y <= bandTop && it.y >= bandBottom);
-                                const rawIdStr = matchedIdObj ? matchedIdObj.str.trim() : '';
+                                    const activeSubj = currentPdfSubject || fallbackSubject;
+                                    if (activeSubj && scoreVal !== null) {
+                                        upsertStudentSubjectMark(ic, combinedName, activeSubj, scoreVal, sourceType);
+                                    }
+                                }
+                            });
+                        }
+                    } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        workbook.SheetNames.forEach(sheetName => {
+                            const worksheet = workbook.Sheets[sheetName];
+                            const sheetRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: true });
+                            const sheetSubj = window.detectSubjectCodeFromText(sheetName) || fileSubjectHint;
+                            processGridRows(sheetRows, sheetSubj);
+                        });
+                    } else if (fileName.endsWith('.docx')) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+                        const parser = new DOMParser();
+                        const docHtml = parser.parseFromString(result.value, 'text/html');
+                        let rollingSubj = fileSubjectHint;
+                        docHtml.body.querySelectorAll('p, h1, h2, h3, h4, table').forEach(el => {
+                            if (el.tagName !== 'TABLE') {
+                                const det = window.detectSubjectCodeFromText(el.textContent);
+                                if (det) rollingSubj = det;
+                            } else {
+                                const tRows = [];
+                                el.querySelectorAll('tr').forEach(tr => {
+                                    tRows.push(Array.from(tr.querySelectorAll('th, td')).map(c => c.textContent.replace(/\s+/g, ' ').trim()));
+                                });
+                                processGridRows(tRows, rollingSubj);
+                            }
+                        });
+                    } else {
+                        window.showToast("Format fail tidak disokong: " + file.name);
+                    }
+                }
 
-                                // Dapatkan Tahap Penguasaan (TP1-TP6) dalam jalur murid ini
-                                const matchedTpObj = tpItems.find(it => it.y <= bandTop && it.y >= bandBottom);
-                                const parsedTp = matchedTpObj ? window.parseSppbTpValue(matchedTpObj.str) : null;
+                const extractedList = Object.values(studentRecordsMap);
+                if (extractedList.length === 0) {
+                    window.showToast("Tiada markah dalam lajur JUMLAH ditemui. Pastikan fail mengandungi jadual transit yang sah.");
+                } else {
+                    window.buildImportPreviewModal(extractedList, studentsInClass, 'MARKAH');
+                }
+            } catch (e) {
+                console.error(e);
+                window.showToast("Ralat memproses fail: " + e.message);
+            }
+            event.target.value = '';
+        };
 
-                                // Cantumkan semua baris nama dalam lajur Nama bagi jalur murid ini
-                                const rowNameItems = nameItems
-                                    .filter(it => it.y <= bandTop && it.y >= bandBottom)
-                                    .sort((a, b) => (Math.abs(b.y - a.y) > 4 ? b.y - a.y : a.x - b.x));
-                                const combinedName = rowNameItems.map(it => it.str).join(' ').replace(/\s+/g, ' ').trim();
+        // --- MODUL 2: IMPORT TAHAP PENGUASAAN (TP 1-6) PBD DARIPADA SPPB (PDF / EXCEL / WORD) ---
+        window.handleSppbTpImport = async function(event) {
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) return;
 
-                                if (activeSubj && parsedTp && combinedName.length >= 3) {
-                                    upsertSppbRecord(rawIdStr, combinedName, activeSubj, parsedTp);
+            const classId = document.getElementById('markFilterClass').value;
+            const selectedSubjDropdown = document.getElementById('markFilterSubject').value;
+            const fallbackSubject = (selectedSubjDropdown && selectedSubjDropdown !== '_KEHADIRAN') ? selectedSubjDropdown : null;
+
+            if (!classId) {
+                window.showToast("Sila pilih kelas terlebih dahulu.");
+                event.target.value = '';
+                return;
+            }
+
+            window.showToast("Membaca laporan SPPB & mengesan Tahap Penguasaan (TP)...");
+
+            try {
+                const studentsInClass = window.appData.students.filter(s => s.classId === classId);
+                const extractedMap = {};
+                let autoDetectedSubject = null;
+
+                const upsertStudentTp = (ic, name, subjCode, tpCode) => {
+                    if (!subjCode || !tpCode || !/^TP[1-6]$/.test(tpCode)) return;
+                    const cleanIC = window.normalizeICForMatching(ic);
+                    const cleanName = window.normalizeHomoglyphs(name || '').replace(/\s+/g, ' ').trim().toUpperCase();
+                    const normName = window.normalizeNameForMatching(cleanName);
+
+                    if (normName.length < 3 && cleanIC.length !== 12) return;
+
+                    const key = normName.length >= 3 ? `NAME_${normName}` : `IC_${cleanIC}`;
+                    if (!extractedMap[key]) {
+                        extractedMap[key] = {
+                            no_kp: cleanIC.length === 12 ? cleanIC : '',
+                            nama: cleanName || 'TANPA NAMA',
+                            tps: {}
+                        };
+                    } else {
+                        if (cleanIC.length === 12 && !extractedMap[key].no_kp) extractedMap[key].no_kp = cleanIC;
+                        if (cleanName && extractedMap[key].nama === 'TANPA NAMA') extractedMap[key].nama = cleanName;
+                    }
+                    extractedMap[key].tps[subjCode] = tpCode;
+                    if (!autoDetectedSubject) autoDetectedSubject = subjCode;
+                };
+
+                const parseTpToken = (str) => {
+                    if (!str) return null;
+                    const up = window.normalizeHomoglyphs(str).toUpperCase().trim();
+                    const matchTp = up.match(/\bTP\s*([1-6])\b/);
+                    if (matchTp) return `TP${matchTp[1]}`;
+                    const matchTahap = up.match(/TAHAP\s*PENGUASAAN\s*([1-6])/);
+                    if (matchTahap) return `TP${matchTahap[1]}`;
+                    return null;
+                };
+
+                const processSppbGridRows = (rows, defaultSubj) => {
+                    let currentSubj = defaultSubj;
+                    let nameColIdx = -1, icColIdx = -1, tpColIdx = -1;
+
+                    for (let r = 0; r < rows.length; r++) {
+                        const cells = (rows[r] || []).map(c => (c === null || c === undefined) ? '' : c.toString().replace(/\s+/g, ' ').trim());
+                        const joined = cells.join(' ').toUpperCase();
+                        if (!joined) continue;
+
+                        if (!/\b\d{12}\b/.test(joined)) {
+                            const det = window.detectSubjectCodeFromText(joined);
+                            if (det) currentSubj = det;
+                        }
+
+                        const foundTpHeader = cells.findIndex(c => /TAHAP\s*PENGUASAAN/i.test(c) || /^TP$/i.test(c));
+                        if (foundTpHeader !== -1) {
+                            tpColIdx = foundTpHeader;
+                            nameColIdx = cells.findIndex(c => /\bNAMA\b/i.test(c));
+                            icColIdx = cells.findIndex(c => /(ID\s*PENGENALAN|NO\.?\s*K\.?P|MYKID|\bIC\b)/i.test(c));
+                            continue;
+                        }
+
+                        if (tpColIdx !== -1) {
+                            const tpVal = parseTpToken(cells[tpColIdx]);
+                            const rawName = nameColIdx !== -1 ? (cells[nameColIdx] || '') : '';
+                            let rawIC = icColIdx !== -1 ? (cells[icColIdx] || '') : '';
+                            if (!rawIC) {
+                                const icFound = cells.find(c => /\b\d{12}\b/.test(c.replace(/[^0-9]/g, '')));
+                                if (icFound) rawIC = icFound;
+                            }
+                            const activeSubj = currentSubj || fallbackSubject;
+                            if (activeSubj && tpVal && (rawName.length >= 3 || window.normalizeICForMatching(rawIC).length === 12)) {
+                                upsertStudentTp(rawIC, rawName, activeSubj, tpVal);
+                            }
+                        }
+                    }
+                };
+
+                for (const file of files) {
+                    const fileName = file.name.toLowerCase();
+                    const fileSubjectHint = window.detectSubjectCodeFromText(file.name) || fallbackSubject;
+
+                    if (fileName.endsWith('.pdf')) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                        let currentPdfSubject = fileSubjectHint;
+
+                        for (let p = 1; p <= pdf.numPages; p++) {
+                            const page = await pdf.getPage(p);
+                            const textContent = await page.getTextContent();
+
+                            const items = textContent.items
+                                .map(it => ({
+                                    str: it.str.trim(),
+                                    x: Math.round(it.transform[4]),
+                                    y: Math.round(it.transform[5]),
+                                    width: Math.round(it.width || (it.str.trim().length * 5))
+                                }))
+                                .filter(it => it.str.length > 0);
+
+                            if (items.length === 0) continue;
+
+                            const maxPageY = Math.max(...items.map(it => it.y));
+                            const headerText = items
+                                .filter(it => it.y >= maxPageY - 140)
+                                .map(it => it.str)
+                                .join(' ');
+                            const detectedSubj = window.detectSubjectCodeFromText(headerText);
+                            if (detectedSubj) currentPdfSubject = detectedSubj;
+
+                            // Kesan zon lajur "Tahap Penguasaan" supaya terasing daripada lajur "Kemahiran"
+                            const tahapHeader = items.find(it => /^TAHAP$/i.test(it.str) || /^TAHAP\s*PENGUASAAN/i.test(it.str));
+                            const kemahiranHeader = items.find(it => /^KEMAHIRAN$/i.test(it.str));
+                            const ulasanHeader = items.find(it => /^ULASAN/i.test(it.str));
+                            const idHeader = items.find(it => /^ID$/i.test(it.str) || /^ID\s*PENGENALAN/i.test(it.str));
+
+                            const tpZoneLeft = tahapHeader
+                                ? (kemahiranHeader ? ((kemahiranHeader.x + kemahiranHeader.width + tahapHeader.x) / 2) : tahapHeader.x - 15)
+                                : 360;
+                            const tpZoneRight = ulasanHeader
+                                ? ((tahapHeader ? (tahapHeader.x + tahapHeader.width + ulasanHeader.x) / 2 : ulasanHeader.x - 10))
+                                : (tahapHeader ? tahapHeader.x + 120 : 540);
+                            const nameZoneRight = idHeader ? idHeader.x - 4 : 235;
+
+                            const rowsMap = {};
+                            items.forEach(it => {
+                                const foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey, 10) - it.y) <= 5);
+                                const yKey = foundY || it.y;
+                                if (!rowsMap[yKey]) rowsMap[yKey] = [];
+                                rowsMap[yKey].push(it);
+                            });
+
+                            const sortedYKeys = Object.keys(rowsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+                            const tableStartY = tahapHeader ? tahapHeader.y - 10 : maxPageY - 110;
+
+                            // Cari semua item TP overall dalam zon lajur Tahap Penguasaan
+                            const tpAnchors = [];
+                            sortedYKeys.forEach(yKey => {
+                                const yNum = parseInt(yKey, 10);
+                                if (yNum >= tableStartY) return;
+                                const rowItems = rowsMap[yKey].sort((a, b) => a.x - b.x);
+                                const tpZoneItems = rowItems.filter(it => it.x >= tpZoneLeft && it.x <= tpZoneRight);
+                                const tpText = tpZoneItems.map(it => it.str).join(' ');
+                                const tpCode = parseTpToken(tpText);
+                                if (tpCode) {
+                                    tpAnchors.push({ y: yNum, tpCode });
+                                }
+                            });
+
+                            // Bagi setiap rekod TP yang ditemui, kumpulkan baris nama & ID Pengenalan di sekeliling koordinat Y tersebut
+                            tpAnchors.forEach((anchor, aIdx) => {
+                                const prevY = aIdx > 0 ? tpAnchors[aIdx - 1].y : tableStartY;
+                                const nextY = aIdx < tpAnchors.length - 1 ? tpAnchors[aIdx + 1].y : 0;
+                                const upperBoundY = Math.min(anchor.y + 34, (prevY + anchor.y) / 2);
+                                const lowerBoundY = Math.max(anchor.y - 34, (anchor.y + nextY) / 2);
+
+                                let nameParts = [];
+                                let foundIC = '';
+
+                                sortedYKeys.forEach(yKey => {
+                                    const yNum = parseInt(yKey, 10);
+                                    if (yNum <= upperBoundY && yNum >= lowerBoundY) {
+                                        const rowItems = rowsMap[yKey].sort((a, b) => a.x - b.x);
+                                        rowItems.forEach(it => {
+                                            const cleanDigits = it.str.replace(/[^0-9]/g, '');
+                                            if (cleanDigits.length === 12 && !foundIC) {
+                                                foundIC = cleanDigits;
+                                            }
+                                            if (it.x >= 45 && it.x < nameZoneRight) {
+                                                const normTok = window.normalizeHomoglyphs(it.str).toUpperCase().trim();
+                                                if (normTok && !/^\d{1,3}\.?$/.test(normTok) && !/^NAMA$/i.test(normTok)) {
+                                                    nameParts.push(normTok);
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+
+                                const fullName = nameParts.join(' ').replace(/\s+/g, ' ').trim();
+                                const activeSubj = currentPdfSubject || fallbackSubject;
+                                if (activeSubj && (fullName.length >= 3 || foundIC.length === 12)) {
+                                    upsertStudentTp(foundIC, fullName, activeSubj, anchor.tpCode);
                                 }
                             });
                         }
@@ -1939,7 +2339,7 @@
                     <option value="${s.id}" ${s.id === row.matchedStudentId ? 'selected' : ''}>${s.name} (${s.ic || 'Tiada KP'})</option>
                 `).join('');
 
-                let statusBadge = row.isMatched 
+                let statusBadge = row.isMatched
                     ? `<span class="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Padan ✅</span>`
                     : `<span class="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">Tidak Padan ⚠️</span>`;
 
@@ -2018,15 +2418,15 @@
             const exam = document.getElementById('markFilterExam').value;
             const mode = window.pendingImportMode || 'MARKAH';
             window.showToast(mode === 'TP' ? "Menyimpan Tahap Penguasaan (TP) & mengemas kini No. KP..." : "Menyimpan markah dan mengekalkan subjek sedia ada...");
-            
+
             try {
-                const batch = writeBatch(db);
+                const ops = [];
                 let updateCount = 0;
                 let autoFilledIcCount = 0;
 
                 window.pendingPreviewRows.forEach(row => {
                     if (!row.matchedStudentId) return;
-                    
+
                     let targetStudent = window.appData.students.find(s => s.id === row.matchedStudentId);
                     if (!targetStudent) return;
 
@@ -2049,7 +2449,7 @@
                             let val = row.values[subCode];
                             let upperVal = val !== null ? val.toString().trim().toUpperCase() : '';
                             let finalMark = (upperVal === 'T' || upperVal === 'TH') ? 'T' : (val !== null && upperVal !== '' ? parseFloat(val) : null);
-                            
+
                             if (finalMark !== null && (finalMark === 'T' || !isNaN(finalMark))) {
                                 let gradeVal = window.getGrade(finalMark === 'T' ? 0 : finalMark);
                                 let existingTP = existingExamScores[subCode] ? existingExamScores[subCode].tp || '' : '';
@@ -2075,12 +2475,17 @@
                         autoFilledIcCount++;
                     }
 
-                    batch.set(doc(db, 'students', targetStudent.id), studentPayload, { merge: true });
+                    ops.push({
+                        type: 'set',
+                        ref: doc(db, 'students', targetStudent.id),
+                        data: studentPayload,
+                        options: { merge: true }
+                    });
                     updateCount++;
                 });
 
                 if (updateCount > 0) {
-                    await batch.commit();
+                    await window.commitOperationsInChunks(ops);
                     document.getElementById('modalPreviewImport').classList.add('hidden');
                     const icNote = autoFilledIcCount > 0 ? ` (${autoFilledIcCount} No. KP diisi automatik)` : '';
                     window.showToast(mode === 'TP'
@@ -2091,7 +2496,6 @@
                 } else {
                     window.showToast("Tiada murid yang sah dipilih untuk disimpan.");
                 }
-
             } catch (e) {
                 console.error(e);
                 window.showToast("Ralat semasa menyimpan ke pangkalan data: " + e.message);
