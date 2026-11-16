@@ -30,7 +30,7 @@
 
     <!-- LOGIN OVERLAY -->
     <div id="loginOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-90 backdrop-blur-sm transition-opacity duration-300">
-        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center mx-4">
             <h2 class="text-2xl font-bold text-gray-800 mb-2">SPAK Enterprise</h2>
             <p class="text-gray-500 mb-6">Sistem Pengurusan Anugerah & PBD<br><span class="text-sm">Sila log masuk menggunakan ID DELIMA (KPM)</span></p>
             
@@ -45,7 +45,7 @@
                 <span id="btnGoogleText">Log Masuk ID DELIMA</span>
             </button>
 
-            <p id="loginError" class="text-red-500 text-sm mt-4 hidden">Hanya e-mel @moe-dl.edu.my atau @moe.edu.my dibenarkan!</p>
+            <p id="loginError" class="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 text-xs mt-4 hidden text-left leading-relaxed">Hanya e-mel @moe-dl.edu.my atau @moe.edu.my dibenarkan!</p>
         </div>
     </div>
 
@@ -133,6 +133,12 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="flex flex-col md:flex-row justify-between items-center p-4 border-b bg-gray-50 gap-4">
                         <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-chart-pie mr-2 text-blue-500"></i>Analitik Pencapaian & PBD (Mengikut Kelas)</h3>
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <label for="dashSubjectFilter" class="text-xs font-bold text-gray-600 uppercase whitespace-nowrap">Mata Pelajaran:</label>
+                            <select id="dashSubjectFilter" class="border border-gray-300 p-2 rounded-lg shadow-sm focus:ring-blue-500 text-sm font-semibold bg-white flex-1 md:min-w-[230px]" onchange="window.updateDashboardAnalytics()">
+                                <option value="ALL">Semua Mata Pelajaran (Keseluruhan)</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
@@ -150,6 +156,76 @@
                             </thead>
                             <tbody id="dashAnalyticsBody">
                                 <tr><td colspan="8" class="text-center py-10 text-gray-400">Memuatkan data analitik...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Modul Laporan Analisis Matriks Tahun 4 -->
+                <div id="matriksT4Section" class="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden mt-6">
+                    <div class="flex flex-col lg:flex-row justify-between lg:items-center p-4 border-b bg-gradient-to-r from-emerald-50 to-teal-50 gap-4">
+                        <div>
+                            <h3 class="font-bold text-emerald-900 text-lg flex items-center">
+                                <span class="bg-emerald-100 text-emerald-700 p-2 rounded-lg mr-3 shadow-sm"><i class="fas fa-table"></i></span>
+                                Laporan Analisis Matriks Tahun 4 (Mengikut Mata Pelajaran)
+                            </h3>
+                            <p class="text-xs text-emerald-700 mt-1 ml-11">Pecahan Gred A, B, C, D, E, Tidak Hadir (TH), Peratus Kelulusan (A–D) dan GPMP</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <select id="matriksT4ClassFilter" class="border border-emerald-300 p-2 rounded-lg shadow-sm focus:ring-emerald-500 text-sm font-semibold bg-white" onchange="window.updateMatriksTahun4Analytics()">
+                                <option value="ALL">Semua Kelas Tahun 4</option>
+                            </select>
+                            <select id="matriksT4ExamFilter" class="border border-emerald-300 p-2 rounded-lg shadow-sm focus:ring-emerald-500 text-sm font-semibold bg-white" onchange="window.updateMatriksTahun4Analytics()">
+                                <option value="PAT" selected>Matriks / Akhir Tahun (PAT)</option>
+                                <option value="PPT">Pertengahan Tahun (PPT)</option>
+                            </select>
+                            <button onclick="window.printMatriksTahun4Report()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition text-sm flex items-center">
+                                <i class="fas fa-print mr-2"></i>Cetak Analisis Matriks Thn 4
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Kad Ringkasan Pantas Matriks Tahun 4 -->
+                    <div id="matriksT4SummaryBar" class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gray-50/70 border-b border-gray-100 text-center">
+                        <div class="bg-white p-3 rounded-lg border border-gray-200">
+                            <p class="text-[11px] font-bold text-gray-500 uppercase">Kelas Tahun 4</p>
+                            <p id="matriksT4TotalClasses" class="text-lg font-black text-gray-800">0</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-gray-200">
+                            <p class="text-[11px] font-bold text-gray-500 uppercase">Jumlah Calon Tahun 4</p>
+                            <p id="matriksT4TotalCandidates" class="text-lg font-black text-blue-700">0</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-gray-200">
+                            <p class="text-[11px] font-bold text-gray-500 uppercase">Lulus Semua Subjek (A–D)</p>
+                            <p id="matriksT4AllPass" class="text-lg font-black text-emerald-600">-</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-gray-200">
+                            <p class="text-[11px] font-bold text-gray-500 uppercase">Skala Gred</p>
+                            <p class="text-[11px] font-bold text-gray-600 mt-1">A:80+ | B:65+ | C:50+ | D:40+ | E:&lt;40</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-emerald-800 text-white text-xs uppercase">
+                                <tr>
+                                    <th class="px-3 py-3 text-center w-10">Bil</th>
+                                    <th class="px-4 py-3">Mata Pelajaran</th>
+                                    <th class="px-3 py-3 text-center">Daftar</th>
+                                    <th class="px-3 py-3 text-center">Hadir</th>
+                                    <th class="px-3 py-3 text-center bg-slate-700">TH</th>
+                                    <th class="px-3 py-3 text-center bg-emerald-700">Gred A</th>
+                                    <th class="px-3 py-3 text-center bg-teal-700">Gred B</th>
+                                    <th class="px-3 py-3 text-center bg-blue-700">Gred C</th>
+                                    <th class="px-3 py-3 text-center bg-amber-600">Gred D</th>
+                                    <th class="px-3 py-3 text-center bg-red-700">Gred E</th>
+                                    <th class="px-3 py-3 text-center bg-green-900">Lulus (A–D)</th>
+                                    <th class="px-3 py-3 text-center bg-green-950 font-black">% Kelulusan</th>
+                                    <th class="px-3 py-3 text-center">GPMP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matriksT4AnalyticsBody">
+                                <tr><td colspan="13" class="text-center py-8 text-gray-400">Memuatkan analisis Matriks Tahun 4...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -250,6 +326,9 @@
                             <i class="fas fa-file-pdf mr-1"></i> 📥 Import Transit Matriks Thn 4 (PDF)
                             <input type="file" id="transitMatrixFile" accept=".pdf" class="hidden" onchange="window.handleTransitMatrixImport(event)">
                         </label>
+                        <button onclick="window.openMatriksTahun4View()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold transition shadow-sm text-sm flex items-center">
+                            <i class="fas fa-chart-bar mr-1"></i> Analisis Matriks Thn 4
+                        </button>
                         <button onclick="window.autoFixGender()" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-bold transition shadow-sm text-sm">
                             🪄 Auto-Betul Jantina
                         </button>
@@ -584,9 +663,25 @@
             });
         };
 
+        // --- UTILITI SIMPANAN BERKELOMPOK FIRESTORE (MAKSIMUM 450 PER BATCH) ---
+        window.commitOperationsInChunks = async function(operations) {
+            const CHUNK_SIZE = 450;
+            for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
+                const chunk = operations.slice(i, i + CHUNK_SIZE);
+                const batch = writeBatch(db);
+                chunk.forEach(op => {
+                    if (op.type === 'delete') {
+                        batch.delete(op.ref);
+                    } else {
+                        batch.set(op.ref, op.data, op.options || {});
+                    }
+                });
+                await batch.commit();
+            }
+        };
+
         // --- INISIALISASI PENDENGAR FIRESTORE SELEPAS LOG MASUK ---
         window.initializeAppAfterAuth = function() {
-            // Bersihkan pendengar lama jika ada supaya tidak berlaku pertindihan
             window.firestoreUnsubscribers.forEach(unsub => {
                 try { unsub(); } catch (e) {}
             });
@@ -618,7 +713,11 @@
                 }
                 if (document.getElementById('settings').classList.contains('active')) window.renderSubjectsTable();
                 window.updateSubjectDropdown();
-                if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
+                window.updateDashboardSubjectDropdown();
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    window.updateDashboardAnalytics();
+                    window.updateMatriksTahun4Analytics();
+                }
             });
 
             const unsubClasses = onSnapshot(collection(db, 'classes'), (snapshot) => {
@@ -641,8 +740,13 @@
                 if (prevFilterClass) document.getElementById('filterClass').value = prevFilterClass;
                 if (prevMarkClass) document.getElementById('markFilterClass').value = prevMarkClass;
 
+                window.updateMatriksTahun4Dropdown();
+
                 if (document.getElementById('students').classList.contains('active')) window.renderStudents();
-                if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    window.updateDashboardAnalytics();
+                    window.updateMatriksTahun4Analytics();
+                }
             });
 
             const unsubStudents = onSnapshot(collection(db, 'students'), (snapshot) => {
@@ -655,7 +759,10 @@
                 if (document.getElementById('marks').classList.contains('active') && !window.isAutoSaving) {
                     window.loadMarksTable();
                 }
-                if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    window.updateDashboardAnalytics();
+                    window.updateMatriksTahun4Analytics();
+                }
             });
 
             window.firestoreUnsubscribers.push(unsubProfile, unsubSubjects, unsubClasses, unsubStudents);
@@ -674,27 +781,33 @@
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Ralat Log Masuk:", error);
-                let errorMsg = error.message;
+                let msg = error.message || "Log masuk gagal.";
                 if (error.code === 'auth/popup-blocked') {
-                    errorMsg = "Pelayar menyekat tetingkap timbul (Pop-up). Sila benarkan Pop-up di tetapan pelayar.";
+                    msg = "Tetingkap timbul (Pop-up) disekat pelayar. Sila benarkan Pop-up untuk laman ini.";
                 } else if (error.code === 'auth/popup-closed-by-user') {
-                    errorMsg = "Tetingkap log masuk ditutup sebelum selesai.";
+                    msg = "Tetingkap log masuk ditutup sebelum selesai.";
                 } else if (error.code === 'auth/unauthorized-domain') {
-                    errorMsg = `Domain (${window.location.hostname}) belum dibenarkan dalam Firebase Authentication.`;
+                    msg = `Domain (${window.location.hostname}) belum didaftarkan dalam Firebase Authorized Domains.`;
                 }
-                errEl.innerText = errorMsg;
+                errEl.innerText = msg;
                 errEl.classList.remove('hidden');
-                window.showToast("Ralat Log Masuk: " + errorMsg);
                 btnText.innerHTML = 'Log Masuk ID DELIMA';
                 btn.disabled = false;
             }
         });
 
-        document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            window.firestoreUnsubscribers.forEach(unsub => {
+                try { unsub(); } catch (e) {}
+            });
+            window.firestoreUnsubscribers = [];
+            signOut(auth);
+        });
 
         onAuthStateChanged(auth, (user) => {
             const btn = document.getElementById('btnGoogleLogin');
             const btnText = document.getElementById('btnGoogleText');
+            const errEl = document.getElementById('loginError');
             btnText.innerHTML = 'Log Masuk ID DELIMA';
             btn.disabled = false;
 
@@ -702,7 +815,7 @@
                 const isDelima = user.email && (user.email.endsWith('@moe-dl.edu.my') || user.email.endsWith('@moe.edu.my'));
                 if (isDelima) {
                     document.getElementById('loginOverlay').classList.add('hidden');
-                    document.getElementById('loginError').classList.add('hidden');
+                    errEl.classList.add('hidden');
                     document.getElementById('userEmail').innerText = user.email;
 
                     if (user.email === 'sekolah-7608@moe-dl.edu.my') {
@@ -710,11 +823,11 @@
                     } else {
                         document.getElementById('adminBadge').classList.add('hidden');
                     }
+
                     window.initializeAppAfterAuth();
                 } else {
-                    const errEl = document.getElementById('loginError');
-                    errEl.innerText = "Hanya e-mel @moe-dl.edu.my atau @moe.edu.my dibenarkan!";
                     document.getElementById('loginOverlay').classList.remove('hidden');
+                    errEl.innerText = "Hanya e-mel rasmi @moe-dl.edu.my atau @moe.edu.my dibenarkan!";
                     errEl.classList.remove('hidden');
                     signOut(auth);
                 }
@@ -733,14 +846,27 @@
             });
             if (tabId === 'students') window.renderStudents();
             if (tabId === 'marks') window.loadMarksTable();
-            if (tabId === 'dashboard') window.updateDashboardAnalytics();
+            if (tabId === 'dashboard') {
+                window.updateDashboardSubjectDropdown();
+                window.updateMatriksTahun4Dropdown();
+                window.updateDashboardAnalytics();
+                window.updateMatriksTahun4Analytics();
+            }
             if (tabId === 'settings') window.renderSubjectsTable();
+        };
+
+        window.openMatriksTahun4View = function() {
+            window.switchTab('dashboard');
+            setTimeout(() => {
+                const section = document.getElementById('matriksT4Section');
+                if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
         };
 
         window.showToast = function(msg) {
             document.getElementById('toastMsg').innerText = msg;
             document.getElementById('toast').classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => document.getElementById('toast').classList.add('translate-y-20', 'opacity-0'), 3500);
+            setTimeout(() => document.getElementById('toast').classList.add('translate-y-20', 'opacity-0'), 3200);
         };
 
         window.showSyncStatus = function(isSaving) {
@@ -761,26 +887,9 @@
         window.getTahapKelas = function(className) {
             if (!className) return 'ALL';
             let name = className.trim();
-            if (/^[123]/.test(name)) return 'T1';
-            if (/^[456]/.test(name)) return 'T2';
+            if (/^(TAHUN\s*)?[123]/i.test(name)) return 'T1';
+            if (/^(TAHUN\s*)?[456]/i.test(name)) return 'T2';
             return 'ALL';
-        };
-
-        // --- PEMBANTU KELOMPOK (CHUNKED BATCH WRITE FIRESTORE <= 450) ---
-        window.commitOperationsInChunks = async function(operations) {
-            const CHUNK_SIZE = 450;
-            for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
-                const chunk = operations.slice(i, i + CHUNK_SIZE);
-                const batch = writeBatch(db);
-                chunk.forEach(op => {
-                    if (op.type === 'delete') {
-                        batch.delete(op.ref);
-                    } else {
-                        batch.set(op.ref, op.data, op.options || {});
-                    }
-                });
-                await batch.commit();
-            }
         };
 
         // --- IMPORT PUKAL MURID (CSV / EXCEL) ---
@@ -788,105 +897,110 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            window.showToast("Memproses fail senarai murid...");
+            window.showToast("Membaca senarai murid daripada fail...");
             try {
-                let rows = [];
-                if (file.name.toLowerCase().endsWith('.csv')) {
-                    const text = await file.text();
-                    const parsed = Papa.parse(text, { skipEmptyLines: true });
-                    rows = parsed.data || [];
-                } else {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '', raw: false });
-                }
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
 
                 let headerIdx = -1;
                 let nameCol = -1, icCol = -1, genderCol = -1, classCol = -1;
 
-                for (let r = 0; r < Math.min(rows.length, 20); r++) {
-                    const rowCells = (rows[r] || []).map(c => c.toString().trim().toUpperCase());
-                    const foundName = rowCells.findIndex(c => c.includes('NAMA'));
+                for (let r = 0; r < Math.min(rows.length, 25); r++) {
+                    const cells = rows[r].map(c => (c || '').toString().trim().toUpperCase());
+                    const foundName = cells.findIndex(c => c === 'NAMA' || c === 'NAMA MURID' || c === 'NAMA PENUH');
                     if (foundName !== -1) {
                         headerIdx = r;
                         nameCol = foundName;
-                        icCol = rowCells.findIndex(c => c.includes('KP') || c.includes('PENGENALAN') || c.includes('MYKID') || c === 'IC');
-                        genderCol = rowCells.findIndex(c => c.includes('JANTINA') || c === 'L/P');
-                        classCol = rowCells.findIndex(c => c.includes('KELAS') || c.includes('TINGKATAN'));
+                        icCol = cells.findIndex(c => /(NO\.?\s*K\.?P|NO\.?\s*PENGENALAN|MYKID|\bIC\b|ID\s*PENGENALAN)/.test(c));
+                        genderCol = cells.findIndex(c => /(JANTINA|GENDER|\bL\/P\b)/.test(c));
+                        classCol = cells.findIndex(c => /(KELAS|NAMA KELAS|CLASS)/.test(c));
                         break;
                     }
                 }
 
-                if (headerIdx === -1) {
-                    window.showToast("Lajur 'NAMA' tidak ditemui dalam fail tersebut.");
+                if (headerIdx === -1 || nameCol === -1) {
+                    window.showToast("Lajur 'NAMA MURID' tidak ditemui dalam fail.");
                     event.target.value = '';
                     return;
                 }
 
-                const classMap = {};
-                window.appData.classes.forEach(c => {
-                    classMap[c.name.trim().toUpperCase()] = c.id;
-                });
-
                 const ops = [];
-                let addedCount = 0;
+                const classCache = {};
+                window.appData.classes.forEach(c => { classCache[c.name.trim().toUpperCase()] = c.id; });
+
+                const defaultFilterClass = document.getElementById('filterClass').value;
+                let importedCount = 0;
 
                 for (let r = headerIdx + 1; r < rows.length; r++) {
-                    const row = rows[r] || [];
-                    const rawName = (row[nameCol] || '').toString().trim().toUpperCase();
-                    if (!rawName || rawName.length < 3 || rawName === 'NAMA') continue;
+                    const row = rows[r];
+                    const rawName = (row[nameCol] || '').toString().replace(/\s+/g, ' ').trim().toUpperCase();
+                    if (!rawName || rawName.length < 3 || /^JUMLAH/i.test(rawName)) continue;
 
                     const rawIC = icCol !== -1 ? (row[icCol] || '').toString().replace(/[^0-9]/g, '') : '';
                     let rawGender = genderCol !== -1 ? (row[genderCol] || '').toString().trim().toUpperCase() : '';
-                    if (rawGender.startsWith('P') || rawGender === 'PEREMPUAN') rawGender = 'P';
-                    else if (rawGender.startsWith('L') || rawGender === 'LELAKI') rawGender = 'L';
-                    else if (rawIC.length === 12) {
-                        rawGender = (parseInt(rawIC.charAt(11), 10) % 2 === 0) ? 'P' : 'L';
-                    } else {
+                    if (rawGender.startsWith('P') || rawGender === 'PEREMPUAN' || rawGender === 'F') {
+                        rawGender = 'P';
+                    } else if (rawGender.startsWith('L') || rawGender === 'LELAKI' || rawGender === 'M') {
                         rawGender = 'L';
+                    } else if (rawIC.length === 12) {
+                        rawGender = parseInt(rawIC.charAt(11), 10) % 2 === 0 ? 'P' : 'L';
+                    } else {
+                        rawGender = /\b(BINTI|BT|BITI|A\/P)\b/.test(rawName) ? 'P' : 'L';
                     }
 
-                    let targetClassId = document.getElementById('filterClass').value || '';
+                    let targetClassId = defaultFilterClass || '';
                     if (classCol !== -1 && row[classCol]) {
-                        const cName = row[classCol].toString().trim().toUpperCase();
-                        if (cName) {
-                            if (!classMap[cName]) {
-                                const newClassRef = doc(collection(db, 'classes'));
-                                ops.push({ type: 'set', ref: newClassRef, data: { name: cName } });
-                                classMap[cName] = newClassRef.id;
+                        const clsName = row[classCol].toString().replace(/\s+/g, ' ').trim().toUpperCase();
+                        if (clsName) {
+                            if (!classCache[clsName]) {
+                                const newClsRef = doc(collection(db, 'classes'));
+                                ops.push({ type: 'set', ref: newClsRef, data: { name: clsName } });
+                                classCache[clsName] = newClsRef.id;
                             }
-                            targetClassId = classMap[cName];
+                            targetClassId = classCache[clsName];
                         }
                     }
 
-                    const existingStudent = rawIC.length === 12
-                        ? window.appData.students.find(s => (s.ic || '').replace(/[^0-9]/g, '') === rawIC)
-                        : window.appData.students.find(s => s.name.trim().toUpperCase() === rawName && s.classId === targetClassId);
+                    const existingStudent = window.appData.students.find(s =>
+                        (rawIC.length === 12 && s.ic === rawIC) ||
+                        (s.name.toUpperCase() === rawName && (!targetClassId || s.classId === targetClassId))
+                    );
 
                     if (existingStudent) {
                         ops.push({
                             type: 'set',
                             ref: doc(db, 'students', existingStudent.id),
-                            data: { name: rawName, ic: rawIC || existingStudent.ic || '', gender: rawGender, classId: targetClassId || existingStudent.classId || '' },
+                            data: {
+                                name: rawName,
+                                ic: rawIC.length === 12 ? rawIC : (existingStudent.ic || ''),
+                                gender: rawGender,
+                                classId: targetClassId || existingStudent.classId || ''
+                            },
                             options: { merge: true }
                         });
                     } else {
-                        const newStuRef = doc(collection(db, 'students'));
                         ops.push({
                             type: 'set',
-                            ref: newStuRef,
-                            data: { name: rawName, ic: rawIC, gender: rawGender, classId: targetClassId, scores: {} }
+                            ref: doc(collection(db, 'students')),
+                            data: {
+                                name: rawName,
+                                ic: rawIC.length === 12 ? rawIC : '',
+                                gender: rawGender,
+                                classId: targetClassId,
+                                scores: {}
+                            }
                         });
                     }
-                    addedCount++;
+                    importedCount++;
                 }
 
-                if (ops.length > 0) {
+                if (importedCount > 0) {
                     await window.commitOperationsInChunks(ops);
-                    window.showToast(`Berjaya mengimport/mengemaskini ${addedCount} rekod murid!`);
+                    window.showToast(`Berjaya mengimport ${importedCount} rekod murid!`);
                 } else {
-                    window.showToast("Tiada rekod murid sah ditemui dalam fail.");
+                    window.showToast("Tiada rekod murid yang sah ditemui.");
                 }
             } catch (e) {
                 console.error(e);
@@ -895,37 +1009,41 @@
             event.target.value = '';
         };
 
-        // --- AUTO-BETUL JANTINA BERDASARKAN DIGIT TERAKHIR NO. KP / NAMA ---
+        // --- AUTO-BETUL JANTINA BERDASARKAN NO. KP / NAMA ---
         window.autoFixGender = async function() {
             const ops = [];
+            let fixedCount = 0;
+
             window.appData.students.forEach(s => {
-                const ic = (s.ic || '').replace(/[^0-9]/g, '');
-                let detectedGender = null;
-                if (ic.length === 12) {
-                    const lastDigit = parseInt(ic.charAt(11), 10);
-                    detectedGender = (lastDigit % 2 === 0) ? 'P' : 'L';
-                } else if (/\bBINTI\b|\bBT\b/.test(s.name.toUpperCase())) {
-                    detectedGender = 'P';
-                } else if (/\bBIN\b/.test(s.name.toUpperCase())) {
-                    detectedGender = 'L';
+                let detected = null;
+                const cleanIC = (s.ic || '').replace(/[^0-9]/g, '');
+                if (cleanIC.length === 12) {
+                    const lastDigit = parseInt(cleanIC.charAt(11), 10);
+                    detected = (lastDigit % 2 === 0) ? 'P' : 'L';
+                } else if (s.name) {
+                    const up = s.name.toUpperCase();
+                    if (/\b(BINTI|BT|BITI|A\/P)\b/.test(up)) detected = 'P';
+                    else if (/\b(BIN|A\/L)\b/.test(up)) detected = 'L';
                 }
 
-                if (detectedGender && s.gender !== detectedGender) {
+                if (detected && s.gender !== detected) {
                     ops.push({
                         type: 'set',
                         ref: doc(db, 'students', s.id),
-                        data: { gender: detectedGender },
+                        data: { gender: detected },
                         options: { merge: true }
                     });
+                    fixedCount++;
                 }
             });
 
-            if (ops.length === 0) {
-                window.showToast("Semua jantina murid sudah tepat.");
+            if (fixedCount === 0) {
+                window.showToast("Semua jantina murid sudah tepat!");
                 return;
             }
+
             await window.commitOperationsInChunks(ops);
-            window.showToast(`Berjaya membetulkan jantina bagi ${ops.length} murid!`);
+            window.showToast(`Berjaya membetulkan jantina bagi ${fixedCount} murid!`);
         };
 
         // --- IMPORT TRANSIT MATRIKS TAHUN 4 (PDF) ---
@@ -933,7 +1051,7 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            window.showToast("Membaca dan memproses PDF Transit Matriks...");
+            window.showToast("Membaca dan memproses PDF Transit Matriks Tahun 4...");
             try {
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -960,9 +1078,9 @@
 
                     let currentSubjCode = null;
                     pageTextItems.forEach(it => {
-                        if (it.str.includes('041-BAHASA MELAYU')) currentSubjCode = 'BM';
-                        if (it.str.includes('043-BAHASA INGGERIS')) currentSubjCode = 'BI';
-                        if (it.str.includes('045-MATEMATIK')) currentSubjCode = 'MT';
+                        if (it.str.includes('041-BAHASA MELAYU') || it.str.includes('041 - BAHASA MELAYU')) currentSubjCode = 'BM';
+                        if (it.str.includes('043-BAHASA INGGERIS') || it.str.includes('043 - BAHASA INGGERIS')) currentSubjCode = 'BI';
+                        if (it.str.includes('045-MATEMATIK') || it.str.includes('045 - MATEMATIK')) currentSubjCode = 'MT';
                         if (it.str.includes('048 - SAINS') || it.str.includes('048-SAINS')) currentSubjCode = 'SN';
                     });
 
@@ -970,7 +1088,7 @@
 
                     let rowsMap = {};
                     pageTextItems.forEach(it => {
-                        let foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey) - it.y) < 5);
+                        let foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey, 10) - it.y) < 5);
                         let yKey = foundY || it.y;
                         if (!rowsMap[yKey]) rowsMap[yKey] = [];
                         rowsMap[yKey].push(it);
@@ -985,13 +1103,21 @@
                             let ic = icMatch[0];
                             let icIndex = rowItems.findIndex(r => r.str.includes(ic));
                             let itemsAfterIc = icIndex !== -1 ? rowItems.slice(icIndex + 1) : [];
-                            let numbersInRow = itemsAfterIc.filter(r => /^\d+$/.test(r.str) && r.str.length <= 3).map(r => parseInt(r.str));
+                            let tokensAfterIc = itemsAfterIc
+                                .filter(r => /^(T|TH|\d{1,3})$/i.test(r.str))
+                                .map(r => r.str.toUpperCase());
 
-                            if (numbersInRow.length > 0) {
-                                let totalMark = numbersInRow[numbersInRow.length - 1];
-                                if (!isNaN(totalMark) && totalMark <= 100) {
+                            if (tokensAfterIc.length > 0) {
+                                let lastTok = tokensAfterIc[tokensAfterIc.length - 1];
+                                if (lastTok === 'T' || lastTok === 'TH') {
                                     if (!extractedData[ic]) extractedData[ic] = {};
-                                    extractedData[ic][currentSubjCode] = totalMark;
+                                    extractedData[ic][currentSubjCode] = 'T';
+                                } else {
+                                    let totalMark = parseInt(lastTok, 10);
+                                    if (!isNaN(totalMark) && totalMark <= 100) {
+                                        if (!extractedData[ic]) extractedData[ic] = {};
+                                        extractedData[ic][currentSubjCode] = totalMark;
+                                    }
                                 }
                             }
                         }
@@ -1002,14 +1128,18 @@
                 const ops = [];
 
                 Object.keys(extractedData).forEach(ic => {
-                    let student = window.appData.students.find(s => (s.ic || '').replace(/[^0-9]/g, '') === ic);
+                    let student = window.appData.students.find(s => window.normalizeICForMatching(s.ic) === ic);
                     if (student) {
                         let existingPat = (student.scores && student.scores['PAT']) ? { ...student.scores['PAT'] } : {};
                         let subjs = extractedData[ic];
                         Object.keys(subjs).forEach(sCode => {
                             let m = subjs[sCode];
-                            let existingTp = existingPat[sCode] ? (existingPat[sCode].tp || '') : '';
-                            existingPat[sCode] = { mark: m, grade: window.getGrade(m), tp: existingTp };
+                            let existingTp = existingPat[sCode]?.tp || '';
+                            existingPat[sCode] = {
+                                mark: m,
+                                grade: m === 'T' ? 'TH' : window.getGrade(m),
+                                tp: existingTp
+                            };
                         });
 
                         ops.push({
@@ -1024,8 +1154,9 @@
 
                 if (matchedCount > 0) {
                     await window.commitOperationsInChunks(ops);
-                    window.showToast(`Berjaya import markah untuk ${matchedCount} murid dari PDF Transit!`);
+                    window.showToast(`Berjaya import markah Matriks untuk ${matchedCount} murid!`);
                     window.loadMarksTable();
+                    window.updateMatriksTahun4Analytics();
                 } else {
                     window.showToast("Tiada padanan No. KP murid ditemui antara fail PDF transit dan sistem.");
                 }
@@ -1036,7 +1167,7 @@
             event.target.value = '';
         };
 
-        // --- MATA PELAJARAN DINAMIK ---
+        // --- PENGURUSAN MATA PELAJARAN DINAMIK ---
         window.renderSubjectsTable = function() {
             const tbody = document.getElementById('subjectListBody');
             let html = '';
@@ -1083,7 +1214,7 @@
         window.deleteSubject = async function(index) {
             const confirmed = await window.showConfirmDialog({
                 title: "Padam Mata Pelajaran",
-                message: "Anda pasti mahu memadam mata pelajaran ini daripada senarai?",
+                message: "Anda pasti mahu memadam mata pelajaran ini daripada senarai sistem?",
                 confirmBtnClass: "bg-red-600 hover:bg-red-700"
             });
             if (!confirmed) return;
@@ -1100,7 +1231,7 @@
 
         window.generateSubjectsAI = async function() {
             const confirmed = await window.showConfirmDialog({
-                title: "Jana Senarai Subjek KSSR",
+                title: "Jana Subjek Standard KSSR",
                 message: "Fungsi ini akan menambah senarai subjek standard KSSR (Tahap 1 & Tahap 2) yang belum wujud ke dalam sistem. Teruskan?"
             });
             if (!confirmed) return;
@@ -1140,10 +1271,10 @@
                     await setDoc(doc(db, 'settings', 'subjects'), { list: currentSubjects }, { merge: true });
                     window.showToast(`${addedCount} Subjek KSSR berjaya ditambah!`);
                 } else {
-                    window.showToast("Semua subjek KSSR sudah wujud.");
+                    window.showToast("Semua subjek standard KSSR sudah wujud.");
                 }
             } catch (e) {
-                window.showToast("Ralat Penjanaan: " + e.message);
+                window.showToast("Ralat: " + e.message);
             } finally {
                 btn.innerHTML = '<i class="fas fa-magic mr-1"></i> Jana Subjek KSSR';
                 btn.disabled = false;
@@ -1172,53 +1303,112 @@
             window.loadMarksTable();
         };
 
-        // --- ANALITIK DASHBOARD & TOKOH MURID ---
+        // --- ANALITIK DASHBOARD (MENGIKUT MATA PELAJARAN) & TOKOH MURID ---
+        window.updateDashboardSubjectDropdown = function() {
+            const subjSelect = document.getElementById('dashSubjectFilter');
+            if (!subjSelect) return;
+            const prevVal = subjSelect.value;
+
+            let html = '<option value="ALL">Semua Mata Pelajaran (Keseluruhan)</option>';
+            window.appData.subjects.forEach(sub => {
+                html += `<option value="${sub.code}">${sub.code} - ${sub.name}</option>`;
+            });
+            subjSelect.innerHTML = html;
+
+            if (prevVal && Array.from(subjSelect.options).some(opt => opt.value === prevVal)) {
+                subjSelect.value = prevVal;
+            } else {
+                subjSelect.value = 'ALL';
+            }
+        };
+
         window.updateDashboardAnalytics = function() {
             const exam = document.getElementById('dashExamFilter').value;
+            const selectedSubjCode = document.getElementById('dashSubjectFilter')?.value || 'ALL';
+            const selectedSubjObj = window.appData.subjects.find(s => s.code === selectedSubjCode);
             const tbody = document.getElementById('dashAnalyticsBody');
 
-            let totalStudentsPassed = 0;
-            let totalStudentsWithMarks = 0;
+            let totalStudentsPassedOverall = 0;
+            let totalStudentsWithMarksOverall = 0;
             let html = '';
             let calonTokoh = { T1L: [], T1P: [], T2L: [], T2P: [] };
 
             window.appData.classes.forEach(c => {
                 let studentsInClass = window.appData.students.filter(s => s.classId === c.id);
-                let classPassedCount = 0, classHasDataCount = 0;
-                let tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
-
                 let namaKelas = c.name.trim();
-                let isTahap1 = /^[123]/.test(namaKelas);
-                let isTahap2 = /^[456]/.test(namaKelas);
+                let isTahap1 = /^(TAHUN\s*)?[123]/i.test(namaKelas);
+                let isTahap2 = /^(TAHUN\s*)?[456]/i.test(namaKelas);
                 let tahapNum = isTahap1 ? 1 : (isTahap2 ? 2 : 0);
-                let strTahap = isTahap1 ? 'T1' : 'T2';
+                let strTahap = isTahap1 ? 'T1' : (isTahap2 ? 'T2' : 'ALL');
 
                 let activeSubjects = window.appData.subjects.filter(sub =>
                     sub.tahap === 'ALL' || sub.tahap === strTahap || strTahap === 'ALL'
                 );
 
+                // Kiraan keseluruhan bagi Purata Keseluruhan Lulus & Calon Tokoh Murid
                 studentsInClass.forEach(s => {
                     let totalMarks = 0, validCount = 0;
                     activeSubjects.forEach(sub => {
                         let sc = (s.scores && s.scores[exam] && s.scores[exam][sub.code]) || {};
-                        if (typeof sc.mark === 'number' && !isNaN(sc.mark)) {
+                        if (typeof sc.mark === 'number') {
                             totalMarks += sc.mark;
                             validCount++;
                         }
-                        if (sc.tp && tpCounts[sc.tp] !== undefined) tpCounts[sc.tp]++;
                     });
-
                     if (validCount > 0) {
-                        classHasDataCount++;
-                        totalStudentsWithMarks++;
-                        let percentage = (totalMarks / (validCount * 100)) * 100;
-                        if (percentage >= 40) { classPassedCount++; totalStudentsPassed++; }
+                        totalStudentsWithMarksOverall++;
+                        let pct = (totalMarks / (validCount * 100)) * 100;
+                        if (pct >= 40) totalStudentsPassedOverall++;
 
                         if (tahapNum > 0) {
                             let purata = totalMarks / validCount;
                             let jantina = s.gender === 'P' ? 'P' : 'L';
                             calonTokoh[`T${tahapNum}${jantina}`].push({ name: s.name, className: namaKelas, average: purata });
                         }
+                    }
+                });
+
+                // Semak jika subjek yang dipilih terpakai untuk tahap kelas ini
+                const isSubjectApplicable = selectedSubjCode === 'ALL' || !selectedSubjObj ||
+                    selectedSubjObj.tahap === 'ALL' || strTahap === 'ALL' || selectedSubjObj.tahap === strTahap;
+
+                if (!isSubjectApplicable) {
+                    html += `<tr class="border-b bg-gray-50/50 text-gray-400">
+                        <td class="px-4 py-2 font-bold">${c.name}</td>
+                        <td class="px-4 py-2 text-center border-r border-blue-100">-</td>
+                        <td class="px-4 py-2 text-center">-</td>
+                        <td class="px-4 py-2 text-center">-</td>
+                        <td class="px-4 py-2 text-center">-</td>
+                        <td class="px-4 py-2 text-center">-</td>
+                        <td class="px-4 py-2 text-center">-</td>
+                        <td class="px-4 py-2 text-center">-</td>
+                    </tr>`;
+                    return;
+                }
+
+                let classPassedCount = 0, classHasDataCount = 0;
+                let tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
+                const targetSubjects = selectedSubjCode === 'ALL'
+                    ? activeSubjects
+                    : activeSubjects.filter(sub => sub.code === selectedSubjCode);
+
+                studentsInClass.forEach(s => {
+                    let subMarks = 0, subValid = 0;
+                    targetSubjects.forEach(sub => {
+                        let sc = (s.scores && s.scores[exam] && s.scores[exam][sub.code]) || {};
+                        if (typeof sc.mark === 'number') {
+                            subMarks += sc.mark;
+                            subValid++;
+                        }
+                        if (sc.tp && tpCounts[sc.tp] !== undefined) {
+                            tpCounts[sc.tp]++;
+                        }
+                    });
+
+                    if (subValid > 0) {
+                        classHasDataCount++;
+                        let percentage = (subMarks / (subValid * 100)) * 100;
+                        if (percentage >= 40) classPassedCount++;
                     }
                 });
 
@@ -1235,10 +1425,14 @@
                 </tr>`;
             });
 
-            if (window.appData.classes.length === 0) html = `<tr><td colspan="8" class="text-center py-10 text-gray-400">Tiada data kelas.</td></tr>`;
+            if (window.appData.classes.length === 0) {
+                html = `<tr><td colspan="8" class="text-center py-10 text-gray-400">Tiada data kelas.</td></tr>`;
+            }
             tbody.innerHTML = html;
 
-            document.getElementById('dashOverallMTM').innerText = totalStudentsWithMarks > 0 ? Math.round((totalStudentsPassed / totalStudentsWithMarks) * 100) + '%' : '-';
+            document.getElementById('dashOverallMTM').innerText = totalStudentsWithMarksOverall > 0
+                ? Math.round((totalStudentsPassedOverall / totalStudentsWithMarksOverall) * 100) + '%'
+                : '-';
 
             const updateTokohUI = (kategori, nameId, classId, marksId) => {
                 let sortedList = calonTokoh[kategori].sort((a, b) => b.average - a.average);
@@ -1257,6 +1451,325 @@
             updateTokohUI('T1P', 'tokoh-t1-p-name', 'tokoh-t1-p-class', 'tokoh-t1-p-marks');
             updateTokohUI('T2L', 'tokoh-t2-l-name', 'tokoh-t2-l-class', 'tokoh-t2-l-marks');
             updateTokohUI('T2P', 'tokoh-t2-p-name', 'tokoh-t2-p-class', 'tokoh-t2-p-marks');
+        };
+
+        // --- LAPORAN ANALISIS MATRIKS TAHUN 4 (GRED A-E, TH & PERATUS KELULUSAN) ---
+        window.getTahun4Classes = function() {
+            return window.appData.classes.filter(c => /^(TAHUN\s*)?4/i.test((c.name || '').trim()));
+        };
+
+        window.updateMatriksTahun4Dropdown = function() {
+            const selectEl = document.getElementById('matriksT4ClassFilter');
+            if (!selectEl) return;
+            const prevVal = selectEl.value;
+            const t4Classes = window.getTahun4Classes();
+
+            let opts = `<option value="ALL">Semua Kelas Tahun 4 (${t4Classes.length} Kelas)</option>`;
+            t4Classes.forEach(c => {
+                opts += `<option value="${c.id}">Kelas: ${c.name}</option>`;
+            });
+            selectEl.innerHTML = opts;
+
+            if (prevVal && (prevVal === 'ALL' || t4Classes.some(c => c.id === prevVal))) {
+                selectEl.value = prevVal;
+            } else {
+                selectEl.value = 'ALL';
+            }
+        };
+
+        window.computeMatriksTahun4Data = function() {
+            const classFilter = document.getElementById('matriksT4ClassFilter')?.value || 'ALL';
+            const exam = document.getElementById('matriksT4ExamFilter')?.value || 'PAT';
+            const allT4Classes = window.getTahun4Classes();
+
+            const targetClasses = classFilter === 'ALL'
+                ? allT4Classes
+                : allT4Classes.filter(c => c.id === classFilter);
+
+            const targetClassIds = new Set(targetClasses.map(c => c.id));
+            const t4Students = window.appData.students.filter(s => targetClassIds.has(s.classId));
+
+            const t4Subjects = window.appData.subjects.filter(sub => sub.tahap === 'ALL' || sub.tahap === 'T2');
+
+            let studentsWithAnyMark = 0;
+            let studentsPassedAllTaken = 0;
+            t4Students.forEach(s => {
+                let takenCount = 0;
+                let failedAny = false;
+                t4Subjects.forEach(sub => {
+                    const sc = (s.scores && s.scores[exam] && s.scores[exam][sub.code]) || {};
+                    let grade = '-';
+                    if (sc.mark !== undefined && sc.mark !== null && sc.mark !== '') {
+                        grade = window.getGrade(sc.mark);
+                    } else if (sc.grade && ['A', 'B', 'C', 'D', 'E', 'TH'].includes(sc.grade.toUpperCase())) {
+                        grade = sc.grade.toUpperCase();
+                    }
+                    if (['A', 'B', 'C', 'D', 'E'].includes(grade)) {
+                        takenCount++;
+                        if (grade === 'E') failedAny = true;
+                    }
+                });
+                if (takenCount > 0) {
+                    studentsWithAnyMark++;
+                    if (!failedAny) studentsPassedAllTaken++;
+                }
+            });
+
+            const subjectStats = t4Subjects.map(sub => {
+                let countA = 0, countB = 0, countC = 0, countD = 0, countE = 0, countTH = 0;
+
+                t4Students.forEach(s => {
+                    const sc = (s.scores && s.scores[exam] && s.scores[exam][sub.code]) || {};
+                    let grade = '-';
+                    if (sc.mark !== undefined && sc.mark !== null && sc.mark !== '') {
+                        grade = window.getGrade(sc.mark);
+                    } else if (sc.grade && ['A', 'B', 'C', 'D', 'E', 'TH'].includes(sc.grade.toUpperCase())) {
+                        grade = sc.grade.toUpperCase();
+                    }
+
+                    if (grade === 'A') countA++;
+                    else if (grade === 'B') countB++;
+                    else if (grade === 'C') countC++;
+                    else if (grade === 'D') countD++;
+                    else if (grade === 'E') countE++;
+                    else if (grade === 'TH') countTH++;
+                });
+
+                const daftar = t4Students.length;
+                const hadir = countA + countB + countC + countD + countE;
+                const lulus = countA + countB + countC + countD;
+                const passPercent = hadir > 0 ? ((lulus / hadir) * 100).toFixed(2) : null;
+                const failPercent = hadir > 0 ? ((countE / hadir) * 100).toFixed(2) : null;
+                const gpmp = hadir > 0
+                    ? (((1 * countA) + (2 * countB) + (3 * countC) + (4 * countD) + (5 * countE)) / hadir).toFixed(2)
+                    : '-';
+
+                return {
+                    code: sub.code,
+                    name: sub.name,
+                    daftar,
+                    hadir,
+                    countTH,
+                    countA,
+                    countB,
+                    countC,
+                    countD,
+                    countE,
+                    lulus,
+                    passPercent,
+                    failPercent,
+                    gpmp
+                };
+            });
+
+            return {
+                exam,
+                classFilter,
+                targetClasses,
+                totalStudents: t4Students.length,
+                studentsWithAnyMark,
+                studentsPassedAllTaken,
+                subjectStats
+            };
+        };
+
+        window.updateMatriksTahun4Analytics = function() {
+            const tbody = document.getElementById('matriksT4AnalyticsBody');
+            if (!tbody) return;
+
+            const data = window.computeMatriksTahun4Data();
+
+            document.getElementById('matriksT4TotalClasses').innerText = data.targetClasses.length;
+            document.getElementById('matriksT4TotalCandidates').innerText = data.totalStudents;
+            document.getElementById('matriksT4AllPass').innerText = data.studentsWithAnyMark > 0
+                ? `${data.studentsPassedAllTaken} / ${data.studentsWithAnyMark} (${Math.round((data.studentsPassedAllTaken / data.studentsWithAnyMark) * 100)}%)`
+                : '-';
+
+            if (data.targetClasses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" class="text-center py-8 text-gray-400">Tiada kelas Tahun 4 ditemui dalam sistem. Pastikan nama kelas bermula dengan angka <strong>4</strong> (contoh: 4 ARIF).</td></tr>`;
+                return;
+            }
+
+            if (data.subjectStats.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" class="text-center py-8 text-gray-400">Tiada mata pelajaran Tahun 4 didaftarkan dalam Tetapan.</td></tr>`;
+                return;
+            }
+
+            const formatGradeCell = (count, hadir) => {
+                if (hadir === 0) return `<span class="text-gray-400">0</span>`;
+                const pct = ((count / hadir) * 100).toFixed(1);
+                return `<div class="font-bold">${count}</div><div class="text-[10px] text-gray-500">(${pct}%)</div>`;
+            };
+
+            let html = '';
+            data.subjectStats.forEach((st, idx) => {
+                const passNum = st.passPercent !== null ? parseFloat(st.passPercent) : -1;
+                const passBadgeClass = passNum < 0
+                    ? 'text-gray-400'
+                    : (passNum >= 80 ? 'text-emerald-700 bg-emerald-100' : (passNum >= 50 ? 'text-blue-700 bg-blue-100' : 'text-red-700 bg-red-100'));
+
+                html += `<tr class="border-b hover:bg-emerald-50/40 transition">
+                    <td class="px-3 py-2.5 text-center font-medium text-gray-500">${idx + 1}</td>
+                    <td class="px-4 py-2.5">
+                        <span class="font-mono text-xs font-bold bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded mr-1.5">${st.code}</span>
+                        <span class="font-bold text-gray-800 uppercase">${st.name}</span>
+                    </td>
+                    <td class="px-3 py-2.5 text-center font-semibold text-gray-700">${st.daftar}</td>
+                    <td class="px-3 py-2.5 text-center font-bold text-gray-800">${st.hadir}</td>
+                    <td class="px-3 py-2.5 text-center font-bold text-slate-600 bg-slate-50">${st.countTH}</td>
+                    <td class="px-3 py-2.5 text-center text-emerald-700 bg-emerald-50/40">${formatGradeCell(st.countA, st.hadir)}</td>
+                    <td class="px-3 py-2.5 text-center text-teal-700 bg-teal-50/40">${formatGradeCell(st.countB, st.hadir)}</td>
+                    <td class="px-3 py-2.5 text-center text-blue-700 bg-blue-50/40">${formatGradeCell(st.countC, st.hadir)}</td>
+                    <td class="px-3 py-2.5 text-center text-amber-700 bg-amber-50/40">${formatGradeCell(st.countD, st.hadir)}</td>
+                    <td class="px-3 py-2.5 text-center text-red-700 bg-red-50/40">${formatGradeCell(st.countE, st.hadir)}</td>
+                    <td class="px-3 py-2.5 text-center font-extrabold text-green-800 bg-green-50">${st.hadir > 0 ? `${st.lulus} / ${st.hadir}` : '-'}</td>
+                    <td class="px-3 py-2.5 text-center">
+                        <span class="px-2.5 py-1 rounded-full font-black text-xs ${passBadgeClass}">
+                            ${st.passPercent !== null ? st.passPercent + '%' : '-'}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2.5 text-center font-mono font-bold text-gray-700">${st.gpmp}</td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        };
+
+        window.printMatriksTahun4Report = function() {
+            const data = window.computeMatriksTahun4Data();
+            if (data.targetClasses.length === 0) {
+                window.showToast("Tiada kelas Tahun 4 ditemui untuk dicetak.");
+                return;
+            }
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                window.showToast("Tetingkap cetakan disekat pelayar. Sila benarkan Pop-up.");
+                return;
+            }
+
+            const schoolName = window.appData.school.name || "SEKOLAH KEBANGSAAN BIKANG";
+            const schoolCode = window.appData.school.code || "-";
+            const schoolYear = window.appData.school.year || new Date().getFullYear();
+            const examLabel = data.exam === 'PPT'
+                ? 'PENTAKSIRAN PERTENGAHAN TAHUN (PPT)'
+                : 'MATRIKS PEMBELAJARAN TAHUN 4 / PENTAKSIRAN AKHIR TAHUN';
+            const classLabel = data.classFilter === 'ALL'
+                ? `SEMUA KELAS TAHUN 4 (${data.targetClasses.map(c => c.name).join(', ')})`
+                : data.targetClasses[0]?.name || 'TAHUN 4';
+            const todayStr = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            const fmtPrintGrade = (cnt, hdr) => {
+                if (hdr === 0) return `0<br><span class="text-[10px] text-gray-500">(0.0%)</span>`;
+                const p = ((cnt / hdr) * 100).toFixed(1);
+                return `<strong>${cnt}</strong><br><span class="text-[10px] text-gray-600">(${p}%)</span>`;
+            };
+
+            let tableRowsHtml = '';
+            data.subjectStats.forEach((st, idx) => {
+                tableRowsHtml += `<tr>
+                    <td class="border border-black px-2 py-1.5 text-center">${idx + 1}</td>
+                    <td class="border border-black px-2 py-1.5 font-bold uppercase">${st.code} - ${st.name}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${st.daftar}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold">${st.hadir}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${st.countTH}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${fmtPrintGrade(st.countA, st.hadir)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${fmtPrintGrade(st.countB, st.hadir)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${fmtPrintGrade(st.countC, st.hadir)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${fmtPrintGrade(st.countD, st.hadir)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${fmtPrintGrade(st.countE, st.hadir)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold">${st.hadir > 0 ? st.lulus : '-'}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold bg-gray-100">${st.passPercent !== null ? st.passPercent + '%' : '-'}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold">${st.hadir > 0 ? st.countE : '-'}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${st.failPercent !== null ? st.failPercent + '%' : '-'}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold">${st.gpmp}</td>
+                </tr>`;
+            });
+
+            const allPassText = data.studentsWithAnyMark > 0
+                ? `${data.studentsPassedAllTaken} / ${data.studentsWithAnyMark} Murid (${((data.studentsPassedAllTaken / data.studentsWithAnyMark) * 100).toFixed(2)}%)`
+                : '-';
+
+            const html = `<html>
+                <head>
+                    <title>Laporan Analisis Matriks Tahun 4 - ${schoolName}</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <style>
+                        @page { size: A4 landscape; margin: 12mm; }
+                        body { font-family: 'Times New Roman', serif; color: #000; }
+                    </style>
+                </head>
+                <body class="p-4">
+                    <div class="text-center mb-4">
+                        <h1 class="text-xl font-bold uppercase">${schoolName} (${schoolCode})</h1>
+                        <h2 class="text-lg font-bold uppercase underline mt-1">LAPORAN ANALISIS PENCAPAIAN MATA PELAJARAN - ${examLabel} ${schoolYear}</h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-xs font-bold uppercase mb-3 border border-black p-2.5 bg-gray-50">
+                        <div>
+                            <p>TAHUN / ALIRAN: TAHUN 4 (${classLabel})</p>
+                            <p class="mt-1">JUMLAH CALON BERDAFTAR: ${data.totalStudents} ORANG</p>
+                        </div>
+                        <div class="text-right">
+                            <p>TARIKH CETAKAN: ${todayStr}</p>
+                            <p class="mt-1">MENGUASAI SEMUA SUBJEK (A–D): ${allPassText}</p>
+                        </div>
+                    </div>
+
+                    <table class="w-full border-collapse border border-black text-xs mb-3">
+                        <thead class="bg-gray-200 uppercase">
+                            <tr>
+                                <th rowspan="2" class="border border-black px-2 py-1.5 text-center w-8">BIL</th>
+                                <th rowspan="2" class="border border-black px-2 py-1.5 text-left">MATA PELAJARAN</th>
+                                <th rowspan="2" class="border border-black px-2 py-1.5 text-center w-14">DAFTAR</th>
+                                <th rowspan="2" class="border border-black px-2 py-1.5 text-center w-14">HADIR</th>
+                                <th rowspan="2" class="border border-black px-2 py-1.5 text-center w-12">TH</th>
+                                <th colspan="5" class="border border-black px-2 py-1 text-center">PENCAPAIAN GRED (BILANGAN &amp; PERATUS)</th>
+                                <th colspan="2" class="border border-black px-2 py-1 text-center bg-gray-300">LULUS (A–D)</th>
+                                <th colspan="2" class="border border-black px-2 py-1 text-center">GAGAL (E)</th>
+                                <th rowspan="2" class="border border-black px-2 py-1.5 text-center w-14">GPMP</th>
+                            </tr>
+                            <tr>
+                                <th class="border border-black px-1.5 py-1 text-center w-16">GRED A</th>
+                                <th class="border border-black px-1.5 py-1 text-center w-16">GRED B</th>
+                                <th class="border border-black px-1.5 py-1 text-center w-16">GRED C</th>
+                                <th class="border border-black px-1.5 py-1 text-center w-16">GRED D</th>
+                                <th class="border border-black px-1.5 py-1 text-center w-16">GRED E</th>
+                                <th class="border border-black px-1.5 py-1 text-center w-14 bg-gray-300">BIL</th>
+                                <th class="border border-black px-1.5 py-1 text-center w-16 bg-gray-300">% LULUS</th>
+                                <th class="border border-black px-1.5 py-1 text-center w-14">BIL</th>
+                                <th class="border border-black px-1.5 py-1 text-center w-16">% GAGAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRowsHtml}</tbody>
+                    </table>
+
+                    <div class="text-[11px] mb-6 flex justify-between">
+                        <span><strong>SKALA PEMARKAHAN:</strong> A (80–100) | B (65–79) | C (50–64) | D (40–49) | E (0–39) | TH (Tidak Hadir)</span>
+                        <span><strong>FORMULA:</strong> % Lulus = (Bil. Lulus A–D &divide; Bil. Hadir) &times; 100</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-8 text-center text-xs font-bold uppercase mt-8">
+                        <div>
+                            <br><br>
+                            <p class="border-t border-black pt-1.5 mx-6">DISEDIAKAN OLEH (PENYELARAS TAHUN 4 / SU PEPERIKSAAN)</p>
+                        </div>
+                        <div>
+                            <br><br>
+                            <p class="border-t border-black pt-1.5 mx-6">DISEMAK OLEH (PK PENTADBIRAN)</p>
+                        </div>
+                        <div>
+                            <br><br>
+                            <p class="border-t border-black pt-1.5 mx-6">DISAHKAN OLEH (GURU BESAR)</p>
+                        </div>
+                    </div>
+
+                    <script>window.onload=function(){setTimeout(window.print, 700);}<\/script>
+                </body>
+            </html>`;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
         };
 
         // --- BACKUP & TETAPAN ---
@@ -1484,7 +1997,10 @@
                     }, { merge: true });
                 }
                 window.showSyncStatus(false);
-                if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    window.updateDashboardAnalytics();
+                    window.updateMatriksTahun4Analytics();
+                }
             } catch (e) {
                 document.getElementById('syncStatus').innerText = "Ralat ❌";
             }
@@ -2110,7 +2626,6 @@
                             const detectedSubj = window.detectSubjectCodeFromText(headerText);
                             if (detectedSubj) currentPdfSubject = detectedSubj;
 
-                            // Kesan zon lajur "Tahap Penguasaan" supaya terasing daripada lajur "Kemahiran"
                             const tahapHeader = items.find(it => /^TAHAP$/i.test(it.str) || /^TAHAP\s*PENGUASAAN/i.test(it.str));
                             const kemahiranHeader = items.find(it => /^KEMAHIRAN$/i.test(it.str));
                             const ulasanHeader = items.find(it => /^ULASAN/i.test(it.str));
@@ -2135,7 +2650,6 @@
                             const sortedYKeys = Object.keys(rowsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
                             const tableStartY = tahapHeader ? tahapHeader.y - 10 : maxPageY - 110;
 
-                            // Cari semua item TP overall dalam zon lajur Tahap Penguasaan
                             const tpAnchors = [];
                             sortedYKeys.forEach(yKey => {
                                 const yNum = parseInt(yKey, 10);
@@ -2149,7 +2663,6 @@
                                 }
                             });
 
-                            // Bagi setiap rekod TP yang ditemui, kumpulkan baris nama & ID Pengenalan di sekeliling koordinat Y tersebut
                             tpAnchors.forEach((anchor, aIdx) => {
                                 const prevY = aIdx > 0 ? tpAnchors[aIdx - 1].y : tableStartY;
                                 const nextY = aIdx < tpAnchors.length - 1 ? tpAnchors[aIdx + 1].y : 0;
@@ -2217,7 +2730,6 @@
                     }
                 }
 
-                // Auto-pilih subjek pada dropdown jika dikesan dari dokumen SPPB
                 if (autoDetectedSubject && !selectedSubjDropdown) {
                     const subjDropdown = document.getElementById('markFilterSubject');
                     if (Array.from(subjDropdown.options).some(opt => opt.value === autoDetectedSubject)) {
@@ -2262,7 +2774,6 @@
                 let rawDocName = item.nama || item.nama_dokumen || 'TANPA NAMA';
                 let cleanedDocIC = window.normalizeICForMatching(item.no_kp);
 
-                // Semak nama dahulu (seperti diminta), diikuti No. KP sebagai sandaran
                 let matchedSysStudent = window.findBestStudentMatchByName(rawDocName, systemStudents);
                 if (!matchedSysStudent && cleanedDocIC.length === 12) {
                     matchedSysStudent = systemStudents.find(s => window.normalizeICForMatching(s.ic) === cleanedDocIC);
@@ -2469,7 +2980,6 @@
                         }
                     };
 
-                    // Masukkan No. Kad Pengenalan secara automatik jika dalam sistem belum ada No. KP
                     if (row.docIC && row.docIC !== '-' && row.docIC.length === 12 && (!targetStudent.ic || targetStudent.ic.trim() === '' || targetStudent.ic.trim() === '-')) {
                         studentPayload.ic = row.docIC;
                         autoFilledIcCount++;
@@ -2492,7 +3002,10 @@
                         ? `Berjaya mengimport TP PBD untuk ${updateCount} murid${icNote}!`
                         : `Berjaya menyimpan markah untuk ${updateCount} murid${icNote}!`);
                     window.loadMarksTable();
-                    if (document.getElementById('dashboard').classList.contains('active')) window.updateDashboardAnalytics();
+                    if (document.getElementById('dashboard').classList.contains('active')) {
+                        window.updateDashboardAnalytics();
+                        window.updateMatriksTahun4Analytics();
+                    }
                 } else {
                     window.showToast("Tiada murid yang sah dipilih untuk disimpan.");
                 }
@@ -2524,7 +3037,7 @@
                 let c = window.appData.classes.find(x => x.id === s.classId);
                 let classTahap = c ? window.getTahapKelas(c.name) : 'ALL';
                 let isTahap2 = classTahap === 'T2';
-                let isTahun4 = c && /^4/.test(c.name.trim());
+                let isTahun4 = c && /^(TAHUN\s*)?4/i.test(c.name.trim());
 
                 let activeSubjects = window.appData.subjects.filter(sub => sub.tahap === 'ALL' || sub.tahap === classTahap || classTahap === 'ALL');
                 let rows = '', total = 0, valid = 0;
