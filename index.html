@@ -329,9 +329,6 @@
                         <button onclick="window.openMatriksTahun4View()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold transition shadow-sm text-sm flex items-center">
                             <i class="fas fa-chart-bar mr-1"></i> Analisis Matriks Thn 4
                         </button>
-                        <button onclick="window.autoFixGender()" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-lg font-bold transition shadow-sm text-sm">
-                            🪄 Auto-Betul Jantina
-                        </button>
                         <button onclick="window.printReport('PPT')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm text-sm">
                             <i class="fas fa-print mr-1"></i> Cetak PPT
                         </button>
@@ -389,7 +386,7 @@
                             <input type="file" id="tpFileImport" accept=".pdf, .xlsx, .xls, .docx" multiple class="hidden" onchange="window.handleSppbTpImport(event)">
                         </label>
                         <button onclick="window.saveMarksBatch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition w-full md:w-auto whitespace-nowrap">
-                            <i class="fas fa-save mr-2"></i>Simpan Pukal
+                            <i class="fas fa-save mr-2"></i>Simpan
                         </button>
                     </div>
                 </div>
@@ -445,6 +442,10 @@
                                 <span><i class="fas fa-upload mr-2"></i> Muat Naik / Pulihkan Backup</span>
                                 <input type="file" accept=".json" class="hidden" onchange="window.importJSON(event)">
                             </label>
+
+                            <button onclick="window.autoFixGender()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 px-4 py-3 rounded font-bold transition shadow-sm text-left flex items-center justify-between">
+                                <span>🪄 Auto-Betul Jantina Murid (No. KP / Nama)</span>
+                            </button>
 
                             <div class="border-t border-red-200 pt-4 mt-2">
                                 <button onclick="window.wipeData()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded font-medium transition shadow-sm text-left flex items-center justify-between w-full">
@@ -1167,6 +1168,750 @@
                     window.showToast(`Berjaya import markah Matriks untuk ${matchedCount} murid!`);
                     window.loadMarksTable();
                     window.updateMatriksTahun4Analytics();
+                } else {
+                    window.showToast("Tiada padanan No. KP murid ditemui dalam fail Transit Matriks tersebut.");
+                }
+            } catch (e) {
+                console.error(e);
+                window.showToast("Ralat membaca PDF Transit Matriks: " + e.message);
+            }
+            event.target.value = '';
+        };
+
+        // --- ANALITIK DASHBOARD & CALON TOKOH MURID ---
+        window.updateDashboardSubjectDropdown = function() {
+            const selectEl = document.getElementById('dashSubjectFilter');
+            if (!selectEl) return;
+            const prevVal = selectEl.value || 'ALL';
+            let opts = '<option value="ALL">Semua Mata Pelajaran (Keseluruhan)</option>';
+            (window.appData.subjects || []).forEach(sub => {
+                opts += `<option value="${sub.code}">${sub.name} (${sub.code})</option>`;
+            });
+            selectEl.innerHTML = opts;
+            if (Array.from(selectEl.options).some(o => o.value === prevVal)) {
+                selectEl.value = prevVal;
+            }
+        };
+
+        window.updateDashboardAnalytics = function() {
+            const exam = document.getElementById('dashExamFilter')?.value || 'PAT';
+            const selectedSubj = document.getElementById('dashSubjectFilter')?.value || 'ALL';
+            const tbody = document.getElementById('dashAnalyticsBody');
+            if (!tbody) return;
+
+            const classes = window.appData.classes || [];
+            const students = window.appData.students || [];
+            const subjects = window.appData.subjects || [];
+
+            if (classes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-400">Tiada kelas didaftarkan lagi.</td></tr>`;
+            } else {
+                const subjObj = selectedSubj !== 'ALL' ? subjects.find(s => s.code === selectedSubj) : null;
+                let rowsHtml = '';
+
+                classes.forEach(cls => {
+                    const classTahap = window.getTahapKelas(cls.name);
+                    const classStudents = students.filter(s => s.classId === cls.id);
+
+                    if (subjObj && subjObj.tahap !== 'ALL' && classTahap !== 'ALL' && subjObj.tahap !== classTahap) {
+                        rowsHtml += `<tr class="border-b bg-gray-50/60 text-gray-400">
+                            <td class="px-4 py-3 font-bold">${cls.name}</td>
+                            <td class="px-4 py-3 text-center border-r border-blue-100">-</td>
+                            <td class="px-4 py-3 text-center">-</td>
+                            <td class="px-4 py-3 text-center">-</td>
+                            <td class="px-4 py-3 text-center">-</td>
+                            <td class="px-4 py-3 text-center">-</td>
+                            <td class="px-4 py-3 text-center">-</td>
+                            <td class="px-4 py-3 text-center">-</td>
+                        </tr>`;
+                        return;
+                    }
+
+                    const tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
+                    let satCount = 0;
+                    let passCount = 0;
+
+                    if (selectedSubj !== 'ALL') {
+                        classStudents.forEach(st => {
+                            const sc = st.scores?.[exam]?.[selectedSubj];
+                            if (sc?.tp && tpCounts[sc.tp] !== undefined) tpCounts[sc.tp]++;
+                            if (typeof sc?.mark === 'number') {
+                                satCount++;
+                                if (sc.mark >= 40) passCount++;
+                            }
+                        });
+                    } else {
+                        const activeSubjs = subjects.filter(sub => sub.tahap === 'ALL' || sub.tahap === classTahap || classTahap === 'ALL');
+                        classStudents.forEach(st => {
+                            let stSat = 0, stPass = 0;
+                            activeSubjs.forEach(sub => {
+                                const sc = st.scores?.[exam]?.[sub.code];
+                                if (sc?.tp && tpCounts[sc.tp] !== undefined) tpCounts[sc.tp]++;
+                                if (typeof sc?.mark === 'number') {
+                                    stSat++;
+                                    if (sc.mark >= 40) stPass++;
+                                }
+                            });
+                            if (stSat > 0) {
+                                satCount++;
+                                if (stPass === stSat) passCount++;
+                            }
+                        });
+                    }
+
+                    const passPct = satCount > 0 ? `${((passCount / satCount) * 100).toFixed(1)}%` : '-';
+                    rowsHtml += `<tr class="border-b hover:bg-blue-50/40">
+                        <td class="px-4 py-3 font-bold text-gray-800">${cls.name} <span class="text-xs font-normal text-gray-400">(${classStudents.length})</span></td>
+                        <td class="px-4 py-3 text-center font-extrabold text-blue-700 bg-blue-50/40 border-r border-blue-100">${passPct}</td>
+                        <td class="px-4 py-3 text-center font-bold text-red-600">${tpCounts.TP1}</td>
+                        <td class="px-4 py-3 text-center font-bold text-orange-600">${tpCounts.TP2}</td>
+                        <td class="px-4 py-3 text-center font-bold text-yellow-600">${tpCounts.TP3}</td>
+                        <td class="px-4 py-3 text-center font-bold text-green-600">${tpCounts.TP4}</td>
+                        <td class="px-4 py-3 text-center font-bold text-teal-600">${tpCounts.TP5}</td>
+                        <td class="px-4 py-3 text-center font-bold text-blue-600">${tpCounts.TP6}</td>
+                    </tr>`;
+                });
+
+                tbody.innerHTML = rowsHtml;
+            }
+
+            // Purata Keseluruhan Lulus (Sumatif)
+            let totalMarksCount = 0;
+            let totalPassMarksCount = 0;
+            students.forEach(st => {
+                const examScores = st.scores?.[exam] || {};
+                Object.keys(examScores).forEach(k => {
+                    if (k === '_KEHADIRAN') return;
+                    const m = examScores[k]?.mark;
+                    if (typeof m === 'number') {
+                        totalMarksCount++;
+                        if (m >= 40) totalPassMarksCount++;
+                    }
+                });
+            });
+            const overallEl = document.getElementById('dashOverallMTM');
+            if (overallEl) {
+                overallEl.innerText = totalMarksCount > 0 ? `${((totalPassMarksCount / totalMarksCount) * 100).toFixed(1)}%` : '-';
+            }
+
+            // Calon Tokoh Murid (Tahap 1 & Tahap 2)
+            const bestCandidates = {
+                'T1_L': null, 'T1_P': null,
+                'T2_L': null, 'T2_P': null
+            };
+
+            students.forEach(st => {
+                const cls = classes.find(c => c.id === st.classId);
+                if (!cls) return;
+                const tahap = window.getTahapKelas(cls.name);
+                const gender = st.gender === 'P' ? 'P' : 'L';
+                const key = `${tahap}_${gender}`;
+                if (!bestCandidates.hasOwnProperty(key)) return;
+
+                const activeSubjs = subjects.filter(sub => sub.tahap === 'ALL' || sub.tahap === tahap);
+                let sum = 0, cnt = 0;
+                activeSubjs.forEach(sub => {
+                    const m = st.scores?.[exam]?.[sub.code]?.mark;
+                    if (typeof m === 'number') { sum += m; cnt++; }
+                });
+
+                if (cnt > 0) {
+                    const avg = sum / cnt;
+                    if (!bestCandidates[key] || avg > bestCandidates[key].avg) {
+                        bestCandidates[key] = { student: st, className: cls.name, avg };
+                    }
+                }
+            });
+
+            const setTokohCard = (prefix, entry) => {
+                const nameEl = document.getElementById(`${prefix}-name`);
+                const clsEl = document.getElementById(`${prefix}-class`);
+                const markEl = document.getElementById(`${prefix}-marks`);
+                if (!nameEl || !clsEl || !markEl) return;
+                if (entry) {
+                    nameEl.innerText = entry.student.name;
+                    clsEl.innerText = entry.className;
+                    markEl.innerText = `${entry.avg.toFixed(1)}%`;
+                } else {
+                    nameEl.innerText = 'TIADA DATA';
+                    clsEl.innerText = '-';
+                    markEl.innerText = '-';
+                }
+            };
+
+            setTokohCard('tokoh-t1-l', bestCandidates['T1_L']);
+            setTokohCard('tokoh-t1-p', bestCandidates['T1_P']);
+            setTokohCard('tokoh-t2-l', bestCandidates['T2_L']);
+            setTokohCard('tokoh-t2-p', bestCandidates['T2_P']);
+        };
+
+        // --- LAPORAN ANALISIS MATRIKS TAHUN 4 ---
+        window.updateMatriksTahun4Dropdown = function() {
+            const selectEl = document.getElementById('matriksT4ClassFilter');
+            if (!selectEl) return;
+            const prevVal = selectEl.value || 'ALL';
+            const t4Classes = (window.appData.classes || []).filter(c => /^(TAHUN\s*)?4\b/i.test(c.name.trim()));
+            let opts = '<option value="ALL">Semua Kelas Tahun 4</option>';
+            t4Classes.forEach(c => {
+                opts += `<option value="${c.id}">${c.name}</option>`;
+            });
+            selectEl.innerHTML = opts;
+            if (Array.from(selectEl.options).some(o => o.value === prevVal)) {
+                selectEl.value = prevVal;
+            }
+        };
+
+        window.computeMatriksTahun4Data = function() {
+            const selectedClassId = document.getElementById('matriksT4ClassFilter')?.value || 'ALL';
+            const exam = document.getElementById('matriksT4ExamFilter')?.value || 'PAT';
+            const t4Classes = (window.appData.classes || []).filter(c => /^(TAHUN\s*)?4\b/i.test(c.name.trim()));
+            const targetClasses = selectedClassId === 'ALL' ? t4Classes : t4Classes.filter(c => c.id === selectedClassId);
+            const targetIds = new Set(targetClasses.map(c => c.id));
+            const candidates = (window.appData.students || []).filter(s => targetIds.has(s.classId));
+            const t4Subjects = (window.appData.subjects || []).filter(sub => sub.tahap === 'ALL' || sub.tahap === 'T2');
+
+            const rowsData = t4Subjects.map(sub => {
+                let daftar = candidates.length;
+                let hadir = 0, th = 0, A = 0, B = 0, C = 0, D = 0, E = 0;
+
+                candidates.forEach(st => {
+                    const sc = st.scores?.[exam]?.[sub.code];
+                    const m = sc?.mark;
+                    if (m === 'T' || m === 'TH') {
+                        th++;
+                    } else if (typeof m === 'number') {
+                        hadir++;
+                        if (m >= 80) A++;
+                        else if (m >= 65) B++;
+                        else if (m >= 50) C++;
+                        else if (m >= 40) D++;
+                        else E++;
+                    }
+                });
+
+                const lulus = A + B + C + D;
+                const pctLulus = hadir > 0 ? ((lulus / hadir) * 100).toFixed(2) : '0.00';
+                const gpmp = hadir > 0 ? (((A * 1) + (B * 2) + (C * 3) + (D * 4) + (E * 5)) / hadir).toFixed(2) : '-';
+                const fmtCell = (cnt) => hadir > 0 ? `${cnt} <span class="text-[11px] text-gray-500">(${((cnt / hadir) * 100).toFixed(1)}%)</span>` : `${cnt}`;
+
+                return { sub, daftar, hadir, th, A, B, C, D, E, lulus, pctLulus, gpmp, fmtCell };
+            });
+
+            let allPassCount = 0;
+            let candidatesWithMarks = 0;
+            candidates.forEach(st => {
+                let sat = 0, failedOrTh = false;
+                t4Subjects.forEach(sub => {
+                    const m = st.scores?.[exam]?.[sub.code]?.mark;
+                    if (m === 'T' || m === 'TH') {
+                        sat++;
+                        failedOrTh = true;
+                    } else if (typeof m === 'number') {
+                        sat++;
+                        if (m < 40) failedOrTh = true;
+                    }
+                });
+                if (sat > 0) {
+                    candidatesWithMarks++;
+                    if (!failedOrTh) allPassCount++;
+                }
+            });
+
+            return { t4Classes, targetClasses, candidates, exam, rowsData, allPassCount, candidatesWithMarks };
+        };
+
+        window.updateMatriksTahun4Analytics = function() {
+            const tbody = document.getElementById('matriksT4AnalyticsBody');
+            if (!tbody) return;
+
+            const { targetClasses, candidates, rowsData, allPassCount, candidatesWithMarks } = window.computeMatriksTahun4Data();
+            document.getElementById('matriksT4TotalClasses').innerText = targetClasses.length;
+            document.getElementById('matriksT4TotalCandidates').innerText = candidates.length;
+            document.getElementById('matriksT4AllPass').innerText = candidatesWithMarks > 0
+                ? `${allPassCount} / ${candidatesWithMarks} (${((allPassCount / candidatesWithMarks) * 100).toFixed(1)}%)`
+                : '-';
+
+            if (targetClasses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" class="text-center py-8 text-gray-400">Tiada kelas Tahun 4 ditemui dalam sistem (Contoh nama kelas: 4 ARIF / TAHUN 4).</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            rowsData.forEach((r, idx) => {
+                html += `<tr class="border-b hover:bg-emerald-50/40 text-xs">
+                    <td class="px-3 py-2.5 text-center font-bold text-gray-500">${idx + 1}</td>
+                    <td class="px-4 py-2.5 font-bold text-gray-800">${r.sub.name} <span class="text-gray-400 font-mono">(${r.sub.code})</span></td>
+                    <td class="px-3 py-2.5 text-center font-semibold">${r.daftar}</td>
+                    <td class="px-3 py-2.5 text-center font-bold text-blue-700">${r.hadir}</td>
+                    <td class="px-3 py-2.5 text-center font-semibold text-gray-600 bg-gray-50">${r.th}</td>
+                    <td class="px-3 py-2.5 text-center font-bold text-emerald-700">${r.fmtCell(r.A)}</td>
+                    <td class="px-3 py-2.5 text-center font-bold text-teal-700">${r.fmtCell(r.B)}</td>
+                    <td class="px-3 py-2.5 text-center font-bold text-blue-700">${r.fmtCell(r.C)}</td>
+                    <td class="px-3 py-2.5 text-center font-bold text-amber-700">${r.fmtCell(r.D)}</td>
+                    <td class="px-3 py-2.5 text-center font-bold text-red-600">${r.fmtCell(r.E)}</td>
+                    <td class="px-3 py-2.5 text-center font-extrabold text-green-800 bg-green-50/50">${r.lulus}</td>
+                    <td class="px-3 py-2.5 text-center font-black text-green-900 bg-green-100/70">${r.hadir > 0 ? r.pctLulus + '%' : '-'}</td>
+                    <td class="px-3 py-2.5 text-center font-extrabold text-slate-800">${r.gpmp}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html || `<tr><td colspan="13" class="text-center py-6 text-gray-400">Tiada mata pelajaran dikonfigurasikan.</td></tr>`;
+        };
+
+        window.printMatriksTahun4Report = function() {
+            const { targetClasses, candidates, exam, rowsData, allPassCount, candidatesWithMarks } = window.computeMatriksTahun4Data();
+            if (targetClasses.length === 0) {
+                window.showToast("Tiada kelas Tahun 4 untuk dicetak.");
+                return;
+            }
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                window.showToast("Tetingkap cetakan disekat pelayar. Sila benarkan Pop-up.");
+                return;
+            }
+
+            const schoolName = window.appData.school.name || 'SEKOLAH KEBANGSAAN BIKANG';
+            const schoolYear = window.appData.school.year || new Date().getFullYear();
+            const classLabel = targetClasses.map(c => c.name).join(', ');
+            const examLabel = exam === 'PPT' ? 'PENTAKSIRAN PERTENGAHAN TAHUN (PPT)' : 'MATRIKS PEMBELAJARAN / AKHIR TAHUN (PAT)';
+
+            let tableRows = '';
+            rowsData.forEach((r, idx) => {
+                const cellTxt = (cnt) => r.hadir > 0 ? `${cnt} (${((cnt / r.hadir) * 100).toFixed(1)}%)` : `${cnt}`;
+                tableRows += `<tr>
+                    <td class="border border-black px-2 py-1.5 text-center">${idx + 1}</td>
+                    <td class="border border-black px-2 py-1.5 font-bold">${r.sub.name} (${r.sub.code})</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${r.daftar}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold">${r.hadir}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${r.th}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.A)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.B)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.C)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.D)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.E)}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold">${r.lulus}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold bg-gray-100">${r.hadir > 0 ? r.pctLulus + '%' : '-'}</td>
+                    <td class="border border-black px-2 py-1.5 text-center font-bold">${r.gpmp}</td>
+                </tr>`;
+            });
+
+            const allPassStr = candidatesWithMarks > 0
+                ? `${allPassCount} / ${candidatesWithMarks} (${((allPassCount / candidatesWithMarks) * 100).toFixed(2)}%)`
+                : '-';
+
+            const html = `<html><head><title>Analisis Matriks Tahun 4</title><script src="https://cdn.tailwindcss.com"><\/script><style>@page { size: A4 landscape; margin: 12mm; } body { font-family: 'Times New Roman', serif; }</style></head><body class="p-4">
+                <div class="text-center mb-4">
+                    <h1 class="text-xl font-bold uppercase">${schoolName}</h1>
+                    <h2 class="text-base font-bold uppercase mt-1">LAPORAN ANALISIS PENCAPAIAN MATRIKS TAHUN 4 — ${examLabel} (${schoolYear})</h2>
+                    <p class="text-xs font-bold uppercase mt-1">KELAS: ${classLabel} | JUMLAH CALON: ${candidates.length} | LULUS SEMUA SUBJEK (A–D): ${allPassStr}</p>
+                </div>
+                <table class="w-full border-collapse border border-black text-xs mb-4">
+                    <thead class="bg-gray-200 font-bold">
+                        <tr>
+                            <th class="border border-black px-2 py-2 text-center w-8">BIL</th>
+                            <th class="border border-black px-2 py-2 text-left">MATA PELAJARAN</th>
+                            <th class="border border-black px-2 py-2 text-center">DAFTAR</th>
+                            <th class="border border-black px-2 py-2 text-center">HADIR</th>
+                            <th class="border border-black px-2 py-2 text-center">TH</th>
+                            <th class="border border-black px-2 py-2 text-center">GRED A</th>
+                            <th class="border border-black px-2 py-2 text-center">GRED B</th>
+                            <th class="border border-black px-2 py-2 text-center">GRED C</th>
+                            <th class="border border-black px-2 py-2 text-center">GRED D</th>
+                            <th class="border border-black px-2 py-2 text-center">GRED E</th>
+                            <th class="border border-black px-2 py-2 text-center">LULUS (A–D)</th>
+                            <th class="border border-black px-2 py-2 text-center">% LULUS</th>
+                            <th class="border border-black px-2 py-2 text-center">GPMP</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+                <div class="text-[11px] text-gray-700 mb-6 flex justify-between">
+                    <span>Skala Gred: A (80–100) | B (65–79) | C (50–64) | D (40–49) | E (0–39) | TH (Tidak Hadir)</span>
+                    <span>Formula GPMP = [(1×A) + (2×B) + (3×C) + (4×D) + (5×E)] ÷ Bilangan Hadir</span>
+                </div>
+                <div class="grid grid-cols-3 gap-8 text-center text-xs font-bold uppercase mt-8">
+                    <div><br><br><p class="border-t border-black pt-1 mx-6">DISEDIAKAN OLEH (SETIAUSAHA PEPERIKSAAN)</p></div>
+                    <div><br><br><p class="border-t border-black pt-1 mx-6">DISEMAK OLEH (GPK PENTADBIRAN)</p></div>
+                    <div><br><br><p class="border-t border-black pt-1 mx-6">DISAHKAN OLEH (GURU BESAR)</p></div>
+                </div>
+                <script>window.onload=function(){setTimeout(window.print, 700);}<\/script>
+            </body></html>`;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+        };
+
+        // --- PENGURUSAN MURID & KELAS ---
+        window.renderStudents = function() {
+            const tbody = document.getElementById('studentsTableBody');
+            if (!tbody) return;
+            const filterClassId = document.getElementById('filterClass')?.value || '';
+            const list = filterClassId
+                ? (window.appData.students || []).filter(s => s.classId === filterClassId)
+                : (window.appData.students || []);
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-400">Tiada rekod murid ditemui.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            list.forEach(s => {
+                const cls = (window.appData.classes || []).find(c => c.id === s.classId);
+                html += `<tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2.5 text-center"><input type="checkbox" value="${s.id}" class="print-checkbox rounded text-blue-600 w-4 h-4 cursor-pointer"></td>
+                    <td class="px-4 py-2.5 font-mono text-xs text-gray-600">${s.ic || '-'}</td>
+                    <td class="px-4 py-2.5 font-bold uppercase text-xs text-gray-800">${s.name}</td>
+                    <td class="px-4 py-2.5 text-xs font-bold ${s.gender === 'P' ? 'text-pink-600' : 'text-blue-600'}">${s.gender || '-'}</td>
+                    <td class="px-4 py-2.5 text-xs font-semibold text-gray-700">${cls ? cls.name : '<span class="text-red-400">Tiada Kelas</span>'}</td>
+                    <td class="px-4 py-2.5 text-center space-x-2">
+                        <button onclick="window.openEditStudent('${s.id}')" class="text-blue-600 hover:text-blue-800" title="Sunting"><i class="fas fa-edit"></i></button>
+                        <button onclick="window.deleteStudent('${s.id}')" class="text-red-500 hover:text-red-700" title="Padam"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+            const selectAll = document.getElementById('selectAllCheckbox');
+            if (selectAll) selectAll.checked = false;
+        };
+
+        window.toggleSelectAll = function() {
+            const checked = document.getElementById('selectAllCheckbox')?.checked || false;
+            document.querySelectorAll('.print-checkbox').forEach(cb => { cb.checked = checked; });
+        };
+
+        window.saveNewClass = async function() {
+            const input = document.getElementById('newClassName');
+            const name = (input?.value || '').replace(/\s+/g, ' ').trim().toUpperCase();
+            if (!name) {
+                window.showToast("Sila masukkan nama kelas.");
+                return;
+            }
+            if ((window.appData.classes || []).some(c => c.name.toUpperCase() === name)) {
+                window.showToast("Kelas ini sudah wujud.");
+                return;
+            }
+            try {
+                await setDoc(doc(collection(db, 'classes')), { name });
+                input.value = '';
+                document.getElementById('modalAddClass').classList.add('hidden');
+                window.showToast(`Kelas ${name} berjaya ditambah!`);
+            } catch (e) {
+                window.showToast("Ralat menambah kelas: " + e.message);
+            }
+        };
+
+        window.openEditStudent = function(id) {
+            const st = (window.appData.students || []).find(s => s.id === id);
+            if (!st) return;
+            document.getElementById('editStudentId').value = st.id;
+            document.getElementById('editStudentName').value = st.name || '';
+            document.getElementById('editStudentIC').value = st.ic || '';
+            document.getElementById('editStudentGender').value = st.gender || 'L';
+            document.getElementById('editStudentClass').value = st.classId || '';
+            document.getElementById('modalEditStudent').classList.remove('hidden');
+        };
+
+        window.saveEditedStudent = async function() {
+            const id = document.getElementById('editStudentId').value;
+            const name = document.getElementById('editStudentName').value.replace(/\s+/g, ' ').trim().toUpperCase();
+            const ic = document.getElementById('editStudentIC').value.replace(/[^0-9]/g, '');
+            const gender = document.getElementById('editStudentGender').value;
+            const classId = document.getElementById('editStudentClass').value;
+
+            if (!id || !name) {
+                window.showToast("Nama murid tidak boleh kosong.");
+                return;
+            }
+            try {
+                await setDoc(doc(db, 'students', id), { name, ic, gender, classId }, { merge: true });
+                document.getElementById('modalEditStudent').classList.add('hidden');
+                window.showToast("Profil murid dikemaskini!");
+            } catch (e) {
+                window.showToast("Ralat mengemaskini murid: " + e.message);
+            }
+        };
+
+        window.deleteStudent = async function(id) {
+            const st = (window.appData.students || []).find(s => s.id === id);
+            if (!st) return;
+            const ok = await window.showConfirmDialog({
+                title: "Padam Rekod Murid",
+                message: `Adakah anda pasti mahu memadam rekod murid "${st.name}"?`,
+                confirmBtnClass: "bg-red-600 hover:bg-red-700"
+            });
+            if (!ok) return;
+            try {
+                await deleteDoc(doc(db, 'students', id));
+                window.showToast("Rekod murid dipadam.");
+            } catch (e) {
+                window.showToast("Ralat memadam murid: " + e.message);
+            }
+        };
+
+        // --- TETAPAN PROFIL, SUBJEK & SANDARAN DATA ---
+        window.saveSchoolProfile = async function() {
+            const name = document.getElementById('schoolName').value.trim().toUpperCase();
+            const code = document.getElementById('schoolCode').value.trim().toUpperCase();
+            const year = document.getElementById('schoolYear').value.trim();
+            try {
+                await setDoc(doc(db, 'settings', 'profile'), { name, code, year }, { merge: true });
+                window.showToast("Profil sekolah berjaya disimpan!");
+            } catch (e) {
+                window.showToast("Ralat menyimpan profil: " + e.message);
+            }
+        };
+
+        window.renderSubjectsTable = function() {
+            const tbody = document.getElementById('subjectListBody');
+            if (!tbody) return;
+            const list = window.appData.subjects || [];
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-400">Tiada mata pelajaran ditetapkan.</td></tr>`;
+                return;
+            }
+            const tahapLabels = {
+                'ALL': '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-bold">Semua Tahap</span>',
+                'T1': '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold">Tahap 1 (Thn 1–3)</span>',
+                'T2': '<span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold">Tahap 2 (Thn 4–6)</span>'
+            };
+            tbody.innerHTML = list.map(sub => `<tr class="border-b hover:bg-gray-50">
+                <td class="p-3 font-mono font-bold text-indigo-700">${sub.code}</td>
+                <td class="p-3 font-bold uppercase text-gray-800">${sub.name}</td>
+                <td class="p-3 text-center">${tahapLabels[sub.tahap] || tahapLabels['ALL']}</td>
+                <td class="p-3 text-center">
+                    <button onclick="window.deleteSubject('${sub.code}')" class="text-red-500 hover:text-red-700" title="Padam Subjek"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`).join('');
+        };
+
+        window.addSubject = async function() {
+            const code = document.getElementById('newSubCode').value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '');
+            const name = document.getElementById('newSubName').value.trim().toUpperCase();
+            const tahap = document.getElementById('newSubTahap').value || 'ALL';
+            if (!code || !name) {
+                window.showToast("Sila masukkan Kod dan Nama Mata Pelajaran.");
+                return;
+            }
+            const currentList = [...(window.appData.subjects || [])];
+            if (currentList.some(s => s.code === code)) {
+                window.showToast(`Kod subjek ${code} sudah wujud.`);
+                return;
+            }
+            currentList.push({ code, name, tahap });
+            try {
+                await setDoc(doc(db, 'settings', 'subjects'), { list: currentList });
+                document.getElementById('newSubCode').value = '';
+                document.getElementById('newSubName').value = '';
+                window.showToast(`Subjek ${name} (${code}) ditambah!`);
+            } catch (e) {
+                window.showToast("Ralat menambah subjek: " + e.message);
+            }
+        };
+
+        window.deleteSubject = async function(code) {
+            const ok = await window.showConfirmDialog({
+                title: "Padam Mata Pelajaran",
+                message: `Padam subjek berkod "${code}" daripada senarai aktif?`,
+                confirmBtnClass: "bg-red-600 hover:bg-red-700"
+            });
+            if (!ok) return;
+            const updated = (window.appData.subjects || []).filter(s => s.code !== code);
+            try {
+                await setDoc(doc(db, 'settings', 'subjects'), { list: updated });
+                window.showToast(`Subjek ${code} dipadam.`);
+            } catch (e) {
+                window.showToast("Ralat memadam subjek: " + e.message);
+            }
+        };
+
+        window.generateSubjectsAI = async function() {
+            const defaults = [
+                { code: 'BM', name: 'BAHASA MELAYU', tahap: 'ALL' },
+                { code: 'BI', name: 'BAHASA INGGERIS', tahap: 'ALL' },
+                { code: 'MT', name: 'MATEMATIK', tahap: 'ALL' },
+                { code: 'SN', name: 'SAINS', tahap: 'ALL' },
+                { code: 'PI', name: 'PENDIDIKAN ISLAM', tahap: 'ALL' },
+                { code: 'PM', name: 'PENDIDIKAN MORAL', tahap: 'ALL' },
+                { code: 'BA', name: 'BAHASA ARAB', tahap: 'ALL' },
+                { code: 'SJ', name: 'SEJARAH', tahap: 'T2' },
+                { code: 'RBT', name: 'REKA BENTUK DAN TEKNOLOGI', tahap: 'T2' },
+                { code: 'PJPK', name: 'PENDIDIKAN JASMANI DAN KESIHATAN', tahap: 'ALL' },
+                { code: 'PSV', name: 'PENDIDIKAN SENI VISUAL', tahap: 'ALL' },
+                { code: 'MZ', name: 'PENDIDIKAN MUZIK', tahap: 'ALL' }
+            ];
+            const existing = [...(window.appData.subjects || [])];
+            let added = 0;
+            defaults.forEach(d => {
+                if (!existing.some(e => e.code === d.code)) {
+                    existing.push(d);
+                    added++;
+                }
+            });
+            if (added === 0) {
+                window.showToast("Semua subjek standard KSSR sudah lengkap.");
+                return;
+            }
+            try {
+                await setDoc(doc(db, 'settings', 'subjects'), { list: existing });
+                window.showToast(`Berjaya menjana ${added} subjek KSSR!`);
+            } catch (e) {
+                window.showToast("Ralat menjana subjek: " + e.message);
+            }
+        };
+
+        window.exportJSON = function() {
+            const payload = {
+                exportedAt: new Date().toISOString(),
+                school: window.appData.school,
+                subjects: window.appData.subjects,
+                classes: window.appData.classes,
+                students: window.appData.students
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `SPAK_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            window.showToast("Fail sandaran (.JSON) dimuat turun!");
+        };
+
+        window.importJSON = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                const ops = [];
+
+                if (data.school) {
+                    ops.push({ type: 'set', ref: doc(db, 'settings', 'profile'), data: data.school, options: { merge: true } });
+                }
+                if (Array.isArray(data.subjects)) {
+                    ops.push({ type: 'set', ref: doc(db, 'settings', 'subjects'), data: { list: data.subjects } });
+                }
+                if (Array.isArray(data.classes)) {
+                    data.classes.forEach(c => {
+                        const { id, ...rest } = c;
+                        const ref = id ? doc(db, 'classes', id) : doc(collection(db, 'classes'));
+                        ops.push({ type: 'set', ref, data: rest, options: { merge: true } });
+                    });
+                }
+                if (Array.isArray(data.students)) {
+                    data.students.forEach(s => {
+                        const { id, ...rest } = s;
+                        const ref = id ? doc(db, 'students', id) : doc(collection(db, 'students'));
+                        ops.push({ type: 'set', ref, data: rest, options: { merge: true } });
+                    });
+                }
+
+                await window.commitOperationsInChunks(ops);
+                window.showToast("Data sandaran berjaya dipulihkan!");
+            } catch (e) {
+                window.showToast("Fail sandaran tidak sah: " + e.message);
+            }
+            event.target.value = '';
+        };
+
+        window.wipeData = async function() {
+            const ok = await window.showConfirmDialog({
+                title: "Padam Semua Data Sistem",
+                message: "Amaran: Semua senarai kelas, murid, dan markah akan dipadam secara kekal. Taip 'PADAM' untuk mengesahkan.",
+                requireText: "PADAM",
+                placeholder: "Taip PADAM",
+                confirmBtnClass: "bg-red-600 hover:bg-red-700"
+            });
+            if (!ok) return;
+
+            try {
+                const ops = [];
+                (window.appData.students || []).forEach(s => ops.push({ type: 'delete', ref: doc(db, 'students', s.id) }));
+                (window.appData.classes || []).forEach(c => ops.push({ type: 'delete', ref: doc(db, 'classes', c.id) }));
+                await window.commitOperationsInChunks(ops);
+                window.showToast("Semua data murid dan kelas telah dipadam.");
+            } catch (e) {
+                window.showToast("Ralat memadam data: " + e.message);
+            }
+        };
+
+        // --- PENGURUSAN DROPDOWN SUBJEK & GRED MARKAH ---
+        window.updateSubjectDropdown = function() {
+            const classId = document.getElementById('markFilterClass')?.value || '';
+            const selectEl = document.getElementById('markFilterSubject');
+            if (!selectEl) return;
+
+            if (!classId) {
+                selectEl.innerHTML = '<option value="">-- Pilih Kelas Dahulu --</option>';
+                window.loadMarksTable();
+                return;
+            }
+
+            const prevVal = selectEl.value;
+            const cls = (window.appData.classes || []).find(c => c.id === classId);
+            const classTahap = cls ? window.getTahapKelas(cls.name) : 'ALL';
+            const activeSubjects = (window.appData.subjects || []).filter(sub =>
+                sub.tahap === 'ALL' || sub.tahap === classTahap || classTahap === 'ALL'
+            );
+
+            let opts = '<option value="">-- Pilih Mata Pelajaran --</option>';
+            activeSubjects.forEach(sub => {
+                opts += `<option value="${sub.code}">${sub.name} (${sub.code})</option>`;
+            });
+            opts += '<option value="_KEHADIRAN">Kehadiran, Sahsiah & Ulasan</option>';
+
+            selectEl.innerHTML = opts;
+            if (Array.from(selectEl.options).some(o => o.value === prevVal)) {
+                selectEl.value = prevVal;
+            }
+            window.loadMarksTable();
+        };
+
+        window.getGrade = function(mark) {
+            if (mark === null || mark === undefined || mark === '' || mark === '-') return '-';
+            const up = mark.toString().trim().toUpperCase();
+            if (up === 'T' || up === 'TH') return 'TH';
+            const num = parseFloat(up);
+            if (isNaN(num)) return '-';
+            if (num >= 80) return 'A';
+            if (num >= 65) return 'B';
+            if (num >= 50) return 'C';
+            if (num >= 40) return 'D';
+            return 'E';
+        };
+
+        window.updateGradePreview = function(inputEl) {
+            const row = inputEl.closest('tr');
+            if (!row) return;
+            const gradeCell = row.querySelector('.grade-preview');
+            if (gradeCell) gradeCell.innerText = window.getGrade(inputEl.value);
+        };
+
+        window.autoSaveRow = async function(inputEl) {
+            const row = inputEl.closest('tr');
+            if (!row) return;
+            const id = row.getAttribute('data-id');
+            const exam = document.getElementById('markFilterExam').value;
+            const subject = document.getElementById('markFilterSubject').value;
+            if (!id || !subject) return;
+
+            window.isAutoSaving = true;
+            window.showSyncStatus(true);
+            try {
+                if (subject === '_KEHADIRAN') {
+                    const attVal = row.querySelector('.att-input').value;
+                    await setDoc(doc(db, 'students', id), {
+                        scores: {
+                            [exam]: {
+                                '_KEHADIRAN': {
+                                    kehadiran: attVal === '' ? null : parseFloat(attVal),
+                                    kelakuan: row.querySelector('.beh-input').value,
+                                    ulasan: row.querySelector('.cmt-input').value
+                                }
+                            }
+                        }
+                    }, { merge: true });
                 } else {
                     let markInputEl = row.querySelector('.mark-input');
                     let markVal = markInputEl.value.trim().toUpperCase();
