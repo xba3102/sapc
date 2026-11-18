@@ -1078,1107 +1078,62 @@
                     }
 
                     let currentSubjCode = null;
-                    pageTextItems.forEach(it => {
-                        const det = window.detectSubjectCodeFromText(it.str);
-                        if (det) currentSubjCode = det;
-                    });
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
 
-                    if (!currentSubjCode) continue;
+                        let pageTextItems = textContent.items.map(item => ({
+                            str: item.str.trim(),
+                            x: Math.round(item.transform[4]),
+                            y: Math.round(item.transform[5])
+                        })).filter(it => it.str.length > 0);
 
-                    const jumlahHeader = pageTextItems.find(it => /^JUMLAH$/i.test(it.str) || /^JUM\.?$/i.test(it.str));
+                        let rowsMap = {};
+                        pageTextItems.forEach(it => {
+                            let foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey, 10) - it.y) < 5);
+                            let yKey = foundY || it.y;
+                            if (!rowsMap[yKey]) rowsMap[yKey] = [];
+                            rowsMap[yKey].push(it);
+                        });
 
-                    let rowsMap = {};
-                    pageTextItems.forEach(it => {
-                        let foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey, 10) - it.y) < 5);
-                        let yKey = foundY || it.y;
-                        if (!rowsMap[yKey]) rowsMap[yKey] = [];
-                        rowsMap[yKey].push(it);
-                    });
-
-                    Object.keys(rowsMap).forEach(y => {
-                        let rowItems = rowsMap[y].sort((a, b) => a.x - b.x);
-                        let fullRowStr = rowItems.map(r => r.str).join(' ');
-
-                        let icMatch = fullRowStr.match(/\b\d{12}\b/);
-                        if (icMatch) {
-                            let ic = icMatch[0];
-                            let icIndex = rowItems.findIndex(r => r.str.includes(ic));
-                            let itemsAfterIc = icIndex !== -1 ? rowItems.slice(icIndex + 1) : [];
-
-                            if (jumlahHeader) {
-                                const nearJumlah = itemsAfterIc.find(r => Math.abs(r.x - jumlahHeader.x) <= 22 && /^(T|TH|\d{1,3}(\.\d+)?)$/i.test(r.str));
-                                if (nearJumlah) {
-                                    const up = nearJumlah.str.toUpperCase();
-                                    if (!extractedData[ic]) extractedData[ic] = {};
-                                    extractedData[ic][currentSubjCode] = (up === 'T' || up === 'TH') ? 'T' : Math.min(100, Math.max(0, parseFloat(up)));
-                                }
-                            } else {
-                                let tokensAfterIc = itemsAfterIc
-                                    .filter(r => /^(T|TH|\d{1,3})$/i.test(r.str))
-                                    .map(r => r.str.toUpperCase());
-
-                                if (tokensAfterIc.length > 0) {
-                                    let lastTok = tokensAfterIc[tokensAfterIc.length - 1];
-                                    if (lastTok === 'T' || lastTok === 'TH') {
-                                        if (!extractedData[ic]) extractedData[ic] = {};
-                                        extractedData[ic][currentSubjCode] = 'T';
-                                    } else {
-                                        let totalMark = parseInt(lastTok, 10);
-                                        if (!isNaN(totalMark) && totalMark <= 100) {
-                                            if (!extractedData[ic]) extractedData[ic] = {};
-                                            extractedData[ic][currentSubjCode] = totalMark;
-                                        }
-                                    }
-                                }
+                        const sortedY = Object.keys(rowsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+                        sortedY.forEach(yKey => {
+                            const lineText = rowsMap[yKey].sort((a, b) => a.x - b.x).map(r => r.str).join(' ');
+                            if (!detectedClass && lineText.toUpperCase().includes('KELAS')) {
+                                const mCls = lineText.match(/KELAS\s*[:\-]?\s*([0-9A-Z\s]+)/i);
+                                if (mCls && mCls[1]) detectedClass = mCls[1].trim();
                             }
-                        }
-                    });
-                }
-
-                let matchedCount = 0;
-                const ops = [];
-
-                Object.keys(extractedData).forEach(ic => {
-                    let student = window.appData.students.find(s => window.normalizeICForMatching(s.ic) === ic);
-                    if (student) {
-                        let existingPat = (student.scores && student.scores['PAT']) ? { ...student.scores['PAT'] } : {};
-                        let subjs = extractedData[ic];
-                        Object.keys(subjs).forEach(sCode => {
-                            let m = subjs[sCode];
-                            let existingTp = existingPat[sCode]?.tp || '';
-                            existingPat[sCode] = {
-                                mark: m,
-                                grade: m === 'T' ? 'TH' : window.getGrade(m),
-                                tp: existingTp
-                            };
-                        });
-
-                        ops.push({
-                            type: 'set',
-                            ref: doc(db, 'students', student.id),
-                            data: { scores: { 'PAT': existingPat } },
-                            options: { merge: true }
-                        });
-                        matchedCount++;
-                    }
-                });
-
-                if (matchedCount > 0) {
-                    await window.commitOperationsInChunks(ops);
-                    window.showToast(`Berjaya import markah Matriks untuk ${matchedCount} murid!`);
-                    window.loadMarksTable();
-                    window.updateMatriksTahun4Analytics();
-                } else {
-                    window.showToast("Tiada padanan No. KP murid ditemui dalam fail Transit Matriks tersebut.");
-                }
-            } catch (e) {
-                console.error(e);
-                window.showToast("Ralat membaca PDF Transit Matriks: " + e.message);
-            }
-            event.target.value = '';
-        };
-
-        // --- ANALITIK DASHBOARD & CALON TOKOH MURID ---
-        window.updateDashboardSubjectDropdown = function() {
-            const selectEl = document.getElementById('dashSubjectFilter');
-            if (!selectEl) return;
-            const prevVal = selectEl.value || 'ALL';
-            let opts = '<option value="ALL">Semua Mata Pelajaran (Keseluruhan)</option>';
-            (window.appData.subjects || []).forEach(sub => {
-                opts += `<option value="${sub.code}">${sub.name} (${sub.code})</option>`;
-            });
-            selectEl.innerHTML = opts;
-            if (Array.from(selectEl.options).some(o => o.value === prevVal)) {
-                selectEl.value = prevVal;
-            }
-        };
-
-        window.updateDashboardAnalytics = function() {
-            const exam = document.getElementById('dashExamFilter')?.value || 'PAT';
-            const selectedSubj = document.getElementById('dashSubjectFilter')?.value || 'ALL';
-            const tbody = document.getElementById('dashAnalyticsBody');
-            if (!tbody) return;
-
-            const classes = window.appData.classes || [];
-            const students = window.appData.students || [];
-            const subjects = window.appData.subjects || [];
-
-            if (classes.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-400">Tiada kelas didaftarkan lagi.</td></tr>`;
-            } else {
-                const subjObj = selectedSubj !== 'ALL' ? subjects.find(s => s.code === selectedSubj) : null;
-                let rowsHtml = '';
-
-                classes.forEach(cls => {
-                    const classTahap = window.getTahapKelas(cls.name);
-                    const classStudents = students.filter(s => s.classId === cls.id);
-
-                    if (subjObj && subjObj.tahap !== 'ALL' && classTahap !== 'ALL' && subjObj.tahap !== classTahap) {
-                        rowsHtml += `<tr class="border-b bg-gray-50/60 text-gray-400">
-                            <td class="px-4 py-3 font-bold">${cls.name}</td>
-                            <td class="px-4 py-3 text-center border-r border-blue-100">-</td>
-                            <td class="px-4 py-3 text-center">-</td>
-                            <td class="px-4 py-3 text-center">-</td>
-                            <td class="px-4 py-3 text-center">-</td>
-                            <td class="px-4 py-3 text-center">-</td>
-                            <td class="px-4 py-3 text-center">-</td>
-                            <td class="px-4 py-3 text-center">-</td>
-                        </tr>`;
-                        return;
-                    }
-
-                    const tpCounts = { TP1: 0, TP2: 0, TP3: 0, TP4: 0, TP5: 0, TP6: 0 };
-                    let satCount = 0;
-                    let passCount = 0;
-
-                    if (selectedSubj !== 'ALL') {
-                        classStudents.forEach(st => {
-                            const sc = st.scores?.[exam]?.[selectedSubj];
-                            if (sc?.tp && tpCounts[sc.tp] !== undefined) tpCounts[sc.tp]++;
-                            if (typeof sc?.mark === 'number') {
-                                satCount++;
-                                if (sc.mark >= 40) passCount++;
+                            if (!/\b\d{12}\b/.test(lineText) && !/\b(BIN|BINTI|BT|BITI)\b/i.test(lineText)) {
+                                const det = window.detectSubjectCodeFromText(lineText, false);
+                                if (det) currentSubjCode = det;
                             }
                         });
-                    } else {
-                        const activeSubjs = subjects.filter(sub => sub.tahap === 'ALL' || sub.tahap === classTahap || classTahap === 'ALL');
-                        classStudents.forEach(st => {
-                            let stSat = 0, stPass = 0;
-                            activeSubjs.forEach(sub => {
-                                const sc = st.scores?.[exam]?.[sub.code];
-                                if (sc?.tp && tpCounts[sc.tp] !== undefined) tpCounts[sc.tp]++;
-                                if (typeof sc?.mark === 'number') {
-                                    stSat++;
-                                    if (sc.mark >= 40) stPass++;
-                                }
-                            });
-                            if (stSat > 0) {
-                                satCount++;
-                                if (stPass === stSat) passCount++;
-                            }
-                        });
-                    }
 
-                    const passPct = satCount > 0 ? `${((passCount / satCount) * 100).toFixed(1)}%` : '-';
-                    rowsHtml += `<tr class="border-b hover:bg-blue-50/40">
-                        <td class="px-4 py-3 font-bold text-gray-800">${cls.name} <span class="text-xs font-normal text-gray-400">(${classStudents.length})</span></td>
-                        <td class="px-4 py-3 text-center font-extrabold text-blue-700 bg-blue-50/40 border-r border-blue-100">${passPct}</td>
-                        <td class="px-4 py-3 text-center font-bold text-red-600">${tpCounts.TP1}</td>
-                        <td class="px-4 py-3 text-center font-bold text-orange-600">${tpCounts.TP2}</td>
-                        <td class="px-4 py-3 text-center font-bold text-yellow-600">${tpCounts.TP3}</td>
-                        <td class="px-4 py-3 text-center font-bold text-green-600">${tpCounts.TP4}</td>
-                        <td class="px-4 py-3 text-center font-bold text-teal-600">${tpCounts.TP5}</td>
-                        <td class="px-4 py-3 text-center font-bold text-blue-600">${tpCounts.TP6}</td>
-                    </tr>`;
-                });
+                        if (!currentSubjCode) continue;
 
-                tbody.innerHTML = rowsHtml;
-            }
+                        const jumlahHeader = pageTextItems.find(it => /^JUMLAH$/i.test(it.str) || /^JUM\.?$/i.test(it.str));
 
-            // Purata Keseluruhan Lulus (Sumatif)
-            let totalMarksCount = 0;
-            let totalPassMarksCount = 0;
-            students.forEach(st => {
-                const examScores = st.scores?.[exam] || {};
-                Object.keys(examScores).forEach(k => {
-                    if (k === '_KEHADIRAN') return;
-                    const m = examScores[k]?.mark;
-                    if (typeof m === 'number') {
-                        totalMarksCount++;
-                        if (m >= 40) totalPassMarksCount++;
-                    }
-                });
-            });
-            const overallEl = document.getElementById('dashOverallMTM');
-            if (overallEl) {
-                overallEl.innerText = totalMarksCount > 0 ? `${((totalPassMarksCount / totalMarksCount) * 100).toFixed(1)}%` : '-';
-            }
-
-            // Calon Tokoh Murid (Tahap 1 & Tahap 2)
-            const bestCandidates = {
-                'T1_L': null, 'T1_P': null,
-                'T2_L': null, 'T2_P': null
-            };
-
-            students.forEach(st => {
-                const cls = classes.find(c => c.id === st.classId);
-                if (!cls) return;
-                const tahap = window.getTahapKelas(cls.name);
-                const gender = st.gender === 'P' ? 'P' : 'L';
-                const key = `${tahap}_${gender}`;
-                if (!bestCandidates.hasOwnProperty(key)) return;
-
-                const activeSubjs = subjects.filter(sub => sub.tahap === 'ALL' || sub.tahap === tahap);
-                let sum = 0, cnt = 0;
-                activeSubjs.forEach(sub => {
-                    const m = st.scores?.[exam]?.[sub.code]?.mark;
-                    if (typeof m === 'number') { sum += m; cnt++; }
-                });
-
-                if (cnt > 0) {
-                    const avg = sum / cnt;
-                    if (!bestCandidates[key] || avg > bestCandidates[key].avg) {
-                        bestCandidates[key] = { student: st, className: cls.name, avg };
-                    }
-                }
-            });
-
-            const setTokohCard = (prefix, entry) => {
-                const nameEl = document.getElementById(`${prefix}-name`);
-                const clsEl = document.getElementById(`${prefix}-class`);
-                const markEl = document.getElementById(`${prefix}-marks`);
-                if (!nameEl || !clsEl || !markEl) return;
-                if (entry) {
-                    nameEl.innerText = entry.student.name;
-                    clsEl.innerText = entry.className;
-                    markEl.innerText = `${entry.avg.toFixed(1)}%`;
-                } else {
-                    nameEl.innerText = 'TIADA DATA';
-                    clsEl.innerText = '-';
-                    markEl.innerText = '-';
-                }
-            };
-
-            setTokohCard('tokoh-t1-l', bestCandidates['T1_L']);
-            setTokohCard('tokoh-t1-p', bestCandidates['T1_P']);
-            setTokohCard('tokoh-t2-l', bestCandidates['T2_L']);
-            setTokohCard('tokoh-t2-p', bestCandidates['T2_P']);
-        };
-
-        // --- LAPORAN ANALISIS MATRIKS TAHUN 4 ---
-        window.updateMatriksTahun4Dropdown = function() {
-            const selectEl = document.getElementById('matriksT4ClassFilter');
-            if (!selectEl) return;
-            const prevVal = selectEl.value || 'ALL';
-            const t4Classes = (window.appData.classes || []).filter(c => /^(TAHUN\s*)?4\b/i.test(c.name.trim()));
-            let opts = '<option value="ALL">Semua Kelas Tahun 4</option>';
-            t4Classes.forEach(c => {
-                opts += `<option value="${c.id}">${c.name}</option>`;
-            });
-            selectEl.innerHTML = opts;
-            if (Array.from(selectEl.options).some(o => o.value === prevVal)) {
-                selectEl.value = prevVal;
-            }
-        };
-
-        window.computeMatriksTahun4Data = function() {
-            const selectedClassId = document.getElementById('matriksT4ClassFilter')?.value || 'ALL';
-            const exam = document.getElementById('matriksT4ExamFilter')?.value || 'PAT';
-            const t4Classes = (window.appData.classes || []).filter(c => /^(TAHUN\s*)?4\b/i.test(c.name.trim()));
-            const targetClasses = selectedClassId === 'ALL' ? t4Classes : t4Classes.filter(c => c.id === selectedClassId);
-            const targetIds = new Set(targetClasses.map(c => c.id));
-            const candidates = (window.appData.students || []).filter(s => targetIds.has(s.classId));
-            const t4Subjects = (window.appData.subjects || []).filter(sub => sub.tahap === 'ALL' || sub.tahap === 'T2');
-
-            const rowsData = t4Subjects.map(sub => {
-                let daftar = candidates.length;
-                let hadir = 0, th = 0, A = 0, B = 0, C = 0, D = 0, E = 0;
-
-                candidates.forEach(st => {
-                    const sc = st.scores?.[exam]?.[sub.code];
-                    const m = sc?.mark;
-                    if (m === 'T' || m === 'TH') {
-                        th++;
-                    } else if (typeof m === 'number') {
-                        hadir++;
-                        if (m >= 80) A++;
-                        else if (m >= 65) B++;
-                        else if (m >= 50) C++;
-                        else if (m >= 40) D++;
-                        else E++;
-                    }
-                });
-
-                const lulus = A + B + C + D;
-                const pctLulus = hadir > 0 ? ((lulus / hadir) * 100).toFixed(2) : '0.00';
-                const gpmp = hadir > 0 ? (((A * 1) + (B * 2) + (C * 3) + (D * 4) + (E * 5)) / hadir).toFixed(2) : '-';
-                const fmtCell = (cnt) => hadir > 0 ? `${cnt} <span class="text-[11px] text-gray-500">(${((cnt / hadir) * 100).toFixed(1)}%)</span>` : `${cnt}`;
-
-                return { sub, daftar, hadir, th, A, B, C, D, E, lulus, pctLulus, gpmp, fmtCell };
-            });
-
-            let allPassCount = 0;
-            let candidatesWithMarks = 0;
-            candidates.forEach(st => {
-                let sat = 0, failedOrTh = false;
-                t4Subjects.forEach(sub => {
-                    const m = st.scores?.[exam]?.[sub.code]?.mark;
-                    if (m === 'T' || m === 'TH') {
-                        sat++;
-                        failedOrTh = true;
-                    } else if (typeof m === 'number') {
-                        sat++;
-                        if (m < 40) failedOrTh = true;
-                    }
-                });
-                if (sat > 0) {
-                    candidatesWithMarks++;
-                    if (!failedOrTh) allPassCount++;
-                }
-            });
-
-            return { t4Classes, targetClasses, candidates, exam, rowsData, allPassCount, candidatesWithMarks };
-        };
-
-        window.updateMatriksTahun4Analytics = function() {
-            const tbody = document.getElementById('matriksT4AnalyticsBody');
-            if (!tbody) return;
-
-            const { targetClasses, candidates, rowsData, allPassCount, candidatesWithMarks } = window.computeMatriksTahun4Data();
-            document.getElementById('matriksT4TotalClasses').innerText = targetClasses.length;
-            document.getElementById('matriksT4TotalCandidates').innerText = candidates.length;
-            document.getElementById('matriksT4AllPass').innerText = candidatesWithMarks > 0
-                ? `${allPassCount} / ${candidatesWithMarks} (${((allPassCount / candidatesWithMarks) * 100).toFixed(1)}%)`
-                : '-';
-
-            if (targetClasses.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="13" class="text-center py-8 text-gray-400">Tiada kelas Tahun 4 ditemui dalam sistem (Contoh nama kelas: 4 ARIF / TAHUN 4).</td></tr>`;
-                return;
-            }
-
-            let html = '';
-            rowsData.forEach((r, idx) => {
-                html += `<tr class="border-b hover:bg-emerald-50/40 text-xs">
-                    <td class="px-3 py-2.5 text-center font-bold text-gray-500">${idx + 1}</td>
-                    <td class="px-4 py-2.5 font-bold text-gray-800">${r.sub.name} <span class="text-gray-400 font-mono">(${r.sub.code})</span></td>
-                    <td class="px-3 py-2.5 text-center font-semibold">${r.daftar}</td>
-                    <td class="px-3 py-2.5 text-center font-bold text-blue-700">${r.hadir}</td>
-                    <td class="px-3 py-2.5 text-center font-semibold text-gray-600 bg-gray-50">${r.th}</td>
-                    <td class="px-3 py-2.5 text-center font-bold text-emerald-700">${r.fmtCell(r.A)}</td>
-                    <td class="px-3 py-2.5 text-center font-bold text-teal-700">${r.fmtCell(r.B)}</td>
-                    <td class="px-3 py-2.5 text-center font-bold text-blue-700">${r.fmtCell(r.C)}</td>
-                    <td class="px-3 py-2.5 text-center font-bold text-amber-700">${r.fmtCell(r.D)}</td>
-                    <td class="px-3 py-2.5 text-center font-bold text-red-600">${r.fmtCell(r.E)}</td>
-                    <td class="px-3 py-2.5 text-center font-extrabold text-green-800 bg-green-50/50">${r.lulus}</td>
-                    <td class="px-3 py-2.5 text-center font-black text-green-900 bg-green-100/70">${r.hadir > 0 ? r.pctLulus + '%' : '-'}</td>
-                    <td class="px-3 py-2.5 text-center font-extrabold text-slate-800">${r.gpmp}</td>
-                </tr>`;
-            });
-            tbody.innerHTML = html || `<tr><td colspan="13" class="text-center py-6 text-gray-400">Tiada mata pelajaran dikonfigurasikan.</td></tr>`;
-        };
-
-        window.printMatriksTahun4Report = function() {
-            const { targetClasses, candidates, exam, rowsData, allPassCount, candidatesWithMarks } = window.computeMatriksTahun4Data();
-            if (targetClasses.length === 0) {
-                window.showToast("Tiada kelas Tahun 4 untuk dicetak.");
-                return;
-            }
-
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) {
-                window.showToast("Tetingkap cetakan disekat pelayar. Sila benarkan Pop-up.");
-                return;
-            }
-
-            const schoolName = window.appData.school.name || 'SEKOLAH KEBANGSAAN BIKANG';
-            const schoolYear = window.appData.school.year || new Date().getFullYear();
-            const classLabel = targetClasses.map(c => c.name).join(', ');
-            const examLabel = exam === 'PPT' ? 'PENTAKSIRAN PERTENGAHAN TAHUN (PPT)' : 'MATRIKS PEMBELAJARAN / AKHIR TAHUN (PAT)';
-
-            let tableRows = '';
-            rowsData.forEach((r, idx) => {
-                const cellTxt = (cnt) => r.hadir > 0 ? `${cnt} (${((cnt / r.hadir) * 100).toFixed(1)}%)` : `${cnt}`;
-                tableRows += `<tr>
-                    <td class="border border-black px-2 py-1.5 text-center">${idx + 1}</td>
-                    <td class="border border-black px-2 py-1.5 font-bold">${r.sub.name} (${r.sub.code})</td>
-                    <td class="border border-black px-2 py-1.5 text-center">${r.daftar}</td>
-                    <td class="border border-black px-2 py-1.5 text-center font-bold">${r.hadir}</td>
-                    <td class="border border-black px-2 py-1.5 text-center">${r.th}</td>
-                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.A)}</td>
-                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.B)}</td>
-                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.C)}</td>
-                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.D)}</td>
-                    <td class="border border-black px-2 py-1.5 text-center">${cellTxt(r.E)}</td>
-                    <td class="border border-black px-2 py-1.5 text-center font-bold">${r.lulus}</td>
-                    <td class="border border-black px-2 py-1.5 text-center font-bold bg-gray-100">${r.hadir > 0 ? r.pctLulus + '%' : '-'}</td>
-                    <td class="border border-black px-2 py-1.5 text-center font-bold">${r.gpmp}</td>
-                </tr>`;
-            });
-
-            const allPassStr = candidatesWithMarks > 0
-                ? `${allPassCount} / ${candidatesWithMarks} (${((allPassCount / candidatesWithMarks) * 100).toFixed(2)}%)`
-                : '-';
-
-            const html = `<html><head><title>Analisis Matriks Tahun 4</title><script src="https://cdn.tailwindcss.com"><\/script><style>@page { size: A4 landscape; margin: 12mm; } body { font-family: 'Times New Roman', serif; }</style></head><body class="p-4">
-                <div class="text-center mb-4">
-                    <h1 class="text-xl font-bold uppercase">${schoolName}</h1>
-                    <h2 class="text-base font-bold uppercase mt-1">LAPORAN ANALISIS PENCAPAIAN MATRIKS TAHUN 4 — ${examLabel} (${schoolYear})</h2>
-                    <p class="text-xs font-bold uppercase mt-1">KELAS: ${classLabel} | JUMLAH CALON: ${candidates.length} | LULUS SEMUA SUBJEK (A–D): ${allPassStr}</p>
-                </div>
-                <table class="w-full border-collapse border border-black text-xs mb-4">
-                    <thead class="bg-gray-200 font-bold">
-                        <tr>
-                            <th class="border border-black px-2 py-2 text-center w-8">BIL</th>
-                            <th class="border border-black px-2 py-2 text-left">MATA PELAJARAN</th>
-                            <th class="border border-black px-2 py-2 text-center">DAFTAR</th>
-                            <th class="border border-black px-2 py-2 text-center">HADIR</th>
-                            <th class="border border-black px-2 py-2 text-center">TH</th>
-                            <th class="border border-black px-2 py-2 text-center">GRED A</th>
-                            <th class="border border-black px-2 py-2 text-center">GRED B</th>
-                            <th class="border border-black px-2 py-2 text-center">GRED C</th>
-                            <th class="border border-black px-2 py-2 text-center">GRED D</th>
-                            <th class="border border-black px-2 py-2 text-center">GRED E</th>
-                            <th class="border border-black px-2 py-2 text-center">LULUS (A–D)</th>
-                            <th class="border border-black px-2 py-2 text-center">% LULUS</th>
-                            <th class="border border-black px-2 py-2 text-center">GPMP</th>
-                        </tr>
-                    </thead>
-                    <tbody>${tableRows}</tbody>
-                </table>
-                <div class="text-[11px] text-gray-700 mb-6 flex justify-between">
-                    <span>Skala Gred: A (80–100) | B (65–79) | C (50–64) | D (40–49) | E (0–39) | TH (Tidak Hadir)</span>
-                    <span>Formula GPMP = [(1×A) + (2×B) + (3×C) + (4×D) + (5×E)] ÷ Bilangan Hadir</span>
-                </div>
-                <div class="grid grid-cols-3 gap-8 text-center text-xs font-bold uppercase mt-8">
-                    <div><br><br><p class="border-t border-black pt-1 mx-6">DISEDIAKAN OLEH (SETIAUSAHA PEPERIKSAAN)</p></div>
-                    <div><br><br><p class="border-t border-black pt-1 mx-6">DISEMAK OLEH (GPK PENTADBIRAN)</p></div>
-                    <div><br><br><p class="border-t border-black pt-1 mx-6">DISAHKAN OLEH (GURU BESAR)</p></div>
-                </div>
-                <script>window.onload=function(){setTimeout(window.print, 700);}<\/script>
-            </body></html>`;
-
-            printWindow.document.write(html);
-            printWindow.document.close();
-        };
-
-        // --- PENGURUSAN MURID & KELAS ---
-        window.renderStudents = function() {
-            const tbody = document.getElementById('studentsTableBody');
-            if (!tbody) return;
-            const filterClassId = document.getElementById('filterClass')?.value || '';
-            const list = filterClassId
-                ? (window.appData.students || []).filter(s => s.classId === filterClassId)
-                : (window.appData.students || []);
-
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-400">Tiada rekod murid ditemui.</td></tr>`;
-                return;
-            }
-
-            let html = '';
-            list.forEach(s => {
-                const cls = (window.appData.classes || []).find(c => c.id === s.classId);
-                html += `<tr class="border-b hover:bg-gray-50">
-                    <td class="px-4 py-2.5 text-center"><input type="checkbox" value="${s.id}" class="print-checkbox rounded text-blue-600 w-4 h-4 cursor-pointer"></td>
-                    <td class="px-4 py-2.5 font-mono text-xs text-gray-600">${s.ic || '-'}</td>
-                    <td class="px-4 py-2.5 font-bold uppercase text-xs text-gray-800">${s.name}</td>
-                    <td class="px-4 py-2.5 text-xs font-bold ${s.gender === 'P' ? 'text-pink-600' : 'text-blue-600'}">${s.gender || '-'}</td>
-                    <td class="px-4 py-2.5 text-xs font-semibold text-gray-700">${cls ? cls.name : '<span class="text-red-400">Tiada Kelas</span>'}</td>
-                    <td class="px-4 py-2.5 text-center space-x-2">
-                        <button onclick="window.openEditStudent('${s.id}')" class="text-blue-600 hover:text-blue-800" title="Sunting"><i class="fas fa-edit"></i></button>
-                        <button onclick="window.deleteStudent('${s.id}')" class="text-red-500 hover:text-red-700" title="Padam"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            });
-            tbody.innerHTML = html;
-            const selectAll = document.getElementById('selectAllCheckbox');
-            if (selectAll) selectAll.checked = false;
-        };
-
-        window.toggleSelectAll = function() {
-            const checked = document.getElementById('selectAllCheckbox')?.checked || false;
-            document.querySelectorAll('.print-checkbox').forEach(cb => { cb.checked = checked; });
-        };
-
-        window.saveNewClass = async function() {
-            const input = document.getElementById('newClassName');
-            const name = (input?.value || '').replace(/\s+/g, ' ').trim().toUpperCase();
-            if (!name) {
-                window.showToast("Sila masukkan nama kelas.");
-                return;
-            }
-            if ((window.appData.classes || []).some(c => c.name.toUpperCase() === name)) {
-                window.showToast("Kelas ini sudah wujud.");
-                return;
-            }
-            try {
-                await setDoc(doc(collection(db, 'classes')), { name });
-                input.value = '';
-                document.getElementById('modalAddClass').classList.add('hidden');
-                window.showToast(`Kelas ${name} berjaya ditambah!`);
-            } catch (e) {
-                window.showToast("Ralat menambah kelas: " + e.message);
-            }
-        };
-
-        window.openEditStudent = function(id) {
-            const st = (window.appData.students || []).find(s => s.id === id);
-            if (!st) return;
-            document.getElementById('editStudentId').value = st.id;
-            document.getElementById('editStudentName').value = st.name || '';
-            document.getElementById('editStudentIC').value = st.ic || '';
-            document.getElementById('editStudentGender').value = st.gender || 'L';
-            document.getElementById('editStudentClass').value = st.classId || '';
-            document.getElementById('modalEditStudent').classList.remove('hidden');
-        };
-
-        window.saveEditedStudent = async function() {
-            const id = document.getElementById('editStudentId').value;
-            const name = document.getElementById('editStudentName').value.replace(/\s+/g, ' ').trim().toUpperCase();
-            const ic = document.getElementById('editStudentIC').value.replace(/[^0-9]/g, '');
-            const gender = document.getElementById('editStudentGender').value;
-            const classId = document.getElementById('editStudentClass').value;
-
-            if (!id || !name) {
-                window.showToast("Nama murid tidak boleh kosong.");
-                return;
-            }
-            try {
-                await setDoc(doc(db, 'students', id), { name, ic, gender, classId }, { merge: true });
-                document.getElementById('modalEditStudent').classList.add('hidden');
-                window.showToast("Profil murid dikemaskini!");
-            } catch (e) {
-                window.showToast("Ralat mengemaskini murid: " + e.message);
-            }
-        };
-
-        window.deleteStudent = async function(id) {
-            const st = (window.appData.students || []).find(s => s.id === id);
-            if (!st) return;
-            const ok = await window.showConfirmDialog({
-                title: "Padam Rekod Murid",
-                message: `Adakah anda pasti mahu memadam rekod murid "${st.name}"?`,
-                confirmBtnClass: "bg-red-600 hover:bg-red-700"
-            });
-            if (!ok) return;
-            try {
-                await deleteDoc(doc(db, 'students', id));
-                window.showToast("Rekod murid dipadam.");
-            } catch (e) {
-                window.showToast("Ralat memadam murid: " + e.message);
-            }
-        };
-
-        // --- TETAPAN PROFIL, SUBJEK & SANDARAN DATA ---
-        window.saveSchoolProfile = async function() {
-            const name = document.getElementById('schoolName').value.trim().toUpperCase();
-            const code = document.getElementById('schoolCode').value.trim().toUpperCase();
-            const year = document.getElementById('schoolYear').value.trim();
-            try {
-                await setDoc(doc(db, 'settings', 'profile'), { name, code, year }, { merge: true });
-                window.showToast("Profil sekolah berjaya disimpan!");
-            } catch (e) {
-                window.showToast("Ralat menyimpan profil: " + e.message);
-            }
-        };
-
-        window.renderSubjectsTable = function() {
-            const tbody = document.getElementById('subjectListBody');
-            if (!tbody) return;
-            const list = window.appData.subjects || [];
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-400">Tiada mata pelajaran ditetapkan.</td></tr>`;
-                return;
-            }
-            const tahapLabels = {
-                'ALL': '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-bold">Semua Tahap</span>',
-                'T1': '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold">Tahap 1 (Thn 1–3)</span>',
-                'T2': '<span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold">Tahap 2 (Thn 4–6)</span>'
-            };
-            tbody.innerHTML = list.map(sub => `<tr class="border-b hover:bg-gray-50">
-                <td class="p-3 font-mono font-bold text-indigo-700">${sub.code}</td>
-                <td class="p-3 font-bold uppercase text-gray-800">${sub.name}</td>
-                <td class="p-3 text-center">${tahapLabels[sub.tahap] || tahapLabels['ALL']}</td>
-                <td class="p-3 text-center">
-                    <button onclick="window.deleteSubject('${sub.code}')" class="text-red-500 hover:text-red-700" title="Padam Subjek"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>`).join('');
-        };
-
-        window.addSubject = async function() {
-            const code = document.getElementById('newSubCode').value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '');
-            const name = document.getElementById('newSubName').value.trim().toUpperCase();
-            const tahap = document.getElementById('newSubTahap').value || 'ALL';
-            if (!code || !name) {
-                window.showToast("Sila masukkan Kod dan Nama Mata Pelajaran.");
-                return;
-            }
-            const currentList = [...(window.appData.subjects || [])];
-            if (currentList.some(s => s.code === code)) {
-                window.showToast(`Kod subjek ${code} sudah wujud.`);
-                return;
-            }
-            currentList.push({ code, name, tahap });
-            try {
-                await setDoc(doc(db, 'settings', 'subjects'), { list: currentList });
-                document.getElementById('newSubCode').value = '';
-                document.getElementById('newSubName').value = '';
-                window.showToast(`Subjek ${name} (${code}) ditambah!`);
-            } catch (e) {
-                window.showToast("Ralat menambah subjek: " + e.message);
-            }
-        };
-
-        window.deleteSubject = async function(code) {
-            const ok = await window.showConfirmDialog({
-                title: "Padam Mata Pelajaran",
-                message: `Padam subjek berkod "${code}" daripada senarai aktif?`,
-                confirmBtnClass: "bg-red-600 hover:bg-red-700"
-            });
-            if (!ok) return;
-            const updated = (window.appData.subjects || []).filter(s => s.code !== code);
-            try {
-                await setDoc(doc(db, 'settings', 'subjects'), { list: updated });
-                window.showToast(`Subjek ${code} dipadam.`);
-            } catch (e) {
-                window.showToast("Ralat memadam subjek: " + e.message);
-            }
-        };
-
-        window.generateSubjectsAI = async function() {
-            const defaults = [
-                { code: 'BM', name: 'BAHASA MELAYU', tahap: 'ALL' },
-                { code: 'BI', name: 'BAHASA INGGERIS', tahap: 'ALL' },
-                { code: 'MT', name: 'MATEMATIK', tahap: 'ALL' },
-                { code: 'SN', name: 'SAINS', tahap: 'ALL' },
-                { code: 'PI', name: 'PENDIDIKAN ISLAM', tahap: 'ALL' },
-                { code: 'PM', name: 'PENDIDIKAN MORAL', tahap: 'ALL' },
-                { code: 'BA', name: 'BAHASA ARAB', tahap: 'ALL' },
-                { code: 'SJ', name: 'SEJARAH', tahap: 'T2' },
-                { code: 'RBT', name: 'REKA BENTUK DAN TEKNOLOGI', tahap: 'T2' },
-                { code: 'PJPK', name: 'PENDIDIKAN JASMANI DAN KESIHATAN', tahap: 'ALL' },
-                { code: 'PSV', name: 'PENDIDIKAN SENI VISUAL', tahap: 'ALL' },
-                { code: 'MZ', name: 'PENDIDIKAN MUZIK', tahap: 'ALL' }
-            ];
-            const existing = [...(window.appData.subjects || [])];
-            let added = 0;
-            defaults.forEach(d => {
-                if (!existing.some(e => e.code === d.code)) {
-                    existing.push(d);
-                    added++;
-                }
-            });
-            if (added === 0) {
-                window.showToast("Semua subjek standard KSSR sudah lengkap.");
-                return;
-            }
-            try {
-                await setDoc(doc(db, 'settings', 'subjects'), { list: existing });
-                window.showToast(`Berjaya menjana ${added} subjek KSSR!`);
-            } catch (e) {
-                window.showToast("Ralat menjana subjek: " + e.message);
-            }
-        };
-
-        window.exportJSON = function() {
-            const payload = {
-                exportedAt: new Date().toISOString(),
-                school: window.appData.school,
-                subjects: window.appData.subjects,
-                classes: window.appData.classes,
-                students: window.appData.students
-            };
-            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `SPAK_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            window.showToast("Fail sandaran (.JSON) dimuat turun!");
-        };
-
-        window.importJSON = async function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            try {
-                const text = await file.text();
-                const data = JSON.parse(text);
-                const ops = [];
-
-                if (data.school) {
-                    ops.push({ type: 'set', ref: doc(db, 'settings', 'profile'), data: data.school, options: { merge: true } });
-                }
-                if (Array.isArray(data.subjects)) {
-                    ops.push({ type: 'set', ref: doc(db, 'settings', 'subjects'), data: { list: data.subjects } });
-                }
-                if (Array.isArray(data.classes)) {
-                    data.classes.forEach(c => {
-                        const { id, ...rest } = c;
-                        const ref = id ? doc(db, 'classes', id) : doc(collection(db, 'classes'));
-                        ops.push({ type: 'set', ref, data: rest, options: { merge: true } });
-                    });
-                }
-                if (Array.isArray(data.students)) {
-                    data.students.forEach(s => {
-                        const { id, ...rest } = s;
-                        const ref = id ? doc(db, 'students', id) : doc(collection(db, 'students'));
-                        ops.push({ type: 'set', ref, data: rest, options: { merge: true } });
-                    });
-                }
-
-                await window.commitOperationsInChunks(ops);
-                window.showToast("Data sandaran berjaya dipulihkan!");
-            } catch (e) {
-                window.showToast("Fail sandaran tidak sah: " + e.message);
-            }
-            event.target.value = '';
-        };
-
-        window.wipeData = async function() {
-            const ok = await window.showConfirmDialog({
-                title: "Padam Semua Data Sistem",
-                message: "Amaran: Semua senarai kelas, murid, dan markah akan dipadam secara kekal. Taip 'PADAM' untuk mengesahkan.",
-                requireText: "PADAM",
-                placeholder: "Taip PADAM",
-                confirmBtnClass: "bg-red-600 hover:bg-red-700"
-            });
-            if (!ok) return;
-
-            try {
-                const ops = [];
-                (window.appData.students || []).forEach(s => ops.push({ type: 'delete', ref: doc(db, 'students', s.id) }));
-                (window.appData.classes || []).forEach(c => ops.push({ type: 'delete', ref: doc(db, 'classes', c.id) }));
-                await window.commitOperationsInChunks(ops);
-                window.showToast("Semua data murid dan kelas telah dipadam.");
-            } catch (e) {
-                window.showToast("Ralat memadam data: " + e.message);
-            }
-        };
-
-        // --- PENGURUSAN DROPDOWN SUBJEK & GRED MARKAH ---
-        window.updateSubjectDropdown = function() {
-            const classId = document.getElementById('markFilterClass')?.value || '';
-            const selectEl = document.getElementById('markFilterSubject');
-            if (!selectEl) return;
-
-            if (!classId) {
-                selectEl.innerHTML = '<option value="">-- Pilih Kelas Dahulu --</option>';
-                window.loadMarksTable();
-                return;
-            }
-
-            const prevVal = selectEl.value;
-            const cls = (window.appData.classes || []).find(c => c.id === classId);
-            const classTahap = cls ? window.getTahapKelas(cls.name) : 'ALL';
-            const activeSubjects = (window.appData.subjects || []).filter(sub =>
-                sub.tahap === 'ALL' || sub.tahap === classTahap || classTahap === 'ALL'
-            );
-
-            let opts = '<option value="">-- Pilih Mata Pelajaran --</option>';
-            activeSubjects.forEach(sub => {
-                opts += `<option value="${sub.code}">${sub.name} (${sub.code})</option>`;
-            });
-            opts += '<option value="_KEHADIRAN">Kehadiran, Sahsiah & Ulasan</option>';
-
-            selectEl.innerHTML = opts;
-            if (Array.from(selectEl.options).some(o => o.value === prevVal)) {
-                selectEl.value = prevVal;
-            }
-            window.loadMarksTable();
-        };
-
-        window.getGrade = function(mark) {
-            if (mark === null || mark === undefined || mark === '' || mark === '-') return '-';
-            const up = mark.toString().trim().toUpperCase();
-            if (up === 'T' || up === 'TH') return 'TH';
-            const num = parseFloat(up);
-            if (isNaN(num)) return '-';
-            if (num >= 80) return 'A';
-            if (num >= 65) return 'B';
-            if (num >= 50) return 'C';
-            if (num >= 40) return 'D';
-            return 'E';
-        };
-
-        window.updateGradePreview = function(inputEl) {
-            const row = inputEl.closest('tr');
-            if (!row) return;
-            const gradeCell = row.querySelector('.grade-preview');
-            if (gradeCell) gradeCell.innerText = window.getGrade(inputEl.value);
-        };
-
-        window.autoSaveRow = async function(inputEl) {
-            const row = inputEl.closest('tr');
-            if (!row) return;
-            const id = row.getAttribute('data-id');
-            const exam = document.getElementById('markFilterExam').value;
-            const subject = document.getElementById('markFilterSubject').value;
-            if (!id || !subject) return;
-
-            window.isAutoSaving = true;
-            window.showSyncStatus(true);
-            try {
-                if (subject === '_KEHADIRAN') {
-                    const attVal = row.querySelector('.att-input').value;
-                    await setDoc(doc(db, 'students', id), {
-                        scores: {
-                            [exam]: {
-                                '_KEHADIRAN': {
-                                    kehadiran: attVal === '' ? null : parseFloat(attVal),
-                                    kelakuan: row.querySelector('.beh-input').value,
-                                    ulasan: row.querySelector('.cmt-input').value
-                                }
-                            }
-                        }
-                    }, { merge: true });
-                } else {
-                    let markInputEl = row.querySelector('.mark-input');
-                    let markVal = markInputEl.value.trim().toUpperCase();
-                    let markParsed = null;
-
-                    if (markVal !== '') {
-                        if (markVal === 'T' || markVal === 'TH') {
-                            markParsed = 'T';
-                            markInputEl.value = 'T';
-                        } else if (/^\d+(\.\d+)?$/.test(markVal)) {
-                            markParsed = Math.min(100, Math.max(0, parseFloat(markVal)));
-                            markInputEl.value = markParsed;
-                        } else {
-                            window.showToast("Markah tidak sah! Sila masukkan nombor 0-100 atau 'T'.");
-                            markInputEl.value = '';
-                            row.querySelector('.grade-preview').innerText = '-';
-                            window.showSyncStatus(false);
-                            window.isAutoSaving = false;
-                            return;
-                        }
-                    }
-
-                    await setDoc(doc(db, 'students', id), {
-                        scores: {
-                            [exam]: {
-                                [subject]: {
-                                    mark: markParsed,
-                                    grade: window.getGrade(markParsed),
-                                    tp: row.querySelector('.tp-input').value
-                                }
-                            }
-                        }
-                    }, { merge: true });
-                }
-                window.showSyncStatus(false);
-                if (document.getElementById('dashboard').classList.contains('active')) {
-                    window.updateDashboardAnalytics();
-                    window.updateMatriksTahun4Analytics();
-                }
-            } catch (e) {
-                document.getElementById('syncStatus').innerText = "Ralat ❌";
-            }
-            setTimeout(() => { window.isAutoSaving = false; }, 1000);
-        };
-
-        window.loadMarksTable = function() {
-            const classId = document.getElementById('markFilterClass').value;
-            const exam = document.getElementById('markFilterExam').value;
-            const subject = document.getElementById('markFilterSubject').value;
-            const thead = document.getElementById('marksTableHead');
-            const tbody = document.getElementById('marksTableBody');
-
-            const btnImportMarks = document.getElementById('btnImportMarksFile');
-            const btnImportTp = document.getElementById('btnImportTpFile');
-            if (classId && subject !== '_KEHADIRAN') {
-                btnImportMarks.classList.remove('opacity-50', 'pointer-events-none');
-                btnImportTp.classList.remove('opacity-50', 'pointer-events-none');
-            } else {
-                btnImportMarks.classList.add('opacity-50', 'pointer-events-none');
-                btnImportTp.classList.add('opacity-50', 'pointer-events-none');
-            }
-
-            if (!classId || !subject) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Sila pilih Kelas dan Mata Pelajaran.</td></tr>`;
-                return;
-            }
-
-            let students = window.appData.students.filter(s => s.classId === classId);
-            if (students.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">Tiada murid dalam kelas ini.</td></tr>`;
-                return;
-            }
-
-            if (subject === '_KEHADIRAN') {
-                thead.innerHTML = `<tr><th class="px-4 py-3 text-center w-12">Bil</th><th class="px-4 py-3">Nama Murid</th><th class="px-4 py-3 text-center w-32">Kehadiran (%)</th><th class="px-4 py-3 text-center w-48">Sahsiah</th><th class="px-4 py-3">Ulasan</th></tr>`;
-            } else {
-                thead.innerHTML = `<tr><th class="px-4 py-3 text-center w-12">Bil</th><th class="px-4 py-3">Nama Murid</th><th class="px-4 py-3 text-center w-32">Markah / T</th><th class="px-4 py-3 text-center w-24">Gred</th><th class="px-4 py-3 text-center w-32">TP (PBD)</th></tr>`;
-            }
-
-            let html = '';
-            students.forEach((s, idx) => {
-                if (subject === '_KEHADIRAN') {
-                    let ext = (s.scores && s.scores[exam] && s.scores[exam]['_KEHADIRAN']) || {};
-                    html += `<tr class="border-b hover:bg-blue-50 mark-row" data-id="${s.id}">
-                        <td class="px-4 py-2 text-center">${idx + 1}</td>
-                        <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
-                        <td class="px-4 py-2 text-center"><input type="number" min="0" max="100" class="border rounded p-1.5 w-20 text-center font-bold att-input" value="${ext.kehadiran !== undefined && ext.kehadiran !== null ? ext.kehadiran : ''}" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
-                        <td class="px-4 py-2 text-center">
-                            <select class="border rounded p-1.5 w-full text-center beh-input" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)">
-                                <option value="">-- Pilih --</option>
-                                <option value="AMAT BAIK" ${ext.kelakuan === 'AMAT BAIK' ? 'selected' : ''}>Amat Baik</option>
-                                <option value="BAIK" ${ext.kelakuan === 'BAIK' ? 'selected' : ''}>Baik</option>
-                                <option value="MEMUASKAN" ${ext.kelakuan === 'MEMUASKAN' ? 'selected' : ''}>Memuaskan</option>
-                                <option value="PERLU BIMBINGAN" ${ext.kelakuan === 'PERLU BIMBINGAN' ? 'selected' : ''}>Perlu Bimbingan</option>
-                            </select>
-                        </td>
-                        <td class="px-4 py-2"><input type="text" class="border rounded p-1.5 w-full text-sm cmt-input" value="${ext.ulasan || ''}" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
-                    </tr>`;
-                } else {
-                    let sc = (s.scores && s.scores[exam] && s.scores[exam][subject]) || {};
-                    let mark = sc.mark !== undefined && sc.mark !== null ? sc.mark : '';
-                    html += `<tr class="border-b hover:bg-yellow-50 mark-row" data-id="${s.id}">
-                        <td class="px-4 py-2 text-center">${idx + 1}</td>
-                        <td class="px-4 py-2 font-bold uppercase text-xs">${s.name}</td>
-                        <td class="px-4 py-2 text-center"><input type="text" class="border rounded p-1.5 w-20 text-center font-bold uppercase mark-input" value="${mark}" onkeyup="window.updateGradePreview(this)" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)"></td>
-                        <td class="px-4 py-2 text-center font-bold text-lg grade-preview">${window.getGrade(mark)}</td>
-                        <td class="px-4 py-2 text-center">
-                            <select class="border rounded p-1.5 w-full text-center font-bold tp-input" onkeydown="window.handleArrowNavigation(event, this)" onchange="window.autoSaveRow(this)">
-                                <option value="">- TP -</option>
-                                ${[1, 2, 3, 4, 5, 6].map(i => `<option value="TP${i}" ${sc.tp === 'TP' + i ? 'selected' : ''}>TP ${i}</option>`).join('')}
-                            </select>
-                        </td>
-                    </tr>`;
-                }
-            });
-            tbody.innerHTML = html;
-        };
-
-        window.handleArrowNavigation = function(event, currentInput) {
-            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-                event.preventDefault();
-                const row = currentInput.closest('tr');
-                const targetRow = event.key === 'ArrowUp' ? row.previousElementSibling : row.nextElementSibling;
-                if (targetRow) {
-                    const cls = Array.from(currentInput.classList).find(c => ['mark-input', 'tp-input', 'att-input', 'beh-input', 'cmt-input'].includes(c));
-                    if (cls) {
-                        const nextInput = targetRow.querySelector('.' + cls);
-                        if (nextInput) { nextInput.focus(); if (nextInput.select) nextInput.select(); }
-                    }
-                }
-            }
-        };
-
-        window.saveMarksBatch = async function() {
-            window.showSyncStatus(true);
-            const classId = document.getElementById('markFilterClass').value;
-            const exam = document.getElementById('markFilterExam').value;
-            const subject = document.getElementById('markFilterSubject').value;
-            if (!classId || !subject) {
-                window.showToast("Sila pilih kelas & subjek.");
-                window.showSyncStatus(false);
-                return;
-            }
-
-            window.isAutoSaving = true;
-            try {
-                const ops = [];
-                document.querySelectorAll('.mark-row').forEach(row => {
-                    let id = row.getAttribute('data-id');
-                    if (subject === '_KEHADIRAN') {
-                        let attVal = row.querySelector('.att-input').value;
-                        ops.push({
-                            type: 'set',
-                            ref: doc(db, 'students', id),
-                            data: {
-                                scores: {
-                                    [exam]: {
-                                        '_KEHADIRAN': {
-                                            kehadiran: attVal === '' ? null : parseFloat(attVal),
-                                            kelakuan: row.querySelector('.beh-input').value,
-                                            ulasan: row.querySelector('.cmt-input').value
-                                        }
-                                    }
-                                }
-                            },
-                            options: { merge: true }
-                        });
-                    } else {
-                        let markVal = row.querySelector('.mark-input').value.trim().toUpperCase();
-                        let markParsed = null;
-                        if (markVal === 'T' || markVal === 'TH') {
-                            markParsed = 'T';
-                        } else if (/^\d+(\.\d+)?$/.test(markVal)) {
-                            markParsed = Math.min(100, Math.max(0, parseFloat(markVal)));
-                        }
-                        ops.push({
-                            type: 'set',
-                            ref: doc(db, 'students', id),
-                            data: {
-                                scores: {
-                                    [exam]: {
-                                        [subject]: {
-                                            mark: markParsed,
-                                            grade: window.getGrade(markParsed),
-                                            tp: row.querySelector('.tp-input').value
-                                        }
-                                    }
-                                }
-                            },
-                            options: { merge: true }
-                        });
-                    }
-                });
-                await window.commitOperationsInChunks(ops);
-                window.showSyncStatus(false);
-                window.showToast("Markah disimpan!");
-            } catch (e) {
-                window.showToast("Ralat menyimpan markah: " + e.message);
-                window.showSyncStatus(false);
-            }
-            setTimeout(() => { window.isAutoSaving = false; }, 1000);
-        };
-
-        // --- NORMALISASI NAMA & PENGESANAN SUBJEK ---
-        window.normalizeHomoglyphs = function(str) {
-            if (!str) return "";
-            const map = {
-                '\u0391': 'A', '\u0392': 'B', '\u0395': 'E', '\u0396': 'Z',
-                '\u0397': 'H', '\u0399': 'I', '\u039A': 'K', '\u039C': 'M',
-                '\u039D': 'N', '\u039F': 'O', '\u03A1': 'P', '\u03A4': 'T',
-                '\u03A5': 'Y', '\u03A7': 'X'
-            };
-            return str.toString().replace(/[\u0391-\u03A9]/g, ch => map[ch] || ch);
-        };
-
-        window.normalizeNameForMatching = function(name) {
-            if (!name) return "";
-            return window.normalizeHomoglyphs(name).toUpperCase()
-                .replace(/\b(BIN|BINTI|BT|B\.|BITI|A\/L|A\/P)\b/g, '')
-                .replace(/[^A-Z]/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-        };
-
-        window.findBestStudentMatchByName = function(rawName, studentsList) {
-            const normTarget = window.normalizeNameForMatching(rawName);
-            if (normTarget.length < 3) return null;
-
-            const exact = studentsList.find(s => window.normalizeNameForMatching(s.name) === normTarget);
-            if (exact) return exact;
-
-            const targetTokens = normTarget.split(' ').filter(t => t.length >= 2);
-            if (targetTokens.length === 0) return null;
-            const sortedTargetStr = [...targetTokens].sort().join(' ');
-
-            const sortedExact = studentsList.find(s => {
-                const sTokens = window.normalizeNameForMatching(s.name).split(' ').filter(t => t.length >= 2);
-                return sTokens.length > 0 && [...sTokens].sort().join(' ') === sortedTargetStr;
-            });
-            if (sortedExact) return sortedExact;
-
-            let bestCandidate = null;
-            let bestScore = 0;
-            studentsList.forEach(s => {
-                const sTokens = window.normalizeNameForMatching(s.name).split(' ').filter(t => t.length >= 2);
-                if (sTokens.length === 0) return;
-                const commonCount = targetTokens.filter(t => sTokens.includes(t)).length;
-                const ratio = commonCount / Math.max(targetTokens.length, sTokens.length);
-                if (ratio >= 0.8 && commonCount >= 2 && ratio > bestScore) {
-                    bestScore = ratio;
-                    bestCandidate = s;
-                }
-            });
-            return bestCandidate;
-        };
-
-        window.normalizeICForMatching = function(ic) {
-            if (!ic) return "";
-            return ic.toString().replace(/[^0-9]/g, '');
-        };
-
-        window.detectSubjectCodeFromText = function(text) {
+                        Object.keys(rowsMap).forEach(y => {
+                            let rowItems = rowsMap[y].sort((a, b) => a.x - b.x);
+                            let fullRowStr = rowItems.map(r => r.str).join(' ');
+// ... existing code ... -->
+        window.detectSubjectCodeFromText = function(text, allowShortCodes = false) {
             if (!text) return null;
-            const upper = window.normalizeHomoglyphs(text).toUpperCase();
-            if (/\b041\b/.test(upper) || upper.includes('BAHASA MELAYU')) return 'BM';
-            if (/\b043\b/.test(upper) || upper.includes('BAHASA INGGERIS')) return 'BI';
-            if (/\b045\b/.test(upper) || upper.includes('MATEMATIK') || upper.includes('MATHEMATICS')) return 'MT';
+            const upper = window.normalizeHomoglyphs(text).toUpperCase().replace(/\s+/g, ' ').trim();
+
+            // Semak corak label rasmi seperti "MATA PELAJARAN : BM" atau "SUBJEK: 045"
+            const explicitLabelMatch = upper.match(/(?:MATA\s*PELAJARAN|SUBJEK|KOD\s*(?:MP|SUBJEK)?)\s*[:\-]?\s*(041|043|045|048|BM|BI|MT|MATH|SN|SAINS)\b/);
+            if (explicitLabelMatch) {
+                const tok = explicitLabelMatch[1];
+                if (tok === '041' || tok === 'BM') return 'BM';
+                if (tok === '043' || tok === 'BI') return 'BI';
+                if (tok === '045' || tok === 'MT' || tok === 'MATH') return 'MT';
+                if (tok === '048' || tok === 'SN' || tok === 'SAINS') return 'SN';
+            }
+
+            if (/\b041\b/.test(upper) || upper.includes('BAHASA MELAYU') || upper.includes('B. MELAYU') || upper.includes('B.MELAYU')) return 'BM';
+            if (/\b043\b/.test(upper) || upper.includes('BAHASA INGGERIS') || upper.includes('B. INGGERIS') || upper.includes('B.INGGERIS') || upper.includes('ENGLISH')) return 'BI';
+            if (/\b045\b/.test(upper) || upper.includes('MATEMATIK') || upper.includes('MATHEMATICS') || /\bMATH\b/.test(upper)) return 'MT';
             if (/\b048\b/.test(upper) || upper.includes('SAINS') || upper.includes('SCIENCE')) return 'SN';
             if (upper.includes('PENDIDIKAN ISLAM')) return 'PI';
             if (upper.includes('PENDIDIKAN MORAL')) return 'PM';
@@ -2190,153 +1145,33 @@
             if (upper.includes('PENDIDIKAN KESIHATAN')) return 'PK';
             if (upper.includes('PENDIDIKAN SENI') || /\bPSV\b/.test(upper)) return 'PSV';
             if (upper.includes('PENDIDIKAN MUZIK')) return 'MZ';
+
+            if (allowShortCodes && !/\b(BIN|BINTI|BT|BITI)\b/.test(upper)) {
+                if (/^BM$|\bBM\b/.test(upper)) return 'BM';
+                if (/^BI$|\bBI\b/.test(upper)) return 'BI';
+                if (/^MT$|\bMT\b/.test(upper)) return 'MT';
+                if (/^SN$|\bSN\b/.test(upper)) return 'SN';
+            }
             return null;
         };
-
-        window.mapKpmSubjectToSpakCode = function(rawSubj) {
-            if (!rawSubj) return '';
-            const upper = rawSubj.toString().trim().toUpperCase();
-            if (upper === 'MATH' || upper === 'MATEMATIK' || upper === '045') return 'MT';
-            if (upper === 'SAINS' || upper === 'SCIENCE' || upper === '048') return 'SN';
-            if (upper === 'BAHASA MELAYU' || upper === '041') return 'BM';
-            if (upper === 'BAHASA INGGERIS' || upper === '043') return 'BI';
-            return upper;
-        };
-
-        // --- MODUL 1: IMPORT BORANG TRANSIT MARKAH (PDF / EXCEL / WORD) ---
-        window.handleTransitFormImport = async function(event) {
-            const files = Array.from(event.target.files || []);
-            if (files.length === 0) return;
-
-            const classId = document.getElementById('markFilterClass').value;
-            const selectedSubjDropdown = document.getElementById('markFilterSubject').value;
-            const fallbackSubject = (selectedSubjDropdown && selectedSubjDropdown !== '_KEHADIRAN') ? selectedSubjDropdown : null;
-
-            if (!classId) {
-                window.showToast("Sila pilih kelas terlebih dahulu.");
-                event.target.value = '';
-                return;
-            }
-
-            window.showToast("Membaca borang transit & mengunci lajur JUMLAH...");
-
+// ... existing code ... -->
             try {
                 const studentsInClass = window.appData.students.filter(s => s.classId === classId);
                 const studentRecordsMap = {};
+                const pageSubjectLog = [];
+                let activePageRecordCounter = 0;
 
-                const upsertStudentSubjectMark = (ic, name, subjCode, markValue, sourceType = 'jumlah_col') => {
-                    if (!subjCode || markValue === null || markValue === undefined || markValue === '') return;
-                    const cleanIC = window.normalizeICForMatching(ic);
-                    const cleanName = window.normalizeHomoglyphs(name || '').replace(/\s+/g, ' ').trim().toUpperCase();
-                    const normName = window.normalizeNameForMatching(cleanName);
-
-                    if (cleanIC.length !== 12 && normName.length < 3) return;
-
-                    const key = cleanIC.length === 12 ? `IC_${cleanIC}` : `NAME_${normName}`;
-                    if (!studentRecordsMap[key]) {
-                        studentRecordsMap[key] = {
-                            no_kp: cleanIC.length === 12 ? cleanIC : '',
-                            nama: cleanName || 'TANPA NAMA',
-                            markah: {},
-                            sourceMeta: {}
-                        };
-                    } else {
-                        if (cleanIC.length === 12 && !studentRecordsMap[key].no_kp) studentRecordsMap[key].no_kp = cleanIC;
-                        if (cleanName && studentRecordsMap[key].nama === 'TANPA NAMA') studentRecordsMap[key].nama = cleanName;
-                    }
+                const resolveRecordKey = (cleanIC, normName) => {
+// ... existing code ... -->
                     studentRecordsMap[key].markah[subjCode] = { jumlah: markValue };
                     studentRecordsMap[key].sourceMeta[subjCode] = sourceType;
+                    activePageRecordCounter++;
                 };
-
-                const detectPdfJumlahZone = (items) => {
-                    const jumlahHeader = items.find(it => /^JUMLAH$/i.test(it.str) || /^JUM\.?$/i.test(it.str));
-                    if (!jumlahHeader) return null;
-
-                    const headerRowItems = items
-                        .filter(it => Math.abs(it.y - jumlahHeader.y) <= 18)
-                        .sort((a, b) => a.x - b.x);
-
-                    const leftNeighbors = headerRowItems.filter(it => (it.x + it.width) <= jumlahHeader.x + 2);
-                    const rightNeighbors = headerRowItems.filter(it => it.x >= (jumlahHeader.x + jumlahHeader.width) - 2);
-
-                    const leftNeighbor = leftNeighbors.length > 0 ? leftNeighbors[leftNeighbors.length - 1] : null;
-                    const rightNeighbor = rightNeighbors.length > 0 ? rightNeighbors[0] : null;
-
-                    const zoneLeft = leftNeighbor
-                        ? ((leftNeighbor.x + leftNeighbor.width + jumlahHeader.x) / 2)
-                        : jumlahHeader.x - 14;
-                    const zoneRight = rightNeighbor
-                        ? ((jumlahHeader.x + jumlahHeader.width + rightNeighbor.x) / 2)
-                        : jumlahHeader.x + jumlahHeader.width + 24;
-
-                    return { headerY: jumlahHeader.y, zoneLeft, zoneRight };
-                };
-
-                const processGridRows = (rows, defaultSubj) => {
-                    let currentSubj = defaultSubj;
-                    let jumlahColIdx = -1, nameColIdx = -1, icColIdx = -1;
-
-                    for (let r = 0; r < rows.length; r++) {
-                        const cells = (rows[r] || []).map(c => (c === null || c === undefined) ? '' : c.toString().replace(/\s+/g, ' ').trim());
-                        const joined = cells.join(' ').toUpperCase();
-                        if (!joined) continue;
-
-                        if (!/\b\d{12}\b/.test(joined)) {
-                            const det = window.detectSubjectCodeFromText(joined);
-                            if (det) currentSubj = det;
-                        }
-
-                        const foundJumlah = cells.findIndex(c => /^JUMLAH$/i.test(c) || /^JUM\.?$/i.test(c) || /^MARKAH\s*AKHIR$/i.test(c));
-                        if (foundJumlah !== -1) {
-                            jumlahColIdx = foundJumlah;
-                            const headerBlock = [rows[r - 1] || [], cells, rows[r + 1] || []];
-                            headerBlock.forEach(hRow => {
-                                hRow.forEach((hCell, cIdx) => {
-                                    const txt = (hCell || '').toString().trim().toUpperCase();
-                                    if (/\bNAMA\b/.test(txt) && nameColIdx === -1) nameColIdx = cIdx;
-                                    if (/(NO\.?\s*K\.?P|PENGENALAN|MYKID|\bIC\b)/.test(txt) && icColIdx === -1) icColIdx = cIdx;
-                                });
-                            });
-                            continue;
-                        }
-
-                        if (jumlahColIdx !== -1) {
-                            const rawScoreCell = (cells[jumlahColIdx] || '').toUpperCase().trim();
-                            let parsedScore = null;
-                            if (rawScoreCell === 'T' || rawScoreCell === 'TH') {
-                                parsedScore = 'T';
-                            } else if (/^\d+(\.\d+)?$/.test(rawScoreCell)) {
-                                const numVal = parseFloat(rawScoreCell);
-                                if (numVal >= 0 && numVal <= 100) parsedScore = numVal;
-                            }
-
-                            const rawName = nameColIdx !== -1 ? (cells[nameColIdx] || '') : '';
-                            let rawIC = icColIdx !== -1 ? (cells[icColIdx] || '') : '';
-                            if (!rawIC) {
-                                const icFound = cells.find(c => /\b\d{12}\b/.test(c.replace(/[^0-9]/g, '')));
-                                if (icFound) rawIC = icFound;
-                            }
-
-                            const activeSubj = currentSubj || fallbackSubject;
-                            if (activeSubj && parsedScore !== null && (rawName.length >= 3 || window.normalizeICForMatching(rawIC).length === 12)) {
-                                upsertStudentSubjectMark(rawIC, rawName, activeSubj, parsedScore, 'jumlah_col');
-                            }
-                        }
-                    }
-                };
-
-                for (const file of files) {
-                    const fileName = file.name.toLowerCase();
-                    const fileSubjectHint = window.detectSubjectCodeFromText(file.name) || fallbackSubject;
-
-                    if (fileName.endsWith('.pdf')) {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                        let currentPdfSubject = fileSubjectHint;
-
+// ... existing code ... -->
                         for (let p = 1; p <= pdf.numPages; p++) {
                             const page = await pdf.getPage(p);
                             const textContent = await page.getTextContent();
+                            activePageRecordCounter = 0;
 
                             const items = textContent.items
                                 .map(it => ({
@@ -2347,17 +1182,12 @@
                                 }))
                                 .filter(it => it.str.length > 0);
 
-                            if (items.length === 0) continue;
+                            if (items.length === 0) {
+                                pageSubjectLog.push({ fileName: file.name, page: p, subject: currentPdfSubject || 'KOSONG', count: 0 });
+                                continue;
+                            }
 
-                            const maxPageY = Math.max(...items.map(it => it.y));
-                            const headerText = items
-                                .filter(it => it.y >= maxPageY - 150)
-                                .map(it => it.str)
-                                .join(' ');
-                            const detectedSubj = window.detectSubjectCodeFromText(headerText);
-                            if (detectedSubj) currentPdfSubject = detectedSubj;
-
-                            const jumlahZone = detectPdfJumlahZone(items);
+                            const allJumlahZones = detectAllPdfJumlahZones(items);
                             const rowsMap = {};
                             items.forEach(it => {
                                 const foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey, 10) - it.y) <= 5);
@@ -2367,696 +1197,143 @@
                             });
 
                             const sortedYKeys = Object.keys(rowsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-                            sortedYKeys.forEach((yKey, rIdx) => {
-                                const rowItems = rowsMap[yKey].sort((a, b) => a.x - b.x);
-                                const rowStr = rowItems.map(r => r.str).join(' ');
-                                const icMatch = rowStr.match(/\b\d{12}\b/);
 
-                                if (icMatch) {
-                                    const ic = icMatch[0];
-                                    const icItem = rowItems.find(r => r.str.includes(ic));
-                                    const nameItemsSameRow = rowItems.filter(r => r.x < (icItem ? icItem.x - 4 : 250) && !/^\d{1,3}\.?$/.test(r.str));
-                                    let combinedName = nameItemsSameRow.map(r => r.str).join(' ').trim();
+                            // Susun baris kepala muka surat dari atas ke bawah & kiri ke kanan untuk kesan subjek muka surat ini
+                            const maxPageY = Math.max(...items.map(it => it.y));
+                            const topOrderedLines = [];
+                            sortedYKeys.forEach(yKey => {
+                                if (parseInt(yKey, 10) >= maxPageY - 240) {
+                                    const orderedLine = rowsMap[yKey].sort((a, b) => a.x - b.x).map(r => r.str).join(' ');
+                                    topOrderedLines.push(orderedLine);
+                                }
+                            });
 
-                                    [-1, 1].forEach(offset => {
-                                        const adjKey = sortedYKeys[rIdx + offset];
-                                        if (adjKey && Math.abs(parseInt(adjKey, 10) - parseInt(yKey, 10)) <= 15) {
-                                            const adjRow = rowsMap[adjKey];
-                                            const adjStr = adjRow.map(r => r.str).join(' ');
-                                            if (!/\b\d{12}\b/.test(adjStr)) {
-                                                const extraName = adjRow
-                                                    .filter(r => r.x < (icItem ? icItem.x - 4 : 250) && /^[A-Z@\/'\.\s]+$/i.test(r.str) && r.str.length >= 2)
-                                                    .map(r => r.str)
-                                                    .join(' ')
-                                                    .trim();
-                                                if (extraName) combinedName = `${combinedName} ${extraName}`.trim();
+                            let detectedHeaderSubj = null;
+                            for (const lineTxt of topOrderedLines) {
+                                if (!/\b\d{12}\b/.test(lineTxt) && !/\b(BIN|BINTI|BT|BITI)\b/i.test(lineTxt)) {
+                                    const found = window.detectSubjectCodeFromText(lineTxt, false);
+                                    if (found) {
+                                        detectedHeaderSubj = found;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!detectedHeaderSubj && topOrderedLines.length > 0) {
+                                const combinedTopBlock = topOrderedLines.join(' ');
+                                if (!/\b\d{12}\b/.test(combinedTopBlock)) {
+                                    detectedHeaderSubj = window.detectSubjectCodeFromText(combinedTopBlock, false);
+                                }
+                            }
+                            // Jika muka surat ini ada tajuk subjek baharu, kemas kini; jika muka surat sambungan murid, kekalkan subjek sebelumnya
+                            if (detectedHeaderSubj) {
+                                currentPdfSubject = detectedHeaderSubj;
+                            }
+
+                            const pageSubjsUsed = new Set();
+                            if (currentPdfSubject) pageSubjsUsed.add(currentPdfSubject);
+                            const consumedRowIndices = new Set();
+// ... existing code ... -->
+                                // Jika baris adalah tajuk subjek baharu di tengah halaman
+                                if (!icMatch && !hasNameIndicator && horizontalMultiSubjs.length === 0) {
+                                    const midSubj = window.detectSubjectCodeFromText(rowStr, false);
+                                    if (midSubj) {
+                                        currentPdfSubject = midSubj;
+                                        pageSubjsUsed.add(midSubj);
+                                        return;
+                                    }
+                                }
+// ... existing code ... -->
+                                        if (tok) {
+                                            const val = parseMarkToken(tok.str);
+                                            if (val !== null) {
+                                                pageSubjsUsed.add(hSub.code);
+                                                upsertStudentSubjectMark(icMatch ? icMatch[0] : '', combinedName, hSub.code, val, subJumlah ? 'jumlah_col' : 'row_fallback');
                                             }
                                         }
                                     });
-
-                                    let scoreVal = null;
-                                    let sourceType = 'jumlah_col';
-
-                                    if (jumlahZone) {
-                                        const itemsInZone = rowItems.filter(r => {
-                                            const cx = r.x + (r.width / 2);
-                                            return cx >= jumlahZone.zoneLeft && cx <= jumlahZone.zoneRight;
-                                        });
-                                        const scoreToken = itemsInZone.find(r => /^(T|TH|\d{1,3}(\.\d+)?)$/i.test(r.str));
-                                        if (scoreToken) {
-                                            const up = scoreToken.str.toUpperCase();
-                                            if (up === 'T' || up === 'TH') {
-                                                scoreVal = 'T';
-                                            } else {
-                                                const num = parseFloat(up);
-                                                if (!isNaN(num) && num >= 0 && num <= 100) scoreVal = num;
-                                            }
-                                        }
-                                    } else {
-                                        sourceType = 'row_fallback';
-                                        const afterIc = icItem ? rowItems.filter(r => r.x > icItem.x + icItem.width) : [];
-                                        const nums = afterIc.filter(r => /^(T|TH|\d{1,3})$/i.test(r.str));
-                                        if (nums.length > 0) {
-                                            const lastTok = nums[nums.length - 1].str.toUpperCase();
-                                            scoreVal = (lastTok === 'T' || lastTok === 'TH') ? 'T' : parseFloat(lastTok);
-                                        }
-                                    }
-
-                                    const activeSubj = currentPdfSubject || fallbackSubject;
-                                    if (activeSubj && scoreVal !== null) {
-                                        upsertStudentSubjectMark(ic, combinedName, activeSubj, scoreVal, sourceType);
-                                    }
+                                    return;
                                 }
+// ... existing code ... -->
+                                const activeSubj = currentPdfSubject || fallbackSubject;
+                                if (activeSubj && scoreVal !== null && (icMatch || combinedName.length >= 3)) {
+                                    pageSubjsUsed.add(activeSubj);
+                                    upsertStudentSubjectMark(icMatch ? icMatch[0] : '', combinedName, activeSubj, scoreVal, sourceType);
+                                }
+                            });
+
+                            const detectedLabel = pageSubjsUsed.size > 0
+                                ? window.sortSubjectCodesCanonical(Array.from(pageSubjsUsed)).join(', ')
+                                : (fallbackSubject || 'TIDAK DIKESAN');
+                            pageSubjectLog.push({
+                                fileName: file.name,
+                                page: p,
+                                subject: detectedLabel,
+                                isContinued: !detectedHeaderSubj && p > 1 && pageSubjsUsed.size === 1,
+                                count: activePageRecordCounter
                             });
                         }
                     } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                        workbook.SheetNames.forEach(sheetName => {
-                            const worksheet = workbook.Sheets[sheetName];
-                            const sheetRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: true });
-                            const sheetSubj = window.detectSubjectCodeFromText(sheetName) || fileSubjectHint;
-                            processGridRows(sheetRows, sheetSubj);
-                        });
-                    } else if (fileName.endsWith('.docx')) {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
-                        const parser = new DOMParser();
-                        const docHtml = parser.parseFromString(result.value, 'text/html');
-                        let rollingSubj = fileSubjectHint;
-                        docHtml.body.querySelectorAll('p, h1, h2, h3, h4, table').forEach(el => {
-                            if (el.tagName !== 'TABLE') {
-                                const det = window.detectSubjectCodeFromText(el.textContent);
-                                if (det) rollingSubj = det;
-                            } else {
-                                const tRows = [];
-                                el.querySelectorAll('tr').forEach(tr => {
-                                    tRows.push(Array.from(tr.querySelectorAll('th, td')).map(c => c.textContent.replace(/\s+/g, ' ').trim()));
-                                });
-                                processGridRows(tRows, rollingSubj);
-                            }
-                        });
-                    } else {
-                        window.showToast("Format fail tidak disokong: " + file.name);
-                    }
-                }
-
+// ... existing code ... -->
                 const extractedList = Object.values(studentRecordsMap);
                 if (extractedList.length === 0) {
                     window.showToast("Tiada markah dalam lajur JUMLAH ditemui. Pastikan fail mengandungi jadual transit yang sah.");
                 } else {
-                    window.buildImportPreviewModal(extractedList, studentsInClass, 'MARKAH');
+                    window.buildImportPreviewModal(extractedList, studentsInClass, 'MARKAH', pageSubjectLog);
                 }
             } catch (e) {
-                console.error(e);
-                window.showToast("Ralat memproses fail: " + e.message);
-            }
-            event.target.value = '';
-        };
-
-        // --- MODUL 2: IMPORT TAHAP PENGUASAAN (TP 1-6) PBD DARIPADA SPPB (PDF / EXCEL / WORD) ---
-        window.handleSppbTpImport = async function(event) {
-            const files = Array.from(event.target.files || []);
-            if (files.length === 0) return;
-
-            const classId = document.getElementById('markFilterClass').value;
-            const selectedSubjDropdown = document.getElementById('markFilterSubject').value;
-            const fallbackSubject = (selectedSubjDropdown && selectedSubjDropdown !== '_KEHADIRAN') ? selectedSubjDropdown : null;
-
-            if (!classId) {
-                window.showToast("Sila pilih kelas terlebih dahulu.");
-                event.target.value = '';
-                return;
-            }
-
-            window.showToast("Membaca laporan SPPB & mengesan Tahap Penguasaan (TP)...");
-
-            try {
-                const studentsInClass = window.appData.students.filter(s => s.classId === classId);
-                const extractedMap = {};
-                let autoDetectedSubject = null;
-
-                const upsertStudentTp = (ic, name, subjCode, tpCode) => {
-                    if (!subjCode || !tpCode || !/^TP[1-6]$/.test(tpCode)) return;
-                    const cleanIC = window.normalizeICForMatching(ic);
-                    const cleanName = window.normalizeHomoglyphs(name || '').replace(/\s+/g, ' ').trim().toUpperCase();
-                    const normName = window.normalizeNameForMatching(cleanName);
-
-                    if (normName.length < 3 && cleanIC.length !== 12) return;
-
-                    const key = normName.length >= 3 ? `NAME_${normName}` : `IC_${cleanIC}`;
-                    if (!extractedMap[key]) {
-                        extractedMap[key] = {
-                            no_kp: cleanIC.length === 12 ? cleanIC : '',
-                            nama: cleanName || 'TANPA NAMA',
-                            tps: {}
-                        };
-                    } else {
-                        if (cleanIC.length === 12 && !extractedMap[key].no_kp) extractedMap[key].no_kp = cleanIC;
-                        if (cleanName && extractedMap[key].nama === 'TANPA NAMA') extractedMap[key].nama = cleanName;
-                    }
-                    extractedMap[key].tps[subjCode] = tpCode;
-                    if (!autoDetectedSubject) autoDetectedSubject = subjCode;
-                };
-
-                const parseTpToken = (str) => {
-                    if (!str) return null;
-                    const up = window.normalizeHomoglyphs(str).toUpperCase().trim();
-                    const matchTp = up.match(/\bTP\s*([1-6])\b/);
-                    if (matchTp) return `TP${matchTp[1]}`;
-                    const matchTahap = up.match(/TAHAP\s*PENGUASAAN\s*([1-6])/);
-                    if (matchTahap) return `TP${matchTahap[1]}`;
-                    return null;
-                };
-
-                const processSppbGridRows = (rows, defaultSubj) => {
-                    let currentSubj = defaultSubj;
-                    let nameColIdx = -1, icColIdx = -1, tpColIdx = -1;
-
-                    for (let r = 0; r < rows.length; r++) {
-                        const cells = (rows[r] || []).map(c => (c === null || c === undefined) ? '' : c.toString().replace(/\s+/g, ' ').trim());
-                        const joined = cells.join(' ').toUpperCase();
-                        if (!joined) continue;
-
-                        if (!/\b\d{12}\b/.test(joined)) {
-                            const det = window.detectSubjectCodeFromText(joined);
-                            if (det) currentSubj = det;
-                        }
-
-                        const foundTpHeader = cells.findIndex(c => /TAHAP\s*PENGUASAAN/i.test(c) || /^TP$/i.test(c));
-                        if (foundTpHeader !== -1) {
-                            tpColIdx = foundTpHeader;
-                            nameColIdx = cells.findIndex(c => /\bNAMA\b/i.test(c));
-                            icColIdx = cells.findIndex(c => /(ID\s*PENGENALAN|NO\.?\s*K\.?P|MYKID|\bIC\b)/i.test(c));
-                            continue;
-                        }
-
-                        if (tpColIdx !== -1) {
-                            const tpVal = parseTpToken(cells[tpColIdx]);
-                            const rawName = nameColIdx !== -1 ? (cells[nameColIdx] || '') : '';
-                            let rawIC = icColIdx !== -1 ? (cells[icColIdx] || '') : '';
-                            if (!rawIC) {
-                                const icFound = cells.find(c => /\b\d{12}\b/.test(c.replace(/[^0-9]/g, '')));
-                                if (icFound) rawIC = icFound;
-                            }
-                            const activeSubj = currentSubj || fallbackSubject;
-                            if (activeSubj && tpVal && (rawName.length >= 3 || window.normalizeICForMatching(rawIC).length === 12)) {
-                                upsertStudentTp(rawIC, rawName, activeSubj, tpVal);
-                            }
-                        }
-                    }
-                };
-
-                for (const file of files) {
-                    const fileName = file.name.toLowerCase();
-                    const fileSubjectHint = window.detectSubjectCodeFromText(file.name) || fallbackSubject;
-
-                    if (fileName.endsWith('.pdf')) {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                        let currentPdfSubject = fileSubjectHint;
-
-                        for (let p = 1; p <= pdf.numPages; p++) {
-                            const page = await pdf.getPage(p);
-                            const textContent = await page.getTextContent();
-
-                            const items = textContent.items
-                                .map(it => ({
-                                    str: it.str.trim(),
-                                    x: Math.round(it.transform[4]),
-                                    y: Math.round(it.transform[5]),
-                                    width: Math.round(it.width || (it.str.trim().length * 5))
-                                }))
-                                .filter(it => it.str.length > 0);
-
-                            if (items.length === 0) continue;
-
-                            const maxPageY = Math.max(...items.map(it => it.y));
-                            const headerText = items
-                                .filter(it => it.y >= maxPageY - 140)
-                                .map(it => it.str)
-                                .join(' ');
-                            const detectedSubj = window.detectSubjectCodeFromText(headerText);
-                            if (detectedSubj) currentPdfSubject = detectedSubj;
-
-                            const tahapHeader = items.find(it => /^TAHAP$/i.test(it.str) || /^TAHAP\s*PENGUASAAN/i.test(it.str));
-                            const kemahiranHeader = items.find(it => /^KEMAHIRAN$/i.test(it.str));
-                            const ulasanHeader = items.find(it => /^ULASAN/i.test(it.str));
-                            const idHeader = items.find(it => /^ID$/i.test(it.str) || /^ID\s*PENGENALAN/i.test(it.str));
-
-                            const tpZoneLeft = tahapHeader
-                                ? (kemahiranHeader ? ((kemahiranHeader.x + kemahiranHeader.width + tahapHeader.x) / 2) : tahapHeader.x - 15)
-                                : 360;
-                            const tpZoneRight = ulasanHeader
-                                ? ((tahapHeader ? (tahapHeader.x + tahapHeader.width + ulasanHeader.x) / 2 : ulasanHeader.x - 10))
-                                : (tahapHeader ? tahapHeader.x + 120 : 540);
-                            const nameZoneRight = idHeader ? idHeader.x - 4 : 235;
-
-                            const rowsMap = {};
-                            items.forEach(it => {
-                                const foundY = Object.keys(rowsMap).find(yKey => Math.abs(parseInt(yKey, 10) - it.y) <= 5);
-                                const yKey = foundY || it.y;
-                                if (!rowsMap[yKey]) rowsMap[yKey] = [];
-                                rowsMap[yKey].push(it);
-                            });
-
-                            const sortedYKeys = Object.keys(rowsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-                            const subHeaderItem = items.find(it => /^PENGUASAAN$/i.test(it.str) || /^PENGENALAN$/i.test(it.str));
-                            const headerBottomY = subHeaderItem
-                                ? subHeaderItem.y
-                                : (tahapHeader ? tahapHeader.y - 14 : maxPageY - 110);
-                            const tableStartY = headerBottomY - 6;
-
-                            const tpAnchors = [];
-                            sortedYKeys.forEach(yKey => {
-                                const yNum = parseInt(yKey, 10);
-                                if (yNum >= tableStartY) return;
-                                const rowItems = rowsMap[yKey].sort((a, b) => a.x - b.x);
-                                const tpZoneItems = rowItems.filter(it => it.x >= tpZoneLeft && it.x <= tpZoneRight);
-                                const tpText = tpZoneItems.map(it => it.str).join(' ');
-                                const tpCode = parseTpToken(tpText);
-                                if (tpCode) {
-                                    tpAnchors.push({ y: yNum, tpCode });
-                                }
-                            });
-
-                            tpAnchors.forEach((anchor, aIdx) => {
-                                const prevY = aIdx > 0 ? tpAnchors[aIdx - 1].y : tableStartY;
-                                const nextY = aIdx < tpAnchors.length - 1 ? tpAnchors[aIdx + 1].y : 0;
-                                const upperBoundY = aIdx === 0
-                                    ? tableStartY
-                                    : Math.min(anchor.y + 34, (prevY + anchor.y) / 2);
-                                const lowerBoundY = aIdx === tpAnchors.length - 1
-                                    ? Math.max(anchor.y - 45, 25)
-                                    : Math.max(anchor.y - 34, (anchor.y + nextY) / 2);
-
-                                let nameParts = [];
-                                let foundIC = '';
-
-                                sortedYKeys.forEach(yKey => {
-                                    const yNum = parseInt(yKey, 10);
-                                    if (yNum <= upperBoundY && yNum >= lowerBoundY) {
-                                        const rowItems = rowsMap[yKey].sort((a, b) => a.x - b.x);
-                                        rowItems.forEach(it => {
-                                            const cleanDigits = it.str.replace(/[^0-9]/g, '');
-                                            if (cleanDigits.length === 12 && !foundIC) {
-                                                foundIC = cleanDigits;
-                                            }
-                                            if (it.x >= 45 && it.x < nameZoneRight) {
-                                                const normTok = window.normalizeHomoglyphs(it.str).toUpperCase().trim();
-                                                if (normTok && !/^\d{1,3}\.?$/.test(normTok) && !/^(NAMA|BIL|ID|PENGENALAN|JANTINA)$/i.test(normTok)) {
-                                                    nameParts.push(normTok);
-                                                }
-                                            }
-                                        });
-                                    }
-                                });
-
-                                const fullName = nameParts.join(' ').replace(/\s+/g, ' ').trim();
-                                const activeSubj = currentPdfSubject || fallbackSubject;
-                                if (activeSubj && (fullName.length >= 3 || foundIC.length === 12)) {
-                                    upsertStudentTp(foundIC, fullName, activeSubj, anchor.tpCode);
-                                }
-                            });
-                        }
-                    } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                        workbook.SheetNames.forEach(sheetName => {
-                            const worksheet = workbook.Sheets[sheetName];
-                            const sheetRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: true });
-                            const sheetSubj = window.detectSubjectCodeFromText(sheetName) || fileSubjectHint;
-                            processSppbGridRows(sheetRows, sheetSubj);
-                        });
-                    } else if (fileName.endsWith('.docx')) {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
-                        const parser = new DOMParser();
-                        const docHtml = parser.parseFromString(result.value, 'text/html');
-                        let rollingSubj = fileSubjectHint;
-                        docHtml.body.querySelectorAll('p, h1, h2, h3, h4, table').forEach(el => {
-                            if (el.tagName !== 'TABLE') {
-                                const det = window.detectSubjectCodeFromText(el.textContent);
-                                if (det) rollingSubj = det;
-                            } else {
-                                const tRows = [];
-                                el.querySelectorAll('tr').forEach(tr => {
-                                    tRows.push(Array.from(tr.querySelectorAll('th, td')).map(c => c.textContent.replace(/\s+/g, ' ').trim()));
-                                });
-                                processSppbGridRows(tRows, rollingSubj);
-                            }
-                        });
-                    } else {
-                        window.showToast("Format fail tidak disokong: " + file.name);
-                    }
-                }
-
-                if (autoDetectedSubject && !selectedSubjDropdown) {
-                    const subjDropdown = document.getElementById('markFilterSubject');
-                    if (Array.from(subjDropdown.options).some(opt => opt.value === autoDetectedSubject)) {
-                        subjDropdown.value = autoDetectedSubject;
-                        window.loadMarksTable();
-                    }
-                }
-
-                const extractedList = Object.values(extractedMap);
-                if (extractedList.length === 0) {
-                    window.showToast("Tiada rekod Tahap Penguasaan (TP) ditemui dalam fail tersebut.");
-                } else {
-                    window.buildImportPreviewModal(extractedList, studentsInClass, 'TP');
-                }
-            } catch (e) {
-                console.error(e);
-                window.showToast("Ralat membaca fail SPPB: " + e.message);
-            }
-            event.target.value = '';
-        };
-
-        // --- PRATONTON (PREVIEW MODAL) & PEMADANAN PINTAR (MARKAH & TP SPPB) ---
-        window.buildImportPreviewModal = function(extractedStudents, systemStudents, importMode = 'MARKAH') {
+// ... existing code ... -->
+        window.buildImportPreviewModal = function(extractedStudents, systemStudents, importMode = 'MARKAH', pageSubjectLog = []) {
             window.pendingImportMode = importMode;
             const titleEl = document.getElementById('previewModalTitle');
-            const valHeaderEl = document.getElementById('previewValueColHeader');
-            const btnSaveEl = document.getElementById('btnConfirmImportSave');
-
-            if (importMode === 'TP') {
-                titleEl.innerHTML = `<i class="fas fa-award mr-2 text-teal-400"></i>Pratonton Import Tahap Penguasaan (TP) PBD & Auto-Isi No. KP`;
-                valHeaderEl.innerText = 'Tahap Penguasaan (TP)';
-                btnSaveEl.innerHTML = `<i class="fas fa-save mr-2"></i>Sahkan & Import TP`;
-            } else {
-                titleEl.innerHTML = `<i class="fas fa-clipboard-check mr-2 text-green-400"></i>Pratonton Pemadanan Borang Transit Markah`;
-                valHeaderEl.innerText = 'Markah / Subjek Dikesan';
-                btnSaveEl.innerHTML = `<i class="fas fa-save mr-2"></i>Sahkan & Import Markah`;
-            }
-
-            let previewRows = [];
-
-            extractedStudents.forEach(item => {
-                let rawDocName = item.nama || item.nama_dokumen || 'TANPA NAMA';
-                let cleanedDocIC = window.normalizeICForMatching(item.no_kp);
-
-                let matchedSysStudent = window.findBestStudentMatchByName(rawDocName, systemStudents);
-                if (!matchedSysStudent && cleanedDocIC.length === 12) {
-                    matchedSysStudent = systemStudents.find(s => window.normalizeICForMatching(s.ic) === cleanedDocIC);
-                }
-
-                let normalizedValues = {};
-                if (importMode === 'TP') {
-                    let rawTpObj = item.tps || {};
-                    Object.keys(rawTpObj).forEach(rawSubj => {
-                        let spakCode = window.mapKpmSubjectToSpakCode(rawSubj);
-                        if (rawTpObj[rawSubj]) normalizedValues[spakCode] = rawTpObj[rawSubj];
-                    });
-                } else {
-                    let rawMarkahObj = item.markah || {};
-                    Object.keys(rawMarkahObj).forEach(rawSubj => {
-                        let spakCode = window.mapKpmSubjectToSpakCode(rawSubj);
-                        let subjVal = rawMarkahObj[rawSubj];
-                        let jumlahVal = (subjVal !== null && typeof subjVal === 'object') ? subjVal.jumlah : subjVal;
-                        if (jumlahVal !== null && jumlahVal !== undefined && jumlahVal !== '') {
-                            normalizedValues[spakCode] = jumlahVal;
-                        }
-                    });
-                }
-
-                const willAutoFillIC = !!(
-                    matchedSysStudent &&
-                    cleanedDocIC.length === 12 &&
-                    (!matchedSysStudent.ic || matchedSysStudent.ic.trim() === '' || matchedSysStudent.ic.trim() === '-')
-                );
-
-                previewRows.push({
-                    docName: rawDocName,
-                    docIC: cleanedDocIC.length === 12 ? cleanedDocIC : '-',
-                    values: normalizedValues,
-                    sourceMeta: item.sourceMeta || {},
-                    matchedStudentId: matchedSysStudent ? matchedSysStudent.id : '',
-                    isMatched: !!matchedSysStudent,
-                    willAutoFillIC
-                });
-            });
-
+// ... existing code ... -->
             window.pendingPreviewRows = previewRows;
             window.pendingSystemStudents = systemStudents;
+            window.pendingSubjectCounts = subjectCounts;
+            window.pendingPageSubjectLog = pageSubjectLog || [];
 
             window.refreshPreviewSummaryCards = function() {
                 const rowsList = window.pendingPreviewRows || [];
                 const total = rowsList.length;
                 const matched = rowsList.filter(r => r.isMatched).length;
-                const autoIcCount = rowsList.filter(r => r.willAutoFillIC).length;
                 const unmatched = total - matched;
+                const sortedSubjKeys = window.sortSubjectCodesCanonical(Object.keys(window.pendingSubjectCounts || {}));
+                const subjBadges = sortedSubjKeys.length > 0
+                    ? sortedSubjKeys.map(k => `<span class="inline-block bg-white border border-blue-200 px-2 py-0.5 rounded text-xs font-extrabold text-blue-800 mr-1 mb-1">${k}: ${window.pendingSubjectCounts[k]}</span>`).join('')
+                    : '<span class="text-xs text-gray-500">-</span>';
+
+                const pagesLog = window.pendingPageSubjectLog || [];
+                let pageAuditHtml = '';
+                if (pagesLog.length > 0) {
+                    const pageChips = pagesLog.map(pl => {
+                        const contTag = pl.isContinued ? ' <span class="text-[10px] text-gray-500">(samb.)</span>' : '';
+                        return `<span class="inline-flex items-center bg-white border border-slate-300 px-2 py-0.5 rounded text-xs font-semibold text-slate-700">Ms ${pl.page}: <strong class="ml-1 text-indigo-700">${pl.subject}</strong>${contTag} <span class="ml-1 text-[10px] text-gray-500">(${pl.count})</span></span>`;
+                    }).join('');
+                    pageAuditHtml = `
+                        <div class="col-span-1 md:col-span-3 bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                            <p class="text-xs font-bold text-slate-700 uppercase mb-2"><i class="fas fa-file-alt mr-1 text-indigo-600"></i>Semakan Subjek Mengikut Muka Surat (${pagesLog.length} Muka Surat Diimbas):</p>
+                            <div class="flex flex-wrap gap-1.5">${pageChips}</div>
+                        </div>
+                    `;
+                }
+
                 const summaryEl = document.getElementById('previewSummaryCards');
                 if (!summaryEl) return;
                 summaryEl.innerHTML = `
                     <div class="bg-green-50 border border-green-200 p-4 rounded-xl text-center">
-                        <p class="text-xs text-green-600 font-bold uppercase">Berjaya Dipadankan</p>
+                        <p class="text-xs text-green-600 font-bold uppercase">Padanan Nama Berjaya</p>
                         <p class="text-2xl font-black text-green-700">${matched} <span class="text-xs font-normal text-gray-500">/ ${total}</span></p>
                     </div>
                     <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center">
-                        <p class="text-xs text-blue-600 font-bold uppercase">Auto-Isi No. KP Baharu</p>
-                        <p class="text-2xl font-black text-blue-700">${autoIcCount}</p>
+                        <p class="text-xs text-blue-600 font-bold uppercase mb-1">Subjek Diserap</p>
+                        <div>${subjBadges}</div>
                     </div>
                     <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-xl text-center">
                         <p class="text-xs text-yellow-600 font-bold uppercase">Perlu Padanan Manual</p>
                         <p class="text-2xl font-black text-yellow-700">${unmatched}</p>
                     </div>
+                    ${pageAuditHtml}
                 `;
             };
 
             window.refreshPreviewSummaryCards();
-
-            let tableBodyHtml = '';
-            previewRows.forEach((row, index) => {
-                let dropdownOptions = `<option value="">-- Pilih Murid Sistem --</option>` + systemStudents.map(s => `
-                    <option value="${s.id}" ${s.id === row.matchedStudentId ? 'selected' : ''}>${s.name} (${s.ic || 'Tiada KP'})</option>
-                `).join('');
-
-                let statusBadge = row.isMatched
-                    ? `<span class="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Padan ✅</span>`
-                    : `<span class="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">Tidak Padan ⚠️</span>`;
-
-                let icDisplayHtml = `<span class="font-mono text-xs">${row.docIC}</span>`;
-                if (row.willAutoFillIC) {
-                    icDisplayHtml += `<span class="block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">+ Auto-Isi KP</span>`;
-                }
-
-                let valuesSummary = Object.keys(row.values).map(sub => {
-                    if (importMode === 'TP') {
-                        return `<span class="inline-flex items-center bg-teal-50 border border-teal-200 text-teal-800 px-2.5 py-0.5 rounded text-xs font-mono font-bold mr-1 mb-1">${sub}: ${row.values[sub]}</span>`;
-                    }
-                    const isExactCol = row.sourceMeta[sub] === 'jumlah_col';
-                    const tag = isExactCol
-                        ? `<span class="text-[10px] text-emerald-700 font-semibold ml-1" title="Diambil tepat dari lajur JUMLAH">[Lajur Jumlah]</span>`
-                        : `<span class="text-[10px] text-amber-700 font-semibold ml-1" title="Anggaran hujung baris">[Baris]</span>`;
-                    return `<span class="inline-flex items-center bg-gray-100 border border-gray-200 px-2 py-0.5 rounded text-xs font-mono font-bold mr-1 mb-1">${sub}: ${row.values[sub]}${tag}</span>`;
-                }).join('');
-
-                tableBodyHtml += `<tr class="border-b hover:bg-gray-50" data-row-index="${index}">
-                    <td class="p-3 text-center preview-status-cell">${statusBadge}</td>
-                    <td class="p-3 font-bold uppercase text-xs">${row.docName}</td>
-                    <td class="p-3">
-                        <select class="border rounded p-1.5 w-full text-xs font-bold preview-student-select" onchange="window.updatePreviewRowMatch(${index}, this.value)">
-                            ${dropdownOptions}
-                        </select>
-                    </td>
-                    <td class="p-3 preview-ic-cell">${icDisplayHtml}</td>
-                    <td class="p-3 text-center">${valuesSummary || 'Tiada data'}</td>
-                </tr>`;
-            });
-
-            document.getElementById('previewTableBody').innerHTML = tableBodyHtml;
-            document.getElementById('modalPreviewImport').classList.remove('hidden');
-        };
-
-        window.updatePreviewRowMatch = function(rowIndex, selectedSysId) {
-            if (window.pendingPreviewRows && window.pendingPreviewRows[rowIndex]) {
-                const rowObj = window.pendingPreviewRows[rowIndex];
-                rowObj.matchedStudentId = selectedSysId;
-                rowObj.isMatched = !!selectedSysId;
-
-                const sysStudent = (window.pendingSystemStudents || []).find(s => s.id === selectedSysId);
-                rowObj.willAutoFillIC = !!(
-                    sysStudent &&
-                    rowObj.docIC &&
-                    rowObj.docIC !== '-' &&
-                    rowObj.docIC.length === 12 &&
-                    (!sysStudent.ic || sysStudent.ic.trim() === '' || sysStudent.ic.trim() === '-')
-                );
-
-                const tr = document.querySelector(`#previewTableBody tr[data-row-index="${rowIndex}"]`);
-                if (tr) {
-                    const statusCell = tr.querySelector('.preview-status-cell');
-                    if (statusCell) {
-                        statusCell.innerHTML = selectedSysId
-                            ? `<span class="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Padan ✅</span>`
-                            : `<span class="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">Tidak Padan ⚠️</span>`;
-                    }
-                    const icCell = tr.querySelector('.preview-ic-cell');
-                    if (icCell) {
-                        let icHtml = `<span class="font-mono text-xs">${rowObj.docIC}</span>`;
-                        if (rowObj.willAutoFillIC) {
-                            icHtml += `<span class="block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">+ Auto-Isi KP</span>`;
-                        }
-                        icCell.innerHTML = icHtml;
-                    }
-                }
-                if (window.refreshPreviewSummaryCards) window.refreshPreviewSummaryCards();
-            }
-        };
-
-        window.confirmAndSaveImport = async function() {
-            if (!window.pendingPreviewRows || window.pendingPreviewRows.length === 0) return;
-
-            const exam = document.getElementById('markFilterExam').value;
-            const mode = window.pendingImportMode || 'MARKAH';
-            window.showToast(mode === 'TP' ? "Menyimpan Tahap Penguasaan (TP) & mengemas kini No. KP..." : "Menyimpan markah dan mengekalkan subjek sedia ada...");
-
-            try {
-                const ops = [];
-                let updateCount = 0;
-                let autoFilledIcCount = 0;
-
-                window.pendingPreviewRows.forEach(row => {
-                    if (!row.matchedStudentId) return;
-
-                    let targetStudent = window.appData.students.find(s => s.id === row.matchedStudentId);
-                    if (!targetStudent) return;
-
-                    let existingExamScores = (targetStudent.scores && targetStudent.scores[exam]) ? { ...targetStudent.scores[exam] } : {};
-
-                    if (mode === 'TP') {
-                        Object.keys(row.values).forEach(subCode => {
-                            let tpVal = row.values[subCode];
-                            if (tpVal && /^TP[1-6]$/.test(tpVal)) {
-                                let existingSubj = existingExamScores[subCode] || { mark: null, grade: '-', tp: '' };
-                                existingExamScores[subCode] = {
-                                    mark: existingSubj.mark !== undefined ? existingSubj.mark : null,
-                                    grade: existingSubj.grade || '-',
-                                    tp: tpVal
-                                };
-                            }
-                        });
-                    } else {
-                        Object.keys(row.values).forEach(subCode => {
-                            let val = row.values[subCode];
-                            let upperVal = val !== null ? val.toString().trim().toUpperCase() : '';
-                            let finalMark = (upperVal === 'T' || upperVal === 'TH') ? 'T' : (val !== null && upperVal !== '' ? parseFloat(val) : null);
-
-                            if (finalMark !== null && (finalMark === 'T' || !isNaN(finalMark))) {
-                                let gradeVal = window.getGrade(finalMark === 'T' ? 0 : finalMark);
-                                let existingTP = existingExamScores[subCode] ? existingExamScores[subCode].tp || '' : '';
-
-                                existingExamScores[subCode] = {
-                                    mark: finalMark,
-                                    grade: finalMark === 'T' ? 'TH' : gradeVal,
-                                    tp: existingTP
-                                };
-                            }
-                        });
-                    }
-
-                    let studentPayload = {
-                        scores: {
-                            [exam]: existingExamScores
-                        }
-                    };
-
-                    if (row.docIC && row.docIC !== '-' && row.docIC.length === 12 && (!targetStudent.ic || targetStudent.ic.trim() === '' || targetStudent.ic.trim() === '-')) {
-                        studentPayload.ic = row.docIC;
-                        autoFilledIcCount++;
-                    }
-
-                    ops.push({
-                        type: 'set',
-                        ref: doc(db, 'students', targetStudent.id),
-                        data: studentPayload,
-                        options: { merge: true }
-                    });
-                    updateCount++;
-                });
-
-                if (updateCount > 0) {
-                    await window.commitOperationsInChunks(ops);
-                    document.getElementById('modalPreviewImport').classList.add('hidden');
-                    const icNote = autoFilledIcCount > 0 ? ` (${autoFilledIcCount} No. KP diisi automatik)` : '';
-                    window.showToast(mode === 'TP'
-                        ? `Berjaya mengimport TP PBD untuk ${updateCount} murid${icNote}!`
-                        : `Berjaya menyimpan markah untuk ${updateCount} murid${icNote}!`);
-                    window.loadMarksTable();
-                    if (document.getElementById('dashboard').classList.contains('active')) {
-                        window.updateDashboardAnalytics();
-                        window.updateMatriksTahun4Analytics();
-                    }
-                } else {
-                    window.showToast("Tiada murid yang sah dipilih untuk disimpan.");
-                }
-            } catch (e) {
-                console.error(e);
-                window.showToast("Ralat semasa menyimpan ke pangkalan data: " + e.message);
-            }
-        };
-
-        // --- CETAKAN LAPORAN ---
-        window.printReport = function(type) {
-            let selectedIds = Array.from(document.querySelectorAll('.print-checkbox:checked')).map(cb => cb.value);
-            if (selectedIds.length === 0) {
-                window.showToast("Sila tandakan sekurang-kurangnya seorang murid untuk dicetak.");
-                return;
-            }
-
-            let printWindow = window.open('', '_blank');
-            if (!printWindow) {
-                window.showToast("Tetingkap cetakan disekat pelayar. Sila benarkan Pop-up.");
-                return;
-            }
-
-            let schoolName = window.appData.school.name || "SEKOLAH KEBANGSAAN BIKANG";
-            let html = `<html><head><title>Laporan</title><script src="https://cdn.tailwindcss.com"><\/script><style>@page { size: A4 portrait; margin: 15mm; } @media print { .page-break { page-break-after: always; } } body { font-family: 'Times New Roman', serif; }</style></head><body>`;
-
-            selectedIds.forEach((id, index) => {
-                let s = window.appData.students.find(x => x.id === id);
-                if (!s) return;
-                let c = window.appData.classes.find(x => x.id === s.classId);
-                let classTahap = c ? window.getTahapKelas(c.name) : 'ALL';
-                let isTahap2 = classTahap === 'T2';
-                let isTahun4 = c && /^(TAHUN\s*)?4/i.test(c.name.trim());
-
-                let activeSubjects = window.appData.subjects.filter(sub => sub.tahap === 'ALL' || sub.tahap === classTahap || classTahap === 'ALL');
-                let rows = '', total = 0, valid = 0;
-
-                activeSubjects.forEach((sub, idx) => {
-                    let sc = (s.scores && s.scores[type] && s.scores[type][sub.code]) || {};
-                    if (typeof sc.mark === 'number') { total += sc.mark; valid++; }
-                    rows += `<tr><td class="border border-black px-2 py-1 text-center">${idx + 1}</td><td class="border border-black px-2 py-1 font-bold">${sub.name}</td><td class="border border-black px-2 py-1 text-center">${sc.mark ?? '-'}</td><td class="border border-black px-2 py-1 text-center font-bold">${sc.grade || '-'}</td><td class="border border-black px-2 py-1 text-center font-bold">${sc.tp || '-'}</td></tr>`;
-                });
-
-                let full = valid * 100;
-                let pct = full > 0 ? ((total / full) * 100).toFixed(2) : '-';
-                let status = full === 0 ? '-' : (pct >= 40 ? 'MENCAPAI TAHAP MINIMUM (MTM)' : 'BELUM MENCAPAI TAHAP MINIMUM (BMTM)');
-                let ext = (s.scores && s.scores[type] && s.scores[type]['_KEHADIRAN']) || {};
-                let schoolYear = window.appData.school.year || new Date().getFullYear();
-                let title = type === 'PPT' ? `LAPORAN PENTAKSIRAN PERTENGAHAN TAHUN ${schoolYear}` : (isTahun4 ? `LAPORAN MATRIKS PEMBELAJARAN TAHUN 4 ${schoolYear}` : (isTahap2 ? `LAPORAN UJIAN AKHIR SESI AKADEMIK (UASA) ${schoolYear}` : `LAPORAN PENTAKSIRAN AKHIR TAHUN ${schoolYear}`));
-
-                html += `<div class="${index < selectedIds.length - 1 ? 'page-break' : ''} p-6">
-                    <div class="text-center mb-6"><h1 class="text-2xl font-bold uppercase">${schoolName}</h1><h2 class="text-xl font-bold mt-2 border-b-2 border-black inline-block pb-1">${title}</h2></div>
-                    <div class="mb-4 grid grid-cols-2 gap-4 text-sm font-bold uppercase"><div><p>NAMA: ${s.name}</p><p class="mt-1">NO. KP: ${s.ic || '-'}</p></div><div class="text-right"><p>KELAS: ${c?.name || '-'}</p><p class="mt-1">JANTINA: ${s.gender === 'P' ? 'PEREMPUAN' : 'LELAKI'}</p></div></div>
-                    <table class="w-full border-collapse border border-black text-sm mb-4"><thead class="bg-gray-100"><tr><th class="border border-black px-2 py-2 text-center w-10">BIL</th><th class="border border-black px-2 py-2 text-left">MATA PELAJARAN</th><th class="border border-black px-2 py-2 text-center w-24">MARKAH (%)</th><th class="border border-black px-2 py-2 text-center w-24">GRED</th><th class="border border-black px-2 py-2 text-center w-24">PBD (TP)</th></tr></thead><tbody>${rows}</tbody></table>
-                    <div class="border border-black p-4 mb-4 text-sm font-bold uppercase grid grid-cols-2 gap-y-3">
-                        <div>JUMLAH MARKAH: ${full > 0 ? total : '-'} / ${full > 0 ? full : '-'}</div><div class="text-right">KEDUDUKAN DALAM KELAS: -</div>
-                        <div>PERATUS KESELURUHAN: ${pct} ${pct !== '-' ? '%' : ''}</div><div class="text-right">KEDUDUKAN DALAM TAHUN: -</div>
-                        <div class="col-span-2 pt-2 border-t border-gray-400 grid grid-cols-2 gap-y-3">
-                            <div>KEHADIRAN: ${ext.kehadiran !== undefined && ext.kehadiran !== null ? ext.kehadiran + '%' : '-'}</div><div class="text-right">KELAKUAN: ${ext.kelakuan || '-'}</div>
-                            <div class="col-span-2 text-center pt-2 text-base">STATUS: ${status}</div>
-                        </div>
-                    </div>
-                    <div class="border border-black p-4 mb-8 text-sm min-h-[100px]"><p class="font-bold uppercase mb-2">ULASAN GURU KELAS:</p>${ext.ulasan ? `<p class="italic text-lg ml-4 mt-2">"${ext.ulasan}"</p>` : `<div class="border-b border-dotted border-black mt-8"></div>`}</div>
-                    <div class="mt-8 grid grid-cols-3 gap-6 text-center text-sm font-bold uppercase"><div><br><br><p class="border-t border-black pt-2 mx-4">TANDATANGAN GURU KELAS</p></div><div><br><br><p class="border-t border-black pt-2 mx-4">TANDATANGAN GURU BESAR</p></div><div><br><br><p class="border-t border-black pt-2 mx-4">TANDATANGAN IBU BAPA</p></div></div>
-                </div>`;
-            });
-            html += `<script>window.onload=function(){setTimeout(window.print, 800);}<\/script></body></html>`;
-            printWindow.document.write(html);
-            printWindow.document.close();
-        };
-    </script>
-</body>
-</html>
+// ... existing code ... -->
